@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=standardisation
 #SBATCH --partition=big
-#SBATCH --array=0-83
+#SBATCH --array=0-90
 #SBATCH --time=24:00:00
 #SBATCH --mem=10G
 #SBATCH --cpus-per-task=2

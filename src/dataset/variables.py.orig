@@ -152,11 +152,6 @@ rolling_means = [
 ]
 
 # ---------------------------------------------------------------------------
-# Transfer learning channels (optional inputs)
-# ---------------------------------------------------------------------------
-avh15c1_lai = ["lai_avh15c1"]
-
-# ---------------------------------------------------------------------------
 # Groupings by domain/time-resolution
 # ---------------------------------------------------------------------------
 
@@ -171,9 +166,6 @@ daily_forcing   = climate_vars + potential_radiation
 monthly_forcing = ndep
 annual_forcing  = nfert + jsbach_static + land_use_vars + pop + co2 + rolling_means
 
-# Transfer learning
-monthly_transfer = avh15c1_lai
-transfer_vars  = monthly_transfer
 
 # Convenience groupings by time resolution (inputs + outputs)
 monthly_vars = monthly_fluxes + monthly_forcing + monthly_states
@@ -184,7 +176,11 @@ daily_vars   = daily_forcing
 forcing_vars = daily_forcing + monthly_forcing + annual_forcing
 output_vars  = monthly_fluxes + monthly_states + annual_states
 state_vars   = monthly_states + annual_states
+<<<<<<< HEAD
+all_vars     = forcing_vars + output_vars
+=======
 all_vars     = forcing_vars + output_vars + monthly_transfer
+>>>>>>> 5607559... Made some preliminary starts to the TL, not finsihed yet
 
 # ---------------------------------------------------------------------------
 # Canonical dictionary of variable sets (used throughout the codebase)

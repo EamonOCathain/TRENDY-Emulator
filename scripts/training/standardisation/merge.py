@@ -34,7 +34,7 @@ from typing import Dict, Any
 PROJECT_ROOT = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(PROJECT_ROOT))
 
-from src.paths.paths import data_dir, std_dict_path, training_dir
+from src.paths.paths import std_dict_path, training_dir
 
 # --------------------------- helpers ---------------------------
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import enum
 import os
 import json
 import numpy as np
@@ -42,6 +43,7 @@ per_task_output_dir.mkdir(parents=True, exist_ok=True)
 
 # --- Shard over variables only ---
 all_vars = var_names["all"]
+all_vars = ['avh15c1_lai']
 tasks = slurm_shard(all_vars)
 if tasks is None:
     print("[ERROR] No SLURM task ID found in environment", flush=True)

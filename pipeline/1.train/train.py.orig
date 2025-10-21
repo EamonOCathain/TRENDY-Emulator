@@ -201,9 +201,54 @@ def scan_for_nonfinite(dl, max_batches=None):
 # =============================================================================
 # Load and filter with standardisation stats
 # =============================================================================
+<<<<<<< HEAD
 std_dict, invalid_vars = load_standardisation_only(std_dict_path)
 if invalid_vars:
     print(f"[std] dropped {len(invalid_vars)} invalid vars: {sorted(list(invalid_vars))[:10]} ...")
+=======
+std_dict, pruned = load_and_filter_standardisation(
+    standardisation_path= std_dict_path,
+    all_vars=all_vars,
+    daily_vars=daily_vars,
+    monthly_vars=monthly_vars,
+    annual_vars=annual_vars,
+    monthly_states=monthly_states,
+    annual_states=annual_states,
+    monthly_transfer_vars=monthly_transfer,
+    exclude_vars=set(getattr(args, "exclude_vars", [])),
+)
+
+# Unpack back into variable lists
+all_vars       = pruned["all_vars"]
+daily_vars     = pruned["daily_vars"]
+monthly_vars   = pruned["monthly_vars"]
+annual_vars    = pruned["annual_vars"]
+monthly_states = pruned["monthly_states"]
+annual_states  = pruned["annual_states"]
+monthly_transfer = pruned['monthly_transfer']
+
+# =============================================================================
+# Set Up Transfer Learning
+# =============================================================================
+# Replace the variables in the lists for transfer learning if enabled
+
+if args.transfer_learn:
+    for list in [monthly_vars, monthly_states]:
+        # Replace LAI
+        if args.transfer_learn_vars == "avh15c1_lai":
+                i = list.index("lai")
+                list[i] = "avh15c1_lai"
+else:
+    all_vars.remove("avh15c1_lai")
+
+# Set time Bound for TL
+if args.transfer_learn:
+    tl_start_year = int(args.transfer_learn_years.split("-")[0])
+    tl_end_year = int(args.transfer_learn_years.split("-")[1])
+else:
+    tl_start_year = None
+    tl_end_year = None
+>>>>>>> 5607559... Made some preliminary starts to the TL, not finsihed yet
 
 # =============================================================================
 # Main
@@ -268,8 +313,15 @@ def main():
     # -------------------------------------------------------------------------
     # Dataset loading (train/val/test splits)
     # -------------------------------------------------------------------------
+<<<<<<< HEAD
     exclude_vars = set(getattr(args, "exclude_vars", []))
-    ds_dict = get_train_val_test(std_dict, block_locs=70, exclude_vars=exclude_vars, tl_start=tl_start_year, tl_end=tl_end_year)
+    ds_dict = get_train_val_test(std_dict, block_locs=70, exclude_vars=exclude_vars)
+=======
+    ds_dict = get_train_val_test(std_dict, 
+                                 block_locs=70, 
+                                 tl_start=tl_start_year, 
+                                 tl_end=tl_end_year)
+>>>>>>> 5607559... Made some preliminary starts to the TL, not finsihed yet
 
     if is_main:
         print("Number of location chunks in full dataset:",

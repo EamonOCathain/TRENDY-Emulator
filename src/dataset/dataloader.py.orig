@@ -39,9 +39,13 @@ def get_train_val_test(
     std_dict: dict,
     block_locs: int = 70,
     carry_years: float = 0,
+<<<<<<< HEAD
     exclude_vars: Optional[list] = None,
+=======
     tl_start: Optional[int] = None,
     tl_end: Optional[int] = None,
+    tl_scenario: Optional[str] = None,
+>>>>>>> 5607559... Made some preliminary starts to the TL, not finsihed yet
 ) -> dict:
     """
     Return train/val/test datasets depending on *single* carry setting.
