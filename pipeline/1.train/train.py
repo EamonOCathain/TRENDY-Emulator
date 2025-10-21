@@ -1,97 +1,119 @@
-import os, sys, argparse, time, logging
+
+import os
+import sys
+import time
+import argparse
+import logging
+from datetime import datetime
 from pathlib import Path
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from datetime import datetime
 
+# Torch runtime flags (determinism / precision)
+# -----------------------------------------------------------------------------#
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cudnn.allow_tf32 = False
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-# ------------------------------ Environment Setup -----------------------------------
-# set project root
+# -----------------------------------------------------------------------------#
+# Project paths and environment bootstrap
+# -----------------------------------------------------------------------------#
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
-# start time
-start_dt = datetime.now() 
+# Run start timestamp (string form used in downstream metadata/logging)
+start_dt = datetime.now()
 start_dt_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
 
-# import paths and variables
-from src.paths.paths import *
-from src.dataset.variables import *
+# -----------------------------------------------------------------------------#
+# Local imports (after sys.path updated)
+# -----------------------------------------------------------------------------#
+from src.paths.paths import *                      # noqa: F401,F403
+from src.dataset.variables import *                # noqa: F401,F403
 
-# import training modules
 from src.models.custom_transformer import YearProcessor
 from src.training.checkpoints import save_cb, extract_state_dict_for_foundation
 from src.training.history import History
-from src.training.loss import custom_loss
+from src.training.loss import build_loss_fn
 from src.training.trainer import fit, plan_validation
 from src.dataset.dataloader import get_train_val_test, get_data
-from src.training.distributed import  init_distributed
-from src.training.logging import save_args, setup_logging 
+from src.training.distributed import init_distributed
+from src.training.logging import save_args, setup_logging
 from src.training.scheduler import build_cosine_wr_scheduler
 from src.training.stats import get_split_stats, set_seed, load_and_filter_standardisation
 from src.dataset.dataset import base, get_subset
-from src.training.carry import next_progressive_carry, progressive_train, month_slices_from_lengths, parse_carry_years_flag
-from src.training.tester import run_and_save_test_suite, run_and_save_metrics_csv, run_and_save_scatter_grids
+from src.training.tester import (
+    run_and_save_test_suite,
+    run_and_save_metrics_csv,
+    run_and_save_scatter_grids,
+)
 from src.training.varschema import VarSchema
-from src.training.delta import build_delta_ctx
 
-# Overwrite training dir
-training_dir = train_pipeline_dir
+# -----------------------------------------------------------------------------#
+# Global run configuration
+# -----------------------------------------------------------------------------#
+training_dir = train_pipeline_dir  # Overwrite training dir root from paths module
 
-# Slurm stuff
+# SLURM resources
 workers = max(1, int(os.getenv("SLURM_CPUS_PER_TASK", "4")))
 slurm_id = os.getenv("SLURM_JOB_ID", "no_slurm_id")
 
-# ------------------------------ Distributed Setup -----------------------------------
+# Device
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# ------------------------------ Args -----------------------------------
+
+# =============================================================================
+# Argument parsing
+# =============================================================================
 def parse_args():
     parser = argparse.ArgumentParser()
 
     # --- Training loop ---
     parser.add_argument("--resume", type=str, default=None,
-    help="Path to a checkpoint .pt (epoch*.pt or best.pt) to resume training")
+                        help="Path to a checkpoint .pt (epoch*.pt or best.pt) to resume training")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--mb_size", type=int, default=1)       
-    parser.add_argument("--accum_steps", type=int, default=None)
-    parser.add_argument("--grad_clip", type=float, default=None)
-    parser.add_argument("--shuffle_windows", action="store_true")
-    parser.add_argument("--subset_frac", type=float, default=None)
+    parser.add_argument("--mb_size", type=int, default=1,  # windows per microbatch
+                        help="Windows per microbatch")
+    parser.add_argument("--accum_steps", type=int, default=None,
+                        help="Gradient accumulation steps")
+    parser.add_argument("--grad_clip", type=float, default=None,
+                        help="Gradient norm clip (None disables)")
+    parser.add_argument("--shuffle_windows", action="store_true",
+                        help="Shuffle windows in the dataloader (disabled if carry>0)")
+    parser.add_argument("--subset_frac", type=float, default=None,
+                        help="Subsample fraction for train/val splits")
     parser.add_argument("--exclude_vars", nargs="*", default=[],
-        help="Variable names to exclude from inputs (space-separated e.g --exclude_vars var1 var2)")
+                        help="Variable names to exclude from inputs")
     parser.add_argument("--use_foundation", type=str, default=None,
-        help="Path to a checkpoint to initialize model weights from. "
-            "This does NOT resume training: optimizer/scheduler/history/epoch are ignored.")
+                        help=("Path to checkpoint to initialize model weights from "
+                              "(optimizer/scheduler/history/epoch are ignored)"))
     parser.add_argument("--train_only", action="store_true",
-        help="Skip testing after training.")
+                        help="Skip testing after training.")
     parser.add_argument("--test_only", action="store_true",
-        help="Run only the testing suite (skips all training and validation).")
+                        help="Run only the testing suite (skip training/validation).")
 
     # --- Optimiser & scheduler ---
     parser.add_argument("--lr", type=float, default=9e-5)
     parser.add_argument("--scheduler", type=str, default="cosine_wr",
                         choices=["none", "cosine_wr"])
     parser.add_argument("--sched_t0", type=str, default="epoch",
-                    help='Cosine WR T0. Use "epoch" to match steps/epoch, '
-                         'or provide an integer (steps).')
+                        help='Cosine WR T0. Use "epoch" to match steps/epoch, or provide an integer (steps).')
     parser.add_argument("--sched_tmult", type=int, default=2)
     parser.add_argument("--eta_min", type=float, default=9e-6)
 
     # --- Validation ---
-    parser.add_argument("--val_freq", type=float, default=1.0)
-    parser.add_argument("--val_frac", type=float, default=1.0)
-    
-    # Testing
+    parser.add_argument("--val_freq", type=float, default=1.0,
+                        help="Validate every N epochs (can be fractional)")
+    parser.add_argument("--val_frac", type=float, default=1.0,
+                        help="Fraction of validation loader to use per validation pass")
+
+    # --- Testing ---
     parser.add_argument("--test_frac", type=float, default=None,
-        help=("Subset the TEST set by a fraction RELATIVE to --subset_frac. "
-              "Effective test fraction = (subset_frac if set else 1.0) * (test_frac if set else 1.0)."))
+                        help=("Subset the TEST set by a fraction RELATIVE to --subset_frac. "
+                              "Effective test fraction = (subset_frac if set else 1.0) * (test_frac if set else 1.0)."))
 
     # --- Data loading ---
     parser.add_argument("--num_workers", type=int, default=8)
@@ -99,112 +121,111 @@ def parse_args():
     # --- Misc / logging ---
     parser.add_argument("--job_name", type=str, default="transformer_run")
     parser.add_argument("--log_batches_per_rank", action="store_true")
-    
+
     # --- Loss ---
-    parser.add_argument("--loss_type", type=str, default="mse",
-                        choices=["mse", "mae"],
-                        help="Base loss to use for supervision: 'mse' or 'mae'")
+    parser.add_argument("--loss_type", type=str, default="mse", choices=["mse", "mae"])
     parser.add_argument("--use_mass_balances", action="store_true",
-                    help="Enable mass-balance penalties in the loss (off by default)")
-    parser.add_argument("--water_balance_weight", type=float, default=0.0,
-                        help="Weight for water balance penalty (Δmrso vs pr-mrro-evapotrans), set to 0 to disable")
-    parser.add_argument("--npp_balance_weight", type=float, default=0.0,
-                        help="Weight for NPP balance penalty (NPP vs GPP-ra), set to 0 to disable")
-    parser.add_argument("--nbp_balance_weight", type=float, default=0.0,
-                        help="Weight for NBP balance penalty (NBP vs NPP-rh-fFire-fLuc), set to 0 to disable")
-    parser.add_argument("--carbon_partition_weight", type=float, default=0.0,
-                    help="Weight for cTotal_annual = cVeg + cLitter + cSoil (annual means)")
-    parser.add_argument("--nbp_delta_ctotal_weight", type=float, default=0.0,
-                        help="Weight for Δ cTotal_monthly = NBP at monthly scale")
-    
+                        help="Enable mass-balance penalties in the loss (off by default)")
+    parser.add_argument("--water_balance_weight", type=float, default=0.0)
+    parser.add_argument("--npp_balance_weight", type=float, default=0.0)
+    parser.add_argument("--nbp_balance_weight", type=float, default=0.0)
+    parser.add_argument("--carbon_partition_weight", type=float, default=0.0)
+    parser.add_argument("--nbp_delta_ctotal_weight", type=float, default=0.0)
+
     # --- Early Stopping ---
     parser.add_argument("--early_stop", action="store_true",
                         help="Enable early stopping (off by default)")
-    parser.add_argument("--early_stop_patience", type=int, default=10,
-                        help="Patience in epochs (used only if --early_stop is set)")
-    parser.add_argument("--early_stop_min_delta", type=float, default=0.0,
-                        help="Minimum absolute improvement to reset patience (used only if --early_stop is set)")
-    parser.add_argument("--early_stop_warmup_epochs", type=int, default=0,
-                        help="Warmup epochs before monitoring (used only if --early_stop is set)")
-    
+    parser.add_argument("--early_stop_patience", type=int, default=10)
+    parser.add_argument("--early_stop_min_delta", type=float, default=0.0)
+    parser.add_argument("--early_stop_warmup_epochs", type=int, default=0)
+
     # --- Checkpointing ---
     parser.add_argument("--ckpt_every_epochs", type=int, default=1,
-                    help="Save rolling checkpoint every N epochs (0=disable)")
+                        help="Save rolling checkpoint every N epochs (0=disable)")
     parser.add_argument("--keep_last", type=int, default=5,
                         help="Keep last K rolling checkpoints")
-    
-    # Delta
-    parser.add_argument("--delta", action="store_true",
-                        help="Train in delta mode: model daily outputs are normalized daily deltas which are reconstructed to normalized absolutes before loss.")
-    # Carry years
-    parser.add_argument("--carry_years", nargs="+", default=["0"], help=('Carry horizon. Accepts: "0", a float ("2.5"), a fraction ("3/12"), "progressive", or multiple values like: 1 2 3 6 9'))
-    parser.add_argument("--carry_granularity", type=str, default="annual", choices=["monthly", "annual"], help="Carry coupling across years: 'monthly' (last-month state to next Jan) "
-                         "or 'annual' (annual-mean state broadcast across all days of next year).")
-    
-    # Other
-    parser.add_argument("--scan_finite", action="store_true", help = "Scan datasets for non-finite values before training (warns if any found)")
+
+    # --- Carry years ---
+    parser.add_argument("--carry_years", type=str, default="0",
+                        help='Carry horizon across years. Single numeric value: "0", a float ("2.5"), or "3/12".')
+    parser.add_argument("--carry_granularity", type=str, default="annual", choices=["monthly", "annual"],
+                        help=("Carry coupling across years: 'monthly' (last-month state to next Jan) "
+                              "or 'annual' (annual-mean state broadcast across all days of next year)."))
+
+    # --- Other ---
+    parser.add_argument("--scan_finite", action="store_true",
+                        help="Scan datasets for non-finite values before training (warns if any found)")
 
     return parser.parse_args()
 
-# Parse them
+
+# -----------------------------------------------------------------------------#
+# Parse + top-level guards
+# -----------------------------------------------------------------------------#
 args = parse_args()
 
-# Argument Guards 
 if args.resume and args.use_foundation:
     raise SystemExit("Use either --resume or --use_foundation, not both.")
 
 if args.train_only and args.test_only:
     raise SystemExit("Cannot use --train_only and --test_only together.")
 
+
 def _check_frac(name, val):
-    if val is None: return
+    """Guard helper for fraction-type flags."""
+    if val is None:
+        return
     if not (0.0 < float(val) <= 1.0):
         raise SystemExit(f"--{name} must be in (0,1], got {val}")
+
 
 _check_frac("subset_frac", args.subset_frac)
 _check_frac("test_frac", args.test_frac)
 
-# ------------------------------ Carry Years Setup -----------------------------------
-carry_mode, carry_values = parse_carry_years_flag(args.carry_years)  # ("static"|"multi"|"progressive", [floats])
+# =============================================================================
+# Carry-years normalization (single value only)
+# =============================================================================
+def _to_float(token: str) -> float:
+    """Parse a numeric or fractional string (e.g., '3/12') into a float."""
+    token = token.strip().lower()
+    if "/" in token:
+        num, den = token.split("/", 1)
+        return float(num) / float(den)
+    return float(token)
 
-# basic guard
-if carry_mode == "static" and carry_values and carry_values[0] < 0:
+
+try:
+    carry_value = _to_float(args.carry_years)
+except Exception as e:
+    raise SystemExit(f"Invalid --carry_years value '{args.carry_years}': {e}")
+
+if carry_value < 0:
     raise SystemExit("--carry_years must be >= 0")
 
-# Annual mode: clamp any 0<c<1 to 1.0 (keep exact 0.0 as-is, since it means no-carry)
-if args.carry_granularity == "annual":
-    clamped = []
-    any_clamped = False
-    for c in carry_values:
-        if c == 0.0:
-            clamped.append(0.0)
-        else:
-            new_c = max(1.0, float(c))
-            any_clamped |= (new_c != c)
-            clamped.append(new_c)
-    if any_clamped:
-        logging.getLogger(args.job_name).warning(
-            "[carry] annual granularity: clamped carry years %s -> %s (no fractional carry)",
-            carry_values, clamped
-        )
-    carry_values = clamped
+# In annual mode: clamp 0 < carry < 1 to 1.0 (keep exact 0.0)
+if args.carry_granularity == "annual" and 0.0 < carry_value < 1.0:
+    logging.getLogger(args.job_name).warning(
+        f"[carry] annual granularity: clamped carry years {carry_value} -> 1.0 (no fractional carry)"
+    )
+    carry_value = 1.0
 
-# For the dataloader helper that expects a string flag (back-compat)
-if isinstance(args.carry_years, (list, tuple)):
-    carry_flag_for_ds = " ".join(args.carry_years)
-else:
-    carry_flag_for_ds = str(args.carry_years)
+# If any positive carry is used, disable window shuffling
+if carry_value > 0.0 and getattr(args, "shuffle_windows", False):
+    args.shuffle_windows = False
 
-# If any carry coupling is used (progressive or any positive carry), disable window shuffling
-if (carry_mode == "progressive") or any(c > 0.0 for c in carry_values):
-    if getattr(args, "shuffle_windows", False):
-        args.shuffle_windows = False
 
-# Non Finite Check
+# =============================================================================
+# Utility: non-finite scan (optional)
+# =============================================================================
 @torch.no_grad()
 def scan_for_nonfinite(dl, max_batches=None):
+    """
+    Iterate over a dataloader (optionally capped) and report if any tensor contains non-finite values.
+    Returns (idx, (x_ok, m_ok, a_ok)) or (None, (True, True, True)) if all good.
+    """
     for bi, (x, m, a) in enumerate(dl):
-        if max_batches and bi >= max_batches: break
+        if max_batches and bi >= max_batches:
+            break
         bad = (not torch.isfinite(x).all()
                or not torch.isfinite(m).all()
                or not torch.isfinite(a).all())
@@ -216,7 +237,9 @@ def scan_for_nonfinite(dl, max_batches=None):
             )
     return None, (True, True, True)
 
-# ------------------------------ Load Std. Dict and Filter Variables -----------------------------------
+# =============================================================================
+# Load and filter with standardisation stats
+# =============================================================================
 # This removes any variables which have S.D or mean 0
 
 std_dict, pruned = load_and_filter_standardisation(
@@ -238,44 +261,54 @@ annual_vars    = pruned["annual_vars"]
 monthly_states = pruned["monthly_states"]
 annual_states  = pruned["annual_states"]
 
-# ------------------------------ Main -----------------------------------
+
+# =============================================================================
+# Main
+# =============================================================================
 def main():
-    # --- Reproducibility ---
+    # -------------------------------------------------------------------------
+    # Reproducibility
+    # -------------------------------------------------------------------------
     set_seed(42)
 
-    # --- Distributed init & device selection ---
+    # -------------------------------------------------------------------------
+    # Distributed init & device selection
+    # -------------------------------------------------------------------------
     global DEVICE
-    # ddp is the 
-    ddp, device, LOCAL_RANK, WORLD_SIZE, RANK = init_distributed() 
+    ddp, device, LOCAL_RANK, WORLD_SIZE, RANK = init_distributed()
     DEVICE = device
     is_main = (RANK == 0)
 
-    # Per-rank worker count (respect SLURM layout)
+    # Per-rank worker count (respect SLURM CPU allocation)
     cpus = int(os.getenv("SLURM_CPUS_PER_TASK", "4"))
     workers_per_rank = min(8, cpus)
 
-    # --- Run/output directories & logging ---
+    # -------------------------------------------------------------------------
+    # Run/output directories & logging
+    # -------------------------------------------------------------------------
     today = datetime.now().strftime("%Y-%m-%d")
     run_leaf = f"{slurm_id}_{args.job_name}"
     run_dir = training_dir / "runs" / today / run_leaf
+
+    # Ensure expected subfolders exist
     (run_dir / "saves").mkdir(parents=True, exist_ok=True)
     (run_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
     (run_dir / "logs").mkdir(parents=True, exist_ok=True)
     (run_dir / "plots").mkdir(parents=True, exist_ok=True)
     (run_dir / "info").mkdir(parents=True, exist_ok=True)
 
+    # Logger: main rank emits, others stay quiet (no propagation to root)
     log = setup_logging(run_dir, args.job_name) if is_main else logging.getLogger(args.job_name)
     if not is_main:
-        # Don’t forward non-main rank logs to root logger
         log.propagate = False
-    
-    # ---------- Gate early stopping ----------
+
+    # Gate early stopping flags if disabled
     if not args.early_stop:
         args.early_stop_patience = None
         args.early_stop_min_delta = 0.0
         args.early_stop_warmup_epochs = 0
 
-    # ---------- Gate mass-balance penalties ----------
+    # Gate mass-balance penalties if disabled
     if not args.use_mass_balances:
         args.water_balance_weight = 0.0
         args.npp_balance_weight = 0.0
@@ -286,74 +319,71 @@ def main():
     if is_main:
         log.info(f"Early stopping: {'ON' if args.early_stop else 'OFF'}")
         log.info(f"Mass balances: {'ON' if args.use_mass_balances else 'OFF'}")
-
-    if is_main:
         log.info(f"Using device: {DEVICE} | world_size={WORLD_SIZE} rank={RANK} local_rank={LOCAL_RANK}")
+
         info_file = save_args(run_dir, args)
         log.info(f"Saved run arguments to {info_file}")
 
-    # Get the data
-    ds_dict = get_train_val_test(std_dict, block_locs=70, carry_years_flag=carry_flag_for_ds)
+    # -------------------------------------------------------------------------
+    # Dataset loading (train/val/test splits)
+    # -------------------------------------------------------------------------
+    ds_dict = get_train_val_test(std_dict, block_locs=70, carry_years=carry_value)
 
     if is_main:
         print("Number of location chunks in full dataset:",
-            len(ds_dict["train"]), "val len:", len(ds_dict["val"]), "test len:", len(ds_dict["test"]))
+              len(ds_dict["train"]), "val len:", len(ds_dict["val"]), "test len:", len(ds_dict["test"]))
 
-    # --- Train/Val subsetting (unchanged) ---
+    # Optional subsetting of train/val
     if args.subset_frac is None:
         train_ds = ds_dict["train"]
-        val_ds   = ds_dict["val"]
+        val_ds = ds_dict["val"]
     else:
         train_ds = get_subset(ds_dict["train"], frac=args.subset_frac, seed=42)
-        val_ds   = get_subset(ds_dict["val"],   frac=args.subset_frac, seed=1337)
+        val_ds = get_subset(ds_dict["val"], frac=args.subset_frac, seed=1337)
 
-    # --- Test subsetting (multiplicative) ---
-    base_test_frac   = args.subset_frac if args.subset_frac is not None else 1.0
-    mult_test_frac   = args.test_frac   if args.test_frac   is not None else 1.0
+    # Optional subsetting of test (multiplicative with subset_frac)
+    base_test_frac = args.subset_frac if args.subset_frac is not None else 1.0
+    mult_test_frac = args.test_frac if args.test_frac is not None else 1.0
     effective_t_frac = float(base_test_frac) * float(mult_test_frac)
-
-    # Clamp to (0,1] and short-circuit 1.0 to avoid extra copy
     if not (0.0 < effective_t_frac <= 1.0):
         raise SystemExit(f"Effective test fraction must be in (0,1], got {effective_t_frac}")
-
-    test_ds = (get_subset(ds_dict["test"], frac=effective_t_frac, seed=999)
-            if effective_t_frac < 1.0 else ds_dict["test"])
+    test_ds = get_subset(ds_dict["test"], frac=effective_t_frac, seed=999) if effective_t_frac < 1.0 else ds_dict["test"]
 
     if is_main:
         print("Datasets after subsetting:",
-            "train", len(train_ds), "val", len(val_ds),
-            f"test {len(test_ds)} (effective_test_frac={effective_t_frac})")
+              "train", len(train_ds), "val", len(val_ds),
+              f"test {len(test_ds)} (effective_test_frac={effective_t_frac})")
 
-    # -----------------------------------------------------------
-    
-    # --- DataLoaders ---
+    # -------------------------------------------------------------------------
+    # Dataloaders
+    # -------------------------------------------------------------------------
     train_dl, valid_dl, test_dl = get_data(
         train_ds, val_ds, test_ds,
         bs=1,
         num_workers=(args.num_workers if args.num_workers is not None else workers_per_rank),
         ddp=ddp,
     )
-    
-    # --- Optional pre-flight dataset scan for NaNs or Infs ---
-    if args.scan_finite:
-        if is_main:
-            log.info("[preflight] scanning test data for non-finite values in first 5000 test batches...")
-            bi, fins = scan_for_nonfinite(test_dl, max_batches=None)
+
+    # Optional non-finite scan across splits
+    if args.scan_finite and is_main:
+        log.info("[preflight] scanning test data for non-finite values in first 5000 test batches...")
+        bi, fins = scan_for_nonfinite(test_dl, max_batches=None)
+        if bi is not None:
+            log.warning(f"[preflight] first non-finite at test batch {bi} "
+                        f"(x={fins[0]}, m={fins[1]}, a={fins[2]})")
+        else:
+            log.info("[preflight] no non-finite values detected in test batches.")
+
+        log.info("[preflight] scanning train/val/test data for non-finite values...")
+        for name, dl in [("train", train_dl), ("val", valid_dl), ("test", test_dl)]:
+            bi, fins = scan_for_nonfinite(dl, max_batches=None)
             if bi is not None:
-                log.warning(f"[preflight] first non-finite at test batch {bi} "
+                log.warning(f"[preflight/{name}] first non-finite at batch {bi} "
                             f"(x={fins[0]}, m={fins[1]}, a={fins[2]})")
             else:
-                log.info("[preflight] no non-finite values detected in test batches.")
-            
-            log.info("[preflight] scanning train and val data for non-finite values in first 5000 test batches...")
-            for name, dl in [("train", train_dl), ("val", valid_dl), ("test", test_dl)]:
-                bi, fins = scan_for_nonfinite(dl, max_batches=None)
-                if bi is not None:
-                    log.warning(f"[preflight/{name}] first non-finite at batch {bi} (x={fins[0]}, m={fins[1]}, a={fins[2]})")
-                else:
-                    log.info(f"[preflight/{name}] no non-finite in train and val batches")
+                log.info(f"[preflight/{name}] no non-finite in batches")
 
-    # Optional per-rank dataloader/debug logging
+    # Per-rank dataloader stats (handy for debugging DDP)
     if args.log_batches_per_rank and ddp and dist.is_initialized():
         dist.barrier()
         log.info(f"[Rank {RANK}] train_ds={len(train_ds)}, val_ds={len(val_ds)}, test_ds={len(test_ds)}")
@@ -364,7 +394,9 @@ def main():
             log.info(f"Dataset sizes — train={len(train_ds)}, val={len(val_ds)}, test={len(test_ds)}")
             log.info(f"Dataloader batches per GPU — train={len(train_dl)}, val={len(valid_dl)}, test={len(test_dl)}")
 
-    # --- Split stats & validation plan (for in-epoch validation cadence) ---
+    # -------------------------------------------------------------------------
+    # Split stats & validation planning
+    # -------------------------------------------------------------------------
     stats = get_split_stats(train_dl, valid_dl, test_dl, accum_steps=args.accum_steps)
     if is_main:
         log.info(
@@ -388,77 +420,71 @@ def main():
         if "fixed_val_batch_ids" in val_plan:
             log.info("Fixed val batch ids (first 10): %s", val_plan["fixed_val_batch_ids"][:10])
 
-    # --- Map dataset variables to model I/O dimensions & loss indices ---
+    # -------------------------------------------------------------------------
+    # Schema + model I/O mapping (canonicalized from dataset)
+    # -------------------------------------------------------------------------
     base_train = base(train_ds)
-
-    # --- Build canonical schema from the dataset (works for both datasets) ---
     if hasattr(base_train, "schema"):
-        # CarryBlockDataset path — trust the dataset-provided schema
-        schema = base_train.schema
+        schema = base_train.schema  # dataset-provided schema (preferred)
     else:
-        # Legacy CustomDataset path — synthesize schema from var_names
+        # Legacy path: synthesize schema from dataset var_names
         schema = VarSchema(
-            daily_forcing   = sorted(base_train.var_names['daily_forcing']),
-            monthly_forcing = sorted(base_train.var_names['monthly_forcing']),
-            monthly_states  = sorted(base_train.var_names['monthly_states']),
-            annual_forcing  = sorted(base_train.var_names['annual_forcing']),
-            annual_states   = sorted(base_train.var_names['annual_states']),
-            monthly_fluxes  = sorted(base_train.var_names['monthly_fluxes']),
+            daily_forcing=sorted(base_train.var_names['daily_forcing']),
+            monthly_forcing=sorted(base_train.var_names['monthly_forcing']),
+            monthly_states=sorted(base_train.var_names['monthly_states']),
+            annual_forcing=sorted(base_train.var_names['annual_forcing']),
+            annual_states=sorted(base_train.var_names['annual_states']),
+            monthly_fluxes=sorted(base_train.var_names['monthly_fluxes']),
         )
 
-    # Canonical orders & dims (source of truth = schema)
-    INPUT_ORDER   = schema.input_order()
-    OUTPUT_ORDER  = schema.output_order()
-    dims          = schema.dims()
-    input_dim     = dims["input_dim"]
-    output_dim    = dims["output_dim"]
-    schema_sig    = schema.signature()
-    schema_dims   = dims
+    INPUT_ORDER = schema.input_order()
+    OUTPUT_ORDER = schema.output_order()
+    dims = schema.dims()
+    input_dim = dims["input_dim"]
+    output_dim = dims["output_dim"]
+    schema_sig = schema.signature()
+    schema_dims = dims
 
-    # Minimal internal sanity (no dependency on base_train.var_names here)
-    assert len(INPUT_ORDER)  > 0 and len(INPUT_ORDER)  == len(set(INPUT_ORDER)),  "INPUT_ORDER empty or has duplicates"
+    # Minimal sanity
+    assert len(INPUT_ORDER) > 0 and len(INPUT_ORDER) == len(set(INPUT_ORDER)), "INPUT_ORDER empty or has duplicates"
     assert len(OUTPUT_ORDER) > 0 and len(OUTPUT_ORDER) == len(set(OUTPUT_ORDER)), "OUTPUT_ORDER empty or has duplicates"
 
-    # Head-local names for loss/metrics
-    monthly_names = schema.out_monthly_names()   # fluxes + states (monthly head)
-    annual_names  = schema.out_annual_names()    # states (annual head)
-    output_names  = monthly_names + annual_names
+    # Names per head (used for loss/metrics)
+    monthly_names = schema.out_monthly_names()  # monthly head: fluxes + states
+    annual_names = schema.out_annual_names()    # annual head: states
+    output_names = monthly_names + annual_names
 
-    # Indices for the loss heads (local to the combined monthly+annual loss vector)
+    # Indices for loss heads (local to the combined vector)
     idx_monthly = list(range(len(monthly_names)))
-    idx_annual  = list(range(len(monthly_names), len(output_names)))
+    idx_annual = list(range(len(monthly_names), len(output_names)))
 
-    # Name -> index for balances/diagnostics (over the same output_names)
+    # For balance penalties & diagnostics: name -> combined-index
     out_idx = {name: i for i, name in enumerate(output_names)}
 
-    # Snapshot for checkpoint (keep API stable)
+    # Stable snapshot for checkpoint metadata
     if hasattr(base_train, "var_names"):
-        # Legacy dataset: snapshot its dict (sorted) for backwards-compat saves
         varnames_snapshot = {k: sorted(list(v)) for k, v in base_train.var_names.items()}
     else:
-        # Carry dataset: derive snapshot directly from schema
         varnames_snapshot = {
-            "daily_forcing":   list(schema.daily_forcing),
+            "daily_forcing": list(schema.daily_forcing),
             "monthly_forcing": list(schema.monthly_forcing),
-            "monthly_states":  list(schema.monthly_states),
-            "annual_forcing":  list(schema.annual_forcing),
-            "annual_states":   list(schema.annual_states),
-            "monthly_fluxes":  list(schema.monthly_fluxes),
+            "monthly_states": list(schema.monthly_states),
+            "annual_forcing": list(schema.annual_forcing),
+            "annual_states": list(schema.annual_states),
+            "monthly_fluxes": list(schema.monthly_fluxes),
         }
-    
-    # Set mass balance variable index to none if not needed
+
+    # -------------------------------------------------------------------------
+    # Optional mass-balance variable index mapping
+    # -------------------------------------------------------------------------
     mb_var_idx = None
     if args.use_mass_balances:
-        # Pick only the variables needed for balances
         needed_vars = [
-            "mrso", "pre", "mrro", "evapotrans",  
-            "npp", "gpp", "ra",                 
-            "nbp", "rh", "fFire", "fLuc",   
-            "cTotal_monthly", "cTotal_annual", "cVeg", "cLitter",
-            "cSoil" 
+            "mrso", "pre", "mrro", "evapotrans",
+            "npp", "gpp", "ra",
+            "nbp", "rh", "fFire", "fLuc",
+            "cTotal_monthly", "cTotal_annual", "cVeg", "cLitter", "cSoil"
         ]
-
-        # Check that any are missing and build the needed vars 
         mb_var_idx = {}
         missing = []
         for v in needed_vars:
@@ -466,23 +492,24 @@ def main():
                 mb_var_idx[v] = out_idx[v]
             else:
                 missing.append(v)
-
         if missing and is_main:
             print("[mass-balance] missing variables:", missing)
-            
-    # Build roll out config for carry years
+
+    # -------------------------------------------------------------------------
+    # Rollout configuration (carry behavior + calendar)
+    # -------------------------------------------------------------------------
     rollout_cfg = {
-        "in_monthly_state_idx":   schema.in_monthly_state_idx(),
-        "in_annual_state_idx":    schema.in_annual_state_idx(),
-        "out_monthly_state_idx":  schema.out_monthly_state_idx_local(),
-        "out_annual_state_idx":   schema.out_annual_state_idx_local(),
-        "out_monthly_names":      monthly_names,
-        "out_annual_names":       annual_names,
-        "month_lengths":          schema.month_lengths,
-        "carry_horizon":          float(carry_values[0] if carry_values else 0.0),
-        "carry_granularity":      str(args.carry_granularity),
-        "output_order":           OUTPUT_ORDER,
-        "schema_sig":             schema_sig,
+        "in_monthly_state_idx": schema.in_monthly_state_idx(),
+        "in_annual_state_idx": schema.in_annual_state_idx(),
+        "out_monthly_state_idx": schema.out_monthly_state_idx_local(),
+        "out_annual_state_idx": schema.out_annual_state_idx_local(),
+        "out_monthly_names": monthly_names,
+        "out_annual_names": annual_names,
+        "month_lengths": schema.month_lengths,
+        "carry_horizon": float(carry_value),
+        "carry_granularity": str(args.carry_granularity),
+        "output_order": OUTPUT_ORDER,
+        "schema_sig": schema_sig,
     }
 
     if is_main:
@@ -492,32 +519,40 @@ def main():
         log.info(f"[rollout_cfg] out_monthly_state_idx (local) = {rollout_cfg['out_monthly_state_idx']}")
         log.info(f"[rollout_cfg] out_annual_state_idx  (local) = {rollout_cfg['out_annual_state_idx']}")
         log.info(f"[schema] sig={schema.signature()} | input_dim={input_dim} | output_dim={output_dim} "
-             f"| nm={nm} | na={na}")
+                 f"| nm={nm} | na={na}")
     
-    # Delta context
-    month_slices = month_slices_from_lengths(rollout_cfg["month_lengths"])
-    rollout_cfg["month_slices"] = month_slices
-    delta_ctx = build_delta_ctx(
-        enabled=bool(getattr(args, "delta", False)),
-        month_slices=month_slices,
-    )
-    rollout_cfg["delta_ctx"] = delta_ctx
-        
-    # --- Loss ---
-    loss_fn = custom_loss(
-        idx_monthly, idx_annual,
-        loss_type=str(args.loss_type),
-        monthly_weights=[1.0]*len(idx_monthly),
-        annual_weights=[1.0]*len(idx_annual),
+    # -------------------------------------------------------------------------
+    # Loss function (base + optional balance penalties)
+    # -------------------------------------------------------------------------
+    # Set the variable weights to 1 for all vars, can be customized later
+    monthly_weights = [1.0 for _ in monthly_names]
+    annual_weights  = [1.0 for _ in annual_names]
+    
+    # Build a list of mu/sd to pass for output denormalization
+    mu_out = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
+    sd_out = [float(std_dict.get(name, {}).get("std",  1.0))  for name in output_names]
+    
+    
+    loss_fn = build_loss_fn(
+        idx_monthly=idx_monthly,
+        idx_annual=idx_annual,
+        use_mass_balances=args.use_mass_balances,  # from your CLI
+        loss_type=args.loss_type,
+        monthly_weights=monthly_weights,
+        annual_weights=annual_weights,
+        # the following only matter if use_mass_balances=True:
         mb_var_idx=mb_var_idx,
         water_balance_weight=args.water_balance_weight,
         npp_balance_weight=args.npp_balance_weight,
         nbp_balance_weight=args.nbp_balance_weight,
-        carbon_partition_weight=args.carbon_partition_weight,
         nbp_delta_ctotal_weight=args.nbp_delta_ctotal_weight,
+        carbon_partition_weight=args.carbon_partition_weight,
+        mu_out=mu_out, sd_out=sd_out,
     )
 
-    # --- Model & DDP wrapper (if enabled) ---
+    # -------------------------------------------------------------------------
+    # Model + optional DDP wrapper
+    # -------------------------------------------------------------------------
     model = YearProcessor(
         input_dim=input_dim,
         output_dim=output_dim,
@@ -526,21 +561,21 @@ def main():
         month_lengths=rollout_cfg["month_lengths"],
         d=128, h=1024, g=256, num_layers=4, nhead=8, dropout=0.1,
         transformer_kwargs={"max_len": 31},
-        mode="batch_months",   # fast pretrain path by default
-    ).float().to(DEVICE)   
-    
-    # Helper: read io dims from a training-style checkpoint (optional)
+        mode="batch_months",
+    ).float().to(DEVICE)
+
     def _ckpt_io_dims(ckpt: dict) -> tuple[int, int]:
+        """Helper to read io dims from a training-style checkpoint (optional)."""
         return int(ckpt.get("input_dim", -1)), int(ckpt.get("output_dim", -1))
 
-    # --- Load foundation weights if requested ---
+    # Optional: initialize from foundation checkpoint (weights only)
     if args.use_foundation:
         if is_main:
             print(f"[FOUNDATION] Loading foundation weights from {args.use_foundation}")
 
         ckpt_f = torch.load(args.use_foundation, map_location="cpu", weights_only=True)
 
-        # Handle either a full checkpoint or a bare state_dict
+        # Accept either a full state_dict or a wrapped training checkpoint dict
         if isinstance(ckpt_f, dict) and any(k.startswith(("module.", "inner.")) for k in ckpt_f.keys()):
             sd_f = ckpt_f
         else:
@@ -555,68 +590,67 @@ def main():
         if f_out and f_out != output_dim:
             print(f"[FOUNDATION][WARN] output_dim mismatch: ckpt={f_out}, model={output_dim}")
 
-        # Load into current model (allowing head differences)
-        target = (model.module if isinstance(model, DDP) else model)
+        target = model.module if isinstance(model, DDP) else model
         missing, unexpected = target.load_state_dict(sd_f, strict=False)
-
         if is_main:
             msg = f"Loaded foundation weights from {args.use_foundation}"
             if missing or unexpected:
                 msg += f" (missing={len(missing)}, unexpected={len(unexpected)})"
             print(msg)
 
+    # DDP wrapping (after any weight loading)
     if ddp:
         model = DDP(
             model,
             device_ids=[LOCAL_RANK],
             output_device=LOCAL_RANK,
-            find_unused_parameters=False
+            find_unused_parameters=False,
         )
 
-    # --- Optimizer & LR scheduler ---
+    # -------------------------------------------------------------------------
+    # Optimizer & LR scheduler
+    # -------------------------------------------------------------------------
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    scheduler, sched_info = build_cosine_wr_scheduler(
-        args, opt, stats['train'], log=log if is_main else None
-    )
+    scheduler, sched_info = build_cosine_wr_scheduler(args, opt, stats['train'], log=log if is_main else None)
     if sched_info and is_main:
         info_clean = {k: v for k, v in sched_info.items() if k != "total_windows"}
         log.info(f"scheduler_info: {info_clean}")
 
-    # CHECKPOINTING
-    # Save-callback that only runs on main rank
-    real_model = (model.module if isinstance(model, DDP) else model)
-    
+    # -------------------------------------------------------------------------
+    # Checkpointing helpers
+    # -------------------------------------------------------------------------
+    real_model = model.module if isinstance(model, DDP) else model
+
     base_save_cb = (
-        lambda epoch, best, val, history:
-            save_cb(
-                epoch, best, val, history,
-                args=args, run_dir=run_dir, model=real_model, opt=opt, scheduler=scheduler,
-                input_dim=input_dim, output_dim=output_dim,
-                input_order=INPUT_ORDER, output_order=OUTPUT_ORDER,
-                var_names_snapshot=varnames_snapshot,
-                schema_sig=schema_sig,                
-                schema_dims=schema_dims,              
-            )
+        lambda epoch, best, val, history: save_cb(
+            epoch, best, val, history,
+            args=args, run_dir=run_dir, model=real_model, opt=opt, scheduler=scheduler,
+            input_dim=input_dim, output_dim=output_dim,
+            input_order=INPUT_ORDER, output_order=OUTPUT_ORDER,
+            var_names_snapshot=varnames_snapshot,
+            schema_sig=schema_sig,
+            schema_dims=schema_dims,
+        )
     )
-    
+
     def save_cb_main(epoch, best, val, history):
+        """Main-rank-only save callback wrapper."""
         if not is_main:
             return
         base_save_cb(epoch, best, val, history)
 
-    # start time (before training)
-    start_ts = time.time() 
-    
-    # Start memory tracking (before training)
+    # GPU memory tracking (peaks) — best to reset before training
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats(device=torch.cuda.current_device())
-    
-    # Resume from checkpoint if specified
+
+    # -------------------------------------------------------------------------
+    # Optional: resume full training state (model/opt/scheduler/history)
+    # -------------------------------------------------------------------------
     if args.resume:
         ckpt = torch.load(args.resume, map_location="cpu", weights_only=False)
 
-        real_model = (model.module if isinstance(model, DDP) else model)
+        real_model = model.module if isinstance(model, DDP) else model
         real_model.load_state_dict(ckpt["model_state"])
         opt.load_state_dict(ckpt["opt_state"])
         if ckpt.get("sched_state") is not None and scheduler is not None:
@@ -624,31 +658,20 @@ def main():
 
         hist_ckpt = ckpt.get("history", {}) or {}
 
-        # If older checkpoints didn’t store early_state, leave it missing; if present, inject
         early_state_prev = ckpt.get("early_state", None)
         if early_state_prev is not None:
             hist_ckpt["_early_state"] = early_state_prev
 
-        # 1-based stored; resume at this number as the next 0-based epoch
         raw_epoch = int(ckpt.get("epoch", 0))
-        # Back-compat: some very old (pre-fix) saves might have been 0- or 1-based.
-        # Heuristic: if raw_epoch == 0 and you clearly have non-empty train_loss,
-        # assume we completed at least 1 epoch and bump once. Otherwise trust it.
-        if raw_epoch == 0 and len(hist_ckpt.get("train_loss", [])) > 0:
-            start_epoch = 1
-        else:
-            start_epoch = raw_epoch
-
-        best_val_so_far   = float(ckpt.get("best_val", float("inf")))
+        start_epoch = 1 if (raw_epoch == 0 and len(hist_ckpt.get("train_loss", [])) > 0) else raw_epoch
+        best_val_so_far = float(ckpt.get("best_val", float("inf")))
         samples_seen_prev = int(hist_ckpt.get("samples_seen", 0) or 0)
-
     else:
         start_epoch = 0
         best_val_so_far = float("inf")
         samples_seen_prev = 0
         hist_ckpt = {}
-        
-    # --- Resume bundle to apply only once (first stage) ---
+
     resume_payload = {
         "start_epoch": start_epoch,
         "best_val_init": best_val_so_far,
@@ -656,13 +679,13 @@ def main():
         "samples_seen_seed": samples_seen_prev,
     }
     resume_pending = args.resume is not None
-    
-    # ---- Train ----
+
     history = None
     best_val = float("inf")
 
+    # Best checkpoint reloader (used before test/plots)
     BEST_PATH = run_dir / "checkpoints" / "best.pt"
-    
+
     def reload_best_weights() -> bool:
         """Load checkpoints/best.pt into `model` if present. Returns True if loaded."""
         try:
@@ -670,7 +693,7 @@ def main():
                 return False
             ck = torch.load(BEST_PATH, map_location="cpu", weights_only=True)
             state = ck.get("model_state", ck) if isinstance(ck, dict) else ck
-            target = (model.module if isinstance(model, DDP) else model)
+            target = model.module if isinstance(model, DDP) else model
             missing, unexpected = target.load_state_dict(state, strict=False)
             if is_main:
                 msg = "Reloaded best weights"
@@ -686,22 +709,31 @@ def main():
     history = None
     best_val = float("inf")
 
+    # -------------------------------------------------------------------------
+    # Training loop
+    # -------------------------------------------------------------------------
     try:
         if not args.test_only:
-
+            
+            # We define a wrapper to run a single carry years stage - if we wanted mutliple stages in a single run this would make it easier later
             def run_one_stage(carry_val: float):
+                """
+                Single-stage training wrapper.
+                Applies (optional) resume payload and forwards to fit(...).
+                """
                 nonlocal resume_pending, resume_payload
                 rollout_cfg["carry_horizon"] = float(carry_val)
 
                 if resume_pending:
-                    se  = resume_payload.get("start_epoch", 0)
+                    se = resume_payload.get("start_epoch", 0)
                     bvi = resume_payload.get("best_val_init", float("inf"))
-                    hs  = resume_payload.get("history_seed", None)
+                    hs = resume_payload.get("history_seed", None)
                     sss = resume_payload.get("samples_seen_seed", 0)
                     resume_pending = False
                 else:
                     se, bvi, hs, sss = 0, float("inf"), None, 0
 
+                # Main Training Core Function
                 return fit(
                     args.epochs, model, loss_fn, opt, train_dl, valid_dl,
                     log=(log if is_main else None),
@@ -722,75 +754,47 @@ def main():
                     best_val_init=bvi,
                     history_seed=hs,
                     samples_seen_seed=sss,
-                    rollout_cfg=rollout_cfg,
-                    stage_carry=float(carry_val),
+                    rollout_cfg=rollout_cfg
                 )
 
-            # ---- choose training path (static / multi / progressive) ----
-            has_pos_carry = any(float(c) > 0 for c in carry_values)
+            # Single carry value path
+            history, _, _ = run_one_stage(float(carry_value))
 
-            # optional: one clear, final log line
-            if is_main:
-                log.info(f"[carry/final] mode={carry_mode}, values={carry_values}, "
-                        f"granularity={args.carry_granularity}, has_pos_carry={has_pos_carry}")
-
-            if carry_mode == "static" or not has_pos_carry:
-                # true zero-carry path: single stage, horizon=0.0, no progressive logging
-                history, best_val, _ = run_one_stage(0.0)
-
-            elif carry_mode == "multi":
-                history, best_val = progressive_train(
-                    mode="multi",
-                    carry_values=[float(c) for c in carry_values],
-                    fit_fn=run_one_stage,
-                    reload_best_fn=reload_best_weights,
-                    next_carry_fn=next_progressive_carry,  # unused in multi
-                    log=(log if is_main else None),
-                    max_cap=86.0,
-                    carry_granularity=rollout_cfg.get("carry_granularity", "monthly"),
-                )
-
-            else:  # "progressive"
-                default_start = [1.0/12.0] if args.carry_granularity == "monthly" else [1.0]
-                start_seq = carry_values if has_pos_carry else default_start
-                history, best_val = progressive_train(
-                    mode="progressive",
-                    carry_values=[float(start_seq[0])],
-                    fit_fn=run_one_stage,
-                    reload_best_fn=reload_best_weights,
-                    next_carry_fn=next_progressive_carry,
-                    log=(log if is_main else None),
-                    max_cap=86.0,
-                    carry_granularity=rollout_cfg.get("carry_granularity", "monthly"),
-                )
-                
     except KeyboardInterrupt:
         if is_main:
             log.warning("Interrupted during training; proceeding to test & save.")
     except Exception:
         if is_main:
             log.exception("Exception during training; proceeding to test & save.")
+
+    # -------------------------------------------------------------------------
+    # Post-training: persist history + final weights; run tests/plots
+    # -------------------------------------------------------------------------
     finally:
-        # --- Persist loss history & final weights (whatever state we have) ---
-        real_model = (model.module if isinstance(model, DDP) else model)
+        real_model = model.module if isinstance(model, DDP) else model
+
         if is_main:
+            # Persist training curves
             hist_dir = run_dir / "info"
             h = history if history is not None else History(real_model)
             h.save_json(hist_dir / "loss_history.json")
             h.save_npz(hist_dir / "loss_history.npz")
             log.info(f"Saved loss history to {hist_dir}")
 
+            # Persist final weights snapshot (independent of best)
             final_path = run_dir / "saves" / "model_final_state_dict.pt"
             torch.save(real_model.state_dict(), final_path)
             log.info(f"Model weights saved to {final_path}")
 
-        # Sync before evaluation (only if DDP still active)
+        # Keep ranks aligned before evaluation
         if ddp and dist.is_initialized():
             dist.barrier()
 
+        # Testing + metrics + plots (unless train-only)
         if not args.train_only:
-            # Helper: make plotting best-effort so failures don't abort testing
+
             def _safe(fn, name: str):
+                """Run helper to avoid aborting the pipeline if a plot step fails."""
                 try:
                     return fn()
                 except Exception as e:
@@ -798,14 +802,11 @@ def main():
                         log.warning(f"[plots] {name} failed but continuing: {e}", exc_info=True)
                     return None
 
-            # --- Load best weights from checkpoints/best.pt (if available) ---
             reload_best_weights()
 
-            # Optional sync so ranks start test after smoke plotting
             if ddp and dist.is_initialized():
                 dist.barrier()
 
-            # --- (B) Test suite & metrics ---
             _ = run_and_save_test_suite(
                 model=model,
                 loss_func=loss_fn,
@@ -829,7 +830,6 @@ def main():
                     logger=log,
                 )
 
-                # --- (C) Full plots (best-effort, larger subsample) ---
                 log.info("[plots] starting full plots (subsample=200k)")
                 _safe(lambda: run_and_save_scatter_grids(
                     model=model,
@@ -841,5 +841,9 @@ def main():
                     subsample_points=200_000,
                 ), "full_plots")
 
+
+# =============================================================================
+# Entrypoint
+# =============================================================================
 if __name__ == "__main__":
     main()

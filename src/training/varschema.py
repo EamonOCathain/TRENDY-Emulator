@@ -1,4 +1,4 @@
-# src/schema/varschema.py
+# src/training/varschema.py
 from dataclasses import dataclass, field
 from typing import List, Dict
 import json, hashlib

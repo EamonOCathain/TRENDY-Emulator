@@ -1,33 +1,32 @@
 # ------------------------------ Data Loading Helpers -----------------------------------
+from __future__ import annotations
+
 import os
-import torch
-from torch.utils.data import DataLoader, DistributedSampler, Subset, random_split
+import sys
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Dict
-import sys
-import torch.distributed as dist
 
+import torch
+import torch.distributed as dist
+from torch.utils.data import DataLoader, DistributedSampler
+
+# Project root (so local imports resolve when running scripts directly)
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
+# Project imports
 from src.dataset.dataset import CustomDataset
-from src.paths.paths import training_zarr_dir, training_zarr_rechunked_dir
 from src.dataset.dataset_carry import CarryBlockDataset
-from src.training.carry import parse_carry_years_flag 
-
+from src.paths.paths import training_zarr_dir, training_zarr_rechunked_dir
 
 def custom_collate(batch):
     """
-    Custom collate function for DataLoader.
-    
-    Takes a batch of (inputs, labels_monthly, labels_annual) tuples and stacks them
-    into batched tensors.
-    
-    Args:
-        batch (list of tuples): Each item is (inputs, monthly_labels, annual_labels).
-    
-    Returns:
-        tuple: (batched_inputs, batched_monthly, batched_annual), each stacked into a tensor.
+    Collate function for (inputs, labels_monthly, labels_annual) samples.
+
+    Stacks a list of tuples into three batched tensors:
+      inputs          → [B, ...]
+      labels_monthly  → [B, ...]
+      labels_annual   → [B, ...]
     """
     inputs, labels_monthly, labels_annual = zip(*batch)
     batched_inputs = torch.stack(inputs)
@@ -35,53 +34,60 @@ def custom_collate(batch):
     batched_annual = torch.stack(labels_annual)
     return batched_inputs, batched_monthly, batched_annual
 
-def get_train_val_test(std_dict: dict, block_locs: int = 70, carry_years_flag: str = "0") -> dict:
+
+def get_train_val_test(
+    std_dict: dict,
+    block_locs: int = 70,
+    carry_years: float = 0,
+) -> dict:
     """
-    If carry is enabled (progressive or any static carry > 0),
-    use the carry-optimised dataset; otherwise use the base CustomDataset.
+    Return train/val/test datasets depending on *single* carry setting.
 
-    Now supports multi-value carry flags (e.g. "1 2 3 6 9").
+    If carry_years > 0, use the carry-optimized dataset; otherwise use the base CustomDataset.
+
+    Args:
+        std_dict:     Normalization/standardization dictionary used by datasets.
+        block_locs:   Number of locations per block (only used by CarryBlockDataset).
+        carry_years:  Single value (e.g., 0, 1, 2.5 or "0", "1"). No progressive/multi runs.
+
+    Returns:
+        dict with keys {"train", "val", "test"} mapping to Dataset objects.
     """
-    carry_mode, carry_vals = parse_carry_years_flag(carry_years_flag)
+    # Robustly parse to float (supports int/float/str inputs)
+    try:
+        carry_val = float(str(carry_years).strip())
+    except Exception:
+        carry_val = 0.0
 
-    # Normalise carry values into a list of floats
-    if isinstance(carry_vals, (list, tuple)):
-        vals = [float(v) for v in carry_vals]
-    else:
-        vals = [float(carry_vals)]
+    use_carry_ds = (carry_val > 0.0)
 
-    any_positive = any(v > 0.0 for v in vals)
-    use_carry_ds = (carry_mode == "progressive") or any_positive
-
+    # Base locations for data
     data_dir = training_zarr_dir
-    rechunked_data_dir = data_dir  # TEMPORARY UNTIL FINDING NANS IN RECHUNKED ZARR
+    rechunked_dir = training_zarr_rechunked_dir  # used for carry mode
     if not data_dir:
         raise RuntimeError("ZARR path not set")
 
-    # ---- DDP rank check ----
+    # Print only from main rank (avoid duplicated messages under DDP)
     is_main_rank = (not dist.is_available()) or (not dist.is_initialized()) or dist.get_rank() == 0
 
     if use_carry_ds:
         ds_train = CarryBlockDataset(
-            data_dir=training_zarr_rechunked_dir, std_dict=std_dict,
-            tensor_type="train", block_locs=block_locs
+            data_dir=rechunked_dir, std_dict=std_dict, tensor_type="train", block_locs=block_locs
         )
         ds_val = CarryBlockDataset(
-            data_dir=training_zarr_rechunked_dir, std_dict=std_dict,
-            tensor_type="val", block_locs=block_locs
+            data_dir=rechunked_dir, std_dict=std_dict, tensor_type="val", block_locs=block_locs
         )
         ds_test = CarryBlockDataset(
-            data_dir=training_zarr_rechunked_dir, std_dict=std_dict,
-            tensor_type="test", block_locs=block_locs
+            data_dir=rechunked_dir, std_dict=std_dict, tensor_type="test", block_locs=block_locs
         )
         if is_main_rank:
-            print(f"[INFO] Dataloader in carry mode Using data directory: {training_zarr_rechunked_dir}")
+            print(f"[INFO] Dataloader in carry mode (carry_years={carry_val}) using: {rechunked_dir}")
     else:
         ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train")
         ds_val   = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="val")
         ds_test  = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="test")
         if is_main_rank:
-            print(f"[INFO] Dataloader in non-carry mode using data directory: {data_dir}")
+            print(f"[INFO] Dataloader in non-carry mode (carry_years={carry_val}) using: {data_dir}")
 
     return {"train": ds_train, "val": ds_val, "test": ds_test}
 
@@ -90,25 +96,26 @@ def get_data(
     valid_ds,
     test_ds,
     bs: int = 1,
-    collate_fn=custom_collate,
+    collate_fn: Callable = custom_collate,
     ddp: bool = False,
     num_workers: int = 1,
-):
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
     Wrap datasets into DataLoaders for training, validation, and testing.
 
     Args:
-        train_ds: Dataset for training.
-        valid_ds: Dataset for validation.
-        test_ds: Dataset for testing.
-        bs (int): Batch size.
-        collate_fn (callable): Function to collate samples into batches.
-        ddp (bool): If True, use DistributedSampler for multi-GPU training.
-        num_workers (int): Number of workers for DataLoader.
+        train_ds:     Training dataset.
+        valid_ds:     Validation dataset.
+        test_ds:      Test dataset.
+        bs:           Batch size.
+        collate_fn:   Collate function to pack samples into batches.
+        ddp:          If True, use DistributedSampler for multi-GPU training.
+        num_workers:  Number of DataLoader workers.
 
     Returns:
-        tuple: (train_loader, val_loader, test_loader)
+        (train_loader, val_loader, test_loader)
     """
+    # Common DataLoader kwargs
     common = dict(
         batch_size=bs,
         collate_fn=collate_fn,
@@ -116,21 +123,24 @@ def get_data(
         pin_memory=torch.cuda.is_available(),
         persistent_workers=(num_workers > 0 and not ddp),
     )
+
+    # Keep prefetch small to control host memory use (when workers > 0).
     if num_workers > 0:
-        # Keep prefetch small to control memory use
         common["prefetch_factor"] = 1
+
+    # If CUDA is available, pin pages directly to the GPU
     if torch.cuda.is_available():
-        # Pin directly to GPU if available
         common["pin_memory_device"] = "cuda"
 
+    # DDP-aware sampling/shuffling
     if ddp:
-        # Use distributed samplers to shard datasets across GPUs
-        train_sampler = DistributedSampler(train_ds, shuffle=True, drop_last=False)
+        train_sampler = DistributedSampler(train_ds, shuffle=True,  drop_last=False)
         val_sampler   = DistributedSampler(valid_ds, shuffle=False, drop_last=False)
-        test_sampler  = DistributedSampler(test_ds, shuffle=False, drop_last=False)
+        test_sampler  = DistributedSampler(test_ds,  shuffle=False, drop_last=False)
     else:
         train_sampler = val_sampler = test_sampler = None
 
+    # For non-DDP, enable shuffle only for the training loader.
     train_loader = DataLoader(train_ds, shuffle=(train_sampler is None), sampler=train_sampler, **common)
     val_loader   = DataLoader(valid_ds, shuffle=False, sampler=val_sampler, **common)
     test_loader  = DataLoader(test_ds, shuffle=False, sampler=test_sampler, **common)

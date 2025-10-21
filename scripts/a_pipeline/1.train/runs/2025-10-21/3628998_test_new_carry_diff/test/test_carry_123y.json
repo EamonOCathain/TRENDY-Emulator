@@ -1,0 +1,13 @@
+{
+  "sum_loss": 10320.275162938982,
+  "count": 1120,
+  "num_batches": 1,
+  "skipped_batches": 0,
+  "skipped_windows": 0,
+  "carry_horizon_forced": 123.0,
+  "global_sum_loss": 10320.275162938982,
+  "global_count": 1120.0,
+  "global_avg_loss": 9.214531395481234,
+  "global_skipped_batches": 0,
+  "global_skipped_windows": 0
+}

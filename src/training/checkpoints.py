@@ -1,27 +1,46 @@
 from __future__ import annotations
+
+# ---------------------------------------------------------------------------
+# Imports
+# ---------------------------------------------------------------------------
 from pathlib import Path
 from typing import Any, Dict, Optional
+
 import torch
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
+
+
+# ---------------------------------------------------------------------------
+# Single-file checkpoint (minimal payload)
+# ---------------------------------------------------------------------------
 
 def save_checkpoint(
     path: Path,
     model: torch.nn.Module,
     opt: Optimizer,
-    epoch_1based: int,                
+    epoch_1based: int,                # store 1-based epoch index
     best_val: float,
     history: Any,
     extra_cfg: Optional[Dict[str, Any]] = None,
     scheduler: Optional[_LRScheduler] = None,
 ) -> None:
     """
-    Write a single checkpoint file (1-based epoch stored).
+    Write a single checkpoint file with a compact, consumer-friendly payload.
+
+    Fields (unchanged):
+      - epoch (int, 1-based)
+      - model_state (state_dict)
+      - opt_state (optimizer state)
+      - sched_state (scheduler state or None)
+      - best_val (float)
+      - history.train_loss / history.val_loss (lists)
+      - config (dict, as provided via extra_cfg)
     """
     path.parent.mkdir(parents=True, exist_ok=True)
 
     payload: Dict[str, Any] = {
-        "epoch": int(epoch_1based),                   # 1-based in the file
+        "epoch": int(epoch_1based),  # 1-based in the file
         "model_state": model.state_dict(),
         "opt_state": opt.state_dict(),
         "sched_state": (scheduler.state_dict() if scheduler is not None else None),
@@ -37,9 +56,14 @@ def save_checkpoint(
     torch.save(payload, path)
 
 
+# ---------------------------------------------------------------------------
+# Rolling checkpoint pruning
+# ---------------------------------------------------------------------------
+
 def _prune_checkpoints(ckpt_dir: Path, keep: int = 3) -> None:
     """
-    Keep only most recent `keep` epoch*.pt files (keep best.pt).
+    Keep only the most recent `keep` files matching 'epoch*.pt'.
+    Note: 'best.pt' is not touched (pattern excludes it).
     """
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     ckpts = sorted(
@@ -48,9 +72,16 @@ def _prune_checkpoints(ckpt_dir: Path, keep: int = 3) -> None:
         reverse=True,
     )
     for p in ckpts[keep:]:
-        try: p.unlink()
-        except Exception: pass
+        try:
+            p.unlink()
+        except Exception:
+            # best-effort cleanup
+            pass
 
+
+# ---------------------------------------------------------------------------
+# Trainer callback: rich checkpoint + rolling + weights dumps
+# ---------------------------------------------------------------------------
 
 def save_cb(
     epoch: int,                # 0-based loop index coming from the trainer
@@ -72,15 +103,26 @@ def save_cb(
     schema_dims: dict | None = None,
 ) -> None:
     """
-    Checkpoint callback: saves a rich payload (including history, config, and optional schema),
-    plus rolling checkpoints and separate weights dumps.
-    Stores epoch as 1-based inside the payload.
-    """
-    from pathlib import Path as _P
+    Checkpoint callback used during training.
 
-    # JSON-safe CLI args
+    Saves:
+      - checkpoints/best.pt when `best=True`
+      - checkpoints/epoch{N}.pt every `args.ckpt_every_epochs`
+      - saves/best_weights.pt (copy of weights when best)
+      - saves/latest_weights.pt (always)
+
+    Payload fields (unchanged):
+      epoch (1-based), best_val, model_state, opt_state, sched_state,
+      input_dim, output_dim, history (full dict if available), early_state,
+      config = {"args": jsonable_args, "extra_cfg": extra_cfg}
+      Optional: schema snapshot under key "schema".
+    """
+    from pathlib import Path as _P  # local alias for JSON conversion
+
+    # JSON-safe CLI args (Path → str)
     args_jsonable = {k: (str(v) if isinstance(v, _P) else v) for k, v in vars(args).items()}
 
+    # Extra config snapshot (structure preserved)
     extra_cfg = {
         "args": args_jsonable,
         "model_kwargs": {
@@ -100,7 +142,7 @@ def save_cb(
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     saves_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build payload (1-based epoch in file)
+    # Build payload (store 1-based epoch)
     epoch_1based = epoch + 1
     payload = {
         "epoch": epoch_1based,
@@ -126,7 +168,7 @@ def save_cb(
         "config": {"args": args_jsonable, "extra_cfg": extra_cfg},
     }
 
-    # Optional schema snapshot (attach to payload, NOT to an undefined 'ckpt')
+    # Optional schema snapshot (attach to payload)
     if (schema_sig is not None) or (schema_dims is not None):
         _in_dim  = int((schema_dims or {}).get("input_dim",  input_dim))
         _out_dim = int((schema_dims or {}).get("output_dim", output_dim))
@@ -145,7 +187,7 @@ def save_cb(
         torch.save(payload, ckpt_dir / "best.pt")
         torch.save(model.state_dict(), saves_dir / "best_weights.pt")
 
-    # Rolling checkpoints every N epochs
+    # Rolling checkpoints every N epochs (and prune)
     keep_last  = int(getattr(args, "keep_last", 3) or 0)
     ckpt_every = int(getattr(args, "ckpt_every_epochs", 0) or 0)
     if ckpt_every > 0 and (epoch_1based % ckpt_every == 0):
@@ -153,13 +195,26 @@ def save_cb(
         _prune_checkpoints(ckpt_dir, keep=keep_last)
 
     # Always dump latest weights for convenience
-    torch.save(model.state_dict(), saves_dir / "latest_weights.pt") 
+    torch.save(model.state_dict(), saves_dir / "latest_weights.pt")
 
-# --- Optional: initialize from foundation checkpoint ---
+
+# ---------------------------------------------------------------------------
+# Optional: extract a model state_dict from various checkpoint shapes
+# ---------------------------------------------------------------------------
+
 def extract_state_dict_for_foundation(ckpt: dict | object) -> dict:
-    # accept a raw state_dict, or a training checkpoint with common keys
+    """
+    Accepts either:
+      - a raw state_dict (mapping param_name → Tensor), or
+      - a training checkpoint containing one of:
+          {"model_state" | "state_dict" | "model_state_dict" | "model"} → dict
+
+    Returns a cleaned state_dict with common prefixes ('module.' / 'model.') stripped.
+    """
+    # Accept a raw state_dict (all values are Tensors)
     if isinstance(ckpt, dict) and ckpt and all(isinstance(v, torch.Tensor) for v in ckpt.values()):
         sd = ckpt
+    # Or a training checkpoint containing a nested model state
     elif isinstance(ckpt, dict):
         for key in ("model_state", "state_dict", "model_state_dict", "model"):
             blob = ckpt.get(key)
@@ -171,7 +226,7 @@ def extract_state_dict_for_foundation(ckpt: dict | object) -> dict:
     else:
         raise RuntimeError("Unrecognized checkpoint format.")
 
-    # strip common prefixes
+    # Strip common DDP / wrapper prefixes
     def strip_prefix(d: dict, prefix: str) -> dict:
         if not any(k.startswith(prefix) for k in d.keys()):
             return d

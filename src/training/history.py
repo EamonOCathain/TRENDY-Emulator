@@ -1,23 +1,34 @@
 from __future__ import annotations
+
+# ---------------------------------------------------------------------------
+# Imports
+# ---------------------------------------------------------------------------
+
 from pathlib import Path
 from typing import List, Optional
+import json
+
 import matplotlib.pyplot as plt
 import numpy as np
-import json
-from matplotlib.ticker import FixedLocator, FixedFormatter
+
+
+# ---------------------------------------------------------------------------
+# History
+# ---------------------------------------------------------------------------
 
 class History:
     """
     Lightweight training history tracker.
 
     Tracks:
-      - Per-batch training loss (for detailed curves).
-      - Optional in-epoch validation probes (scattered points).
-      - Per-epoch averaged train/val loss.
+      • Per-batch training loss (for detailed curves).
+      • Optional in-epoch validation probes (scattered points).
+      • Per-epoch averaged train/val loss.
+      • Samples seen (for reporting) and LR schedule points.
     """
 
     def __init__(self, model) -> None:
-        # Keep a stringified snapshot of the model for provenance
+        # Stringified snapshot of the model for provenance/debug dumps
         self.model_info: str = str(model)
 
         # Epoch-level metrics
@@ -34,17 +45,16 @@ class History:
 
         # Indices in batch_loss where each epoch ends; starts at 0
         self.epoch_edges: List[int] = [0]
-        
-        self.samples_seen: int = 0
-        
-        # LR steps record
-        self.lr_values: List[float] = []
-        self.lr_steps:  List[int]   = []
-        self.carry_stage_marks: list[dict] = []
 
-    # -------------------------
+        # Additional run metadata
+        self.samples_seen: int = 0  # updated by training loop
+        self.lr_values: List[float] = []
+        self.lr_steps: List[int] = []
+
+    # -----------------------------------------------------------------------
     # Recording helpers
-    # -------------------------
+    # -----------------------------------------------------------------------
+
     def update(
         self,
         train_loss: Optional[float] = None,
@@ -71,8 +81,13 @@ class History:
     def close_epoch(self) -> None:
         """Mark the end of the current epoch (for vertical separators in the plot)."""
         self.epoch_edges.append(len(self.batch_loss))
-    
+
+    # -----------------------------------------------------------------------
+    # Serialization
+    # -----------------------------------------------------------------------
+
     def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot of history and metadata."""
         return {
             "model_info": self.model_info,
             "train_loss": self.train_loss,
@@ -85,17 +100,14 @@ class History:
             "samples_seen": getattr(self, "samples_seen", 0),
             "lr_values": getattr(self, "lr_values", []),
             "lr_steps": getattr(self, "lr_steps", []),
-            "carry_stage_steps":  [m["x_batch"]   for m in self.carry_stage_marks],
-            "carry_stage_epochs": [m["epoch_idx"] for m in self.carry_stage_marks],
-            "carry_stage_values": [m["carry"]     for m in self.carry_stage_marks],
         }
 
     def save_npz(self, path: Path) -> None:
+        """
+        Save a compact .npz archive with arrays for losses/steps,
+        plus a companion text file with the stringified model ('.model.txt').
+        """
         path.parent.mkdir(parents=True, exist_ok=True)
-
-        carry_steps = np.array([m["x_batch"] for m in self.carry_stage_marks], dtype=np.int64)
-        carry_epochs = np.array([m["epoch_idx"] for m in self.carry_stage_marks], dtype=np.int64)
-        carry_values = np.array([m["carry"] for m in self.carry_stage_marks], dtype=np.float64)
 
         np.savez_compressed(
             str(path),
@@ -106,15 +118,8 @@ class History:
             batch_loss=np.array(self.batch_loss, dtype=np.float64),
             batch_step=np.array(self.batch_step, dtype=np.int64),
             epoch_edges=np.array(self.epoch_edges, dtype=np.int64),
-
-            # NEW: carry metadata
-            carry_stage_steps=carry_steps,
-            carry_stage_epochs=carry_epochs,
-            carry_stage_values=carry_values,
-
             # keep this ONLY ONCE
             samples_seen=np.array([getattr(self, "samples_seen", 0)], dtype=np.int64),
-
             # (optional) LR traces
             lr_values=np.array(getattr(self, "lr_values", []), dtype=np.float64),
             lr_steps=np.array(getattr(self, "lr_steps", []), dtype=np.int64),
@@ -123,58 +128,15 @@ class History:
             f.write(self.model_info)
 
     def save_json(self, path: Path) -> None:
+        """Save history snapshot as JSON (human-readable, richer but larger)."""
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
-            
-    def record_carry_stage(self, carry_years: float | int | None) -> None:
-        if carry_years is None:
-            return
-        x_batch = int(self.batch_step[-1]) if self.batch_step else 0
-        epoch_idx = len(self.train_loss)  # 0-based *completed* epochs at stage start
-        if self.carry_stage_marks and \
-        self.carry_stage_marks[-1]["x_batch"] == x_batch and \
-        abs(float(self.carry_stage_marks[-1]["carry"]) - float(carry_years)) < 1e-9:
-            return
-        self.carry_stage_marks.append({
-            "x_batch": x_batch,
-            "epoch_idx": int(epoch_idx),
-            "carry": float(carry_years),
-        })
-    
-    def _draw_carry_stage_overlays(self, ax, *, coord: str = "epoch", top_axis_label: str = "Carry Length"):
-        """Draw vertical lines and top axis for carry stages."""
-        if not self.carry_stage_marks:
-            return
 
-        # choose x-positions
-        xs = [m["epoch_idx"] if coord == "epoch" else m["x_batch"] for m in self.carry_stage_marks]
-        if coord == "epoch":
-            xs = [max(1, int(x)) for x in xs]
-
-        # vertical dotted lines
-        for x in xs:
-            ax.axvline(x, color="gray", alpha=0.5, linestyle=":", linewidth=1.2)
-
-        # top axis with carry labels
-        labs = []
-        for c in [m["carry"] for m in self.carry_stage_marks]:
-            labs.append(f"{int(round(c))}" if abs(c - round(c)) < 1e-9 else f"{c:.3g}")
-
-        ax_top = ax.secondary_xaxis('top')
-        ax_top.xaxis.set_major_locator(FixedLocator(xs))
-        ax_top.xaxis.set_major_formatter(FixedFormatter(labs))
-        ax_top.set_xlabel(top_axis_label)
-
-        ax_top.tick_params(axis='x', pad=6)  # optional: add space from axis label
-        for label in ax_top.get_xticklabels():
-            label.set_rotation(45)   # or 45
-            label.set_ha("center")
-            label.set_va("bottom")
-
-    # -------------------------
+    # -----------------------------------------------------------------------
     # Visualization
-    # -------------------------
+    # -----------------------------------------------------------------------
+
     def plot_batches(
         self,
         loss_type: str = "MSE",
@@ -185,10 +147,9 @@ class History:
     ) -> None:
         """
         Epoch-level loss plot:
-        - Blue line: per-epoch averaged training loss (self.train_loss).
-        - Orange line: per-epoch validation loss (self.val_loss), if present.
+          • Blue line: per-epoch averaged training loss.
+          • Orange line: per-epoch validation loss (if present).
         """
-        # Need at least epoch-level losses
         if not self.train_loss:
             return
 
@@ -199,20 +160,22 @@ class History:
         # Train loss (per-epoch average)
         ax.plot(epochs, self.train_loss, linewidth=1.8, marker="o", label="Train loss (epoch avg)")
 
-        # Val loss (per-epoch)
+        # Validation loss (per-epoch)
         if self.val_loss:
             n = min(len(self.val_loss), len(epochs))
-            ax.plot(epochs[:n], np.asarray(self.val_loss[:n], dtype=float),
-                    linewidth=1.8, marker="o", label="Val loss (epoch)")
+            ax.plot(
+                epochs[:n],
+                np.asarray(self.val_loss[:n], dtype=float),
+                linewidth=1.8,
+                marker="o",
+                label="Val loss (epoch)",
+            )
 
         ax.set_xlabel("Epoch")
         ax.set_ylabel(f"Loss ({loss_type.upper()})")
         ax.grid(True, alpha=0.2)
         ax.legend(loc="upper right")
 
-        # CArry stage overlays
-        self._draw_carry_stage_overlays(ax, coord="epoch", top_axis_label="Carry Length")
-        
         # Save
         if save_dir is not None:
             save_path = Path(save_dir) / f"{filename}.png"
@@ -220,17 +183,23 @@ class History:
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
 
         plt.show() if show else plt.close(fig)
-            
-    # Add this method to History
+
+    # -----------------------------------------------------------------------
+    # Info/summary helpers
+    # -----------------------------------------------------------------------
+
     def summarize_run(self, args, start_dt, elapsed_seconds: float) -> dict:
-        """Package all run metadata + final metrics for plotting."""
+        """
+        Package run metadata + final metrics for annotation panels/plots.
+        Returns a dict compatible with `plot_loss_with_info(**info)`.
+        """
         def _fmt_hms(s: float) -> str:
             h = int(s // 3600)
             m = int((s % 3600) // 60)
             sec = int(s % 60)
             return f"{h:02d}:{m:02d}:{sec:02d}"
 
-        # Flags
+        # Flags reflecting CLI args
         early_stopping_on = bool(getattr(args, "early_stop", False))
         mass_balances_on  = bool(getattr(args, "use_mass_balances", False))
 
@@ -258,7 +227,7 @@ class History:
         final_train = self.train_loss[-1] if self.train_loss else float("nan")
         final_val   = self.val_loss[-1]   if self.val_loss   else float("nan")
 
-        # Scheduler strings
+        # Scheduler strings (friendly names)
         scheduler_name = "Cosine Annealing" if getattr(args, "scheduler", None) == "cosine_wr" else "None"
         if getattr(args, "scheduler", None) == "cosine_wr" and getattr(args, "n_cosine_cycles", None):
             cycles_str = f"{args.n_cosine_cycles} cycles over {args.epochs} epochs"
@@ -268,7 +237,7 @@ class History:
             cycles_str = "N/A"
 
         return {
-            # loss/info panel core fields (for plot_loss_with_info)
+            # Core fields used by plot_loss_with_info
             "loss_type": getattr(args, "loss_type", "MSE"),
             "start_datetime_str": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
             "time_elapsed_str": _fmt_hms(elapsed_seconds),
@@ -277,11 +246,11 @@ class History:
             "early_stopped": early_stopped,
             "samples_seen": getattr(self, "samples_seen", 0),
 
-            # flags to control what to render
+            # Flags
             "early_stopping_on": early_stopping_on,
             "mass_balances_on":  mass_balances_on,
 
-            # configuration
+            # Configuration summary
             "learning_rate": getattr(args, "lr", None),
             "scheduler_name": scheduler_name,
             "scheduler_cycles_str": cycles_str,
@@ -290,30 +259,32 @@ class History:
             "validation_frequency": getattr(args, "validation_frequency", None),
             "mass_balances": mb_list,  # already empty if mass_balances_on is False
 
-            # early stop config (we’ll use only if early_stopping_on)
+            # Early stop config (used only if early_stopping_on)
             "early_stop_patience": getattr(args, "early_stop_patience", None),
             "early_stop_min_delta": getattr(args, "early_stop_min_delta", None),
             "early_stop_warmup_epochs": getattr(args, "early_stop_warmup_epochs", None),
 
-            # performance
+            # Performance
             "final_train_loss": final_train,
             "final_val_loss": final_val,
         }
-            
+
     def plot_loss_with_info(
         self,
         *,
+        # Left panel (loss)
         loss_type: str = "MSE",
+        # Summary values (produced by summarize_run)
         start_datetime_str: str,
         time_elapsed_str: str,
         epoch_done: int,
         epoch_total: int,
         early_stopped: bool,
         samples_seen: int,
-        # --- flags ---
+        # Flags
         early_stopping_on: bool,
         mass_balances_on: bool,
-        # --- config ---
+        # Config
         learning_rate: float,
         scheduler_name: str,
         scheduler_cycles_str: str,
@@ -324,10 +295,10 @@ class History:
         early_stop_patience: int | None = None,
         early_stop_min_delta: float | None = None,
         early_stop_warmup_epochs: int | None = None,
-        # --- performance ---
+        # Performance
         final_train_loss: float | None = None,
         final_val_loss: float | None = None,
-        # --- fig opts ---
+        # Figure opts
         figsize: tuple[int, int] = (16, 6),
         save_dir: Optional[Path] = None,
         filename: str = "loss_and_info_epochs",
@@ -343,26 +314,36 @@ class History:
         gs = GridSpec(1, 2, width_ratios=[2.2, 1.0], wspace=0.25, figure=fig)
         ax_loss = fig.add_subplot(gs[0, 0])
 
-        # -------- Loss panel (epoch level) --------
+        # ---- Loss panel (epoch level) ----
         epochs = np.arange(1, len(self.train_loss) + 1, dtype=int)
 
         if self.train_loss:
-            ax_loss.plot(epochs, self.train_loss,
-                        linewidth=1.8, marker="o", color="blue", label="Train loss (epoch avg)")
+            ax_loss.plot(
+                epochs,
+                self.train_loss,
+                linewidth=1.8,
+                marker="o",
+                color="blue",
+                label="Train loss (epoch avg)",
+            )
 
         if self.val_loss:
             n = min(len(self.val_loss), len(epochs))
-            ax_loss.plot(epochs[:n], np.asarray(self.val_loss[:n], dtype=float),
-                        linewidth=1.8, marker="o", color="orange", label="Val loss (epoch)")
+            ax_loss.plot(
+                epochs[:n],
+                np.asarray(self.val_loss[:n], dtype=float),
+                linewidth=1.8,
+                marker="o",
+                color="orange",
+                label="Val loss (epoch)",
+            )
 
         ax_loss.set_xlabel("Epoch")
         ax_loss.set_ylabel(f"Loss ({loss_type.upper()})")
         ax_loss.grid(True, alpha=0.2)
         ax_loss.legend(loc="upper right")
-        
-        self._draw_carry_stage_overlays(ax_loss, coord="epoch", top_axis_label="Carry Length")
 
-        # -------- Info panel --------
+        # ---- Info panel ----
         if two_cols_right:
             sub = gs[0, 1].subgridspec(1, 2, wspace=0.15)
             ax_info_left  = fig.add_subplot(sub[0, 0])
@@ -388,8 +369,9 @@ class History:
                 y -= line_h
             return y - (line_h * 0.5)
 
-        # Compose text
+        # Compose info text blocks
         epoch_str = f"{epoch_done} of {epoch_total} (early stopping)" if early_stopped else f"{epoch_done}"
+
         info_items = [
             f"Start: {start_datetime_str}",
             f"Elapsed: {time_elapsed_str}",
@@ -425,11 +407,12 @@ class History:
             f"Final val loss: {final_val_loss:.6f}"     if final_val_loss   is not None else "Final val loss: N/A",
         ]
 
+        # Lay out the text panels
         if len(axes_info) == 1:
             y = 0.98
-            y = write_block(axes_info[0], "Information",    info_items, y)
-            y = write_block(axes_info[0], "Configuration",  cfg_items,  y)
-            y = write_block(axes_info[0], "Performance",    perf_items, y)
+            y = write_block(axes_info[0], "Information",   info_items, y)
+            y = write_block(axes_info[0], "Configuration", cfg_items,  y)
+            y = write_block(axes_info[0], "Performance",   perf_items, y)
         else:
             yL = 0.98
             yL = write_block(axes_info[0], "Information",   info_items, yL)
@@ -445,11 +428,15 @@ class History:
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
 
         plt.show() if show else plt.close(fig)
-        
+
+    # -----------------------------------------------------------------------
+    # Rolling per-epoch plot writer
+    # -----------------------------------------------------------------------
+
     def save_epoch_plots_overwrite(self, run_dir: Path, args, start_dt, elapsed_seconds: float) -> None:
         """
-        Overwrite rolling training plots each epoch. Each figure is guarded so one failure
-        doesn't prevent the others from rendering.
+        Overwrite rolling training plots each epoch. Each figure render is guarded,
+        so a failure in one doesn’t stop the others.
         """
         import matplotlib.pyplot as plt
         plt.switch_backend("Agg")
@@ -463,7 +450,7 @@ class History:
             except Exception as e:
                 print(f"[plot warn] {name} failed: {e}")
 
-        # 1) Per-batch loss curve
+        # 1) Per-batch/epoch loss curve (epoch-level)
         _safe(
             lambda: self.plot_batches(
                 loss_type=getattr(args, "loss_type", "mse"),
@@ -474,7 +461,7 @@ class History:
             "plot_batches",
         )
 
-        # 3) Loss + info panel
+        # 2) Loss + info panel
         info = self.summarize_run(args, start_dt, elapsed_seconds)
         _safe(
             lambda: self.plot_loss_with_info(
@@ -487,7 +474,11 @@ class History:
             ),
             "plot_loss_with_info",
         )
-        
+
+    # -----------------------------------------------------------------------
+    # Test results helper
+    # -----------------------------------------------------------------------
+
     def save_test_results(
         self,
         run_dir,
@@ -503,7 +494,7 @@ class History:
         Save and log test results (only on main rank), and stash them on History.
 
         Returns:
-            Path | None: path to the written file on main, else None.
+          Path | None: path to the written file on main rank, else None.
         """
         if not is_main:
             return None
@@ -519,7 +510,7 @@ class History:
             "per_rank_num_batches": test_out["num_batches"],
             "world_size": world_size,
         }
-        self.test_results = results
+        self.test_results = results  # keep for quick later access
 
         path = Path(run_dir) / filename
         path.parent.mkdir(parents=True, exist_ok=True)

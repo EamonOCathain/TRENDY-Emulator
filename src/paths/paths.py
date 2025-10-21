@@ -11,7 +11,7 @@ analysis_dir = scripts_dir / "analysis"
 visualisation_dir = analysis_dir / "visualise"
 
 # Pipeline
-pipeline_dir = scripts_dir / "a_pipeline"
+pipeline_dir = project_root / "pipeline"
 train_pipeline_dir = pipeline_dir / "1.train"
 predict_pipeline_dir = pipeline_dir / "2.predict"
 bench_pipeline_dir = pipeline_dir / "3.bench"
