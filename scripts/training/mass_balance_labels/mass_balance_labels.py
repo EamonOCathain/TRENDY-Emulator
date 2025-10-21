@@ -432,7 +432,6 @@ def main():
                 dummy_a = torch.zeros((B * L, 1,  Ca), device=device_here, dtype=preds.dtype)
 
                 # ---- pull daily precipitation from inputs for this year ----
-                # inputs shape typically [B, Cin, Td, L]  -> flatten to [B*L, Td, Cin]
                 extra_daily = {}
                 try:
                     B_in, Cin, Td, L_in = inputs.shape
@@ -441,26 +440,15 @@ def main():
 
                     # year slice (assumes 365 days per year)
                     td0, td1 = y * 365, (y + 1) * 365
-                    inp_y = inp_bl_tc[:, td0:td1, :]                                   # [B*L, 365, Cin]
+                    inp_y = inp_bl_tc[:, td0:td1, :]                                 # [B*L, 365, Cin]
 
                     # find 'pre' channel in daily forcing order
                     daily_force_order = sorted(base_train.var_names["daily_forcing"])
                     if "pre" in daily_force_order:
                         pre_idx = daily_force_order.index("pre")
-                        pre_daily = inp_y[:, :, pre_idx]                                # [B*L, 365]
-
-                        # OPTIONAL: de-standardize if your inputs are standardized; best-effort try/catch
-                        try:
-                            mu_pre = torch.tensor(std_dict["daily"]["means"]["pre"], device=device_here, dtype=pre_daily.dtype)
-                            sd_pre = torch.tensor(std_dict["daily"]["stds"]["pre"],  device=device_here, dtype=pre_daily.dtype)
-                            pre_daily = pre_daily * sd_pre + mu_pre
-                        except Exception:
-                            # If std_dict structure differs, skip; make sure units are physical before trusting penalties.
-                            pass
-
-                        extra_daily["pre"] = pre_daily
+                        pre_daily_norm = inp_y[:, :, pre_idx]                         # already normalised by the pipeline
+                        extra_daily["pre"] = pre_daily_norm                           # <-- no de-standardisation
                 except Exception:
-                    # If anything fails, extra_daily stays empty; water balance will be skipped.
                     pass
 
                 # ---- evaluate losses (now physics can use daily 'pre') ----
