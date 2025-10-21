@@ -6,7 +6,6 @@
 #SBATCH --time=3-00:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
-#SBATCH --array=0-7
 
 set -euo pipefail
 mkdir -p logs

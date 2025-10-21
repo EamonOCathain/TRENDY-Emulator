@@ -1,12 +1,19 @@
 # --- Basic Zarr checks + NaN coverage for target window ---
 import zarr
 import numpy as np
+import xarray as xr
 
 p = "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/training_new/test/test_location_whole_period/monthly.zarr"
 
 g = zarr.open_group(p, mode="r")
 if "avh15c1_lai" not in g:
     raise SystemExit("avh15c1_lai not found in store")
+
+root = zarr.open_group(p, mode="r")
+print(root["avh15c1_lai"].attrs.get("_ARRAY_DIMENSIONS"))
+
+ds = xr.open_zarr(p, consolidated=True, decode_times=False)
+print(list(ds.data_vars)[:5])
 
 a = g["avh15c1_lai"]
 print("shape:", a.shape)          # (T, 4, L)

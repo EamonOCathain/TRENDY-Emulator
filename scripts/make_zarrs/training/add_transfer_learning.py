@@ -14,10 +14,11 @@ Key points
 - Reads the store’s *own* time coordinate for alignment.
 - Uses the *same shuffled* location order as the original training Zarrs
   (shuffle=True, seed=42).
+- After writing, consolidates metadata so xarray.open_zarr(..., consolidated=True) works.
 """
 
 from __future__ import annotations
-import argparse, os, sys, logging, json
+import argparse, sys, logging, json
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -37,7 +38,7 @@ from src.utils.make_training_zarrs import (
     flat_to_ij,
 )
 from src.paths.paths import masks_dir, zarr_dir
-from src.utils.tools import slurm_shard
+
 # ---------- Logging ----------
 def setup_logging() -> logging.Logger:
     log = logging.getLogger("addvar_allperiods_noensure")
@@ -45,7 +46,7 @@ def setup_logging() -> logging.Logger:
     if not log.handlers:
         h = logging.StreamHandler(sys.stdout)
         h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s",
-                                         datefmt="%Y-%m-%d %H:%M:%S"))
+                                         datefmt="%-Y-%m-%d %H:%M:%S"))
         log.addHandler(h)
     return log
 
@@ -63,7 +64,7 @@ TIME_RESES = ("monthly",)  # we only write monthly here
 # Map mask_code -> location key
 LOC_FOR_MASK = {0: "train", 1: "val", 2: "test"}
 
-# IMPORTANT: map periods to the correct SET directory (fixed)
+# Fixed mapping of sets/periods to directory structure
 SET_SPECS = [
     ("train", 0, ["train_period"]),
     ("val",   1, ["whole_period", "val_period_early", "val_period_late"]),
@@ -127,8 +128,23 @@ def pick_reference_array(root: zarr.hierarchy.Group) -> zarr.core.Array:
     for name, obj in root.arrays():
         if name not in ("time", "location", "scenario", "lat", "lon"):
             return obj
-    # Fallback: if no data arrays yet, raise — we won't create skeletons here.
     raise RuntimeError("No reference data array found in store for shape/chunks; store must contain at least one data var.")
+
+def _array_dims_from_ref(root: zarr.hierarchy.Group, ref_name: str | None) -> list[str]:
+    """
+    Return the dimension names to stamp into _ARRAY_DIMENSIONS.
+    Prefer the reference array's attribute if present; otherwise default.
+    """
+    if ref_name and ref_name in root:
+        try:
+            attrs = root[ref_name].attrs.asdict()
+            dims = attrs.get("_ARRAY_DIMENSIONS", None)
+            if isinstance(dims, (list, tuple)) and len(dims) == 3:
+                return list(dims)
+        except Exception:
+            pass
+    # training arrays are [time, scenario, location]
+    return ["time", "scenario", "location"]
 
 def ensure_new_array_in_group(
     root: zarr.hierarchy.Group,
@@ -136,11 +152,23 @@ def ensure_new_array_in_group(
     shape: Tuple[int, int, int],
     chunks: Tuple[int, int, int],
     compressor=DEFAULT_COMP,
+    array_dims: list[str] | None = None,
 ):
-    """Create a zarr array if missing, otherwise do nothing."""
+    """
+    Create a zarr array if missing, and stamp `_ARRAY_DIMENSIONS`.
+    (xarray can then skip introspection that sometimes triggers json.loads issues.)
+    """
     if var_name in root:
+        # still ensure dims attr is present
+        try:
+            attrs = root[var_name].attrs.asdict()
+            if "_ARRAY_DIMENSIONS" not in attrs and array_dims:
+                root[var_name].attrs["_ARRAY_DIMENSIONS"] = array_dims
+        except Exception:
+            pass
         return
-    root.create_dataset(
+
+    arr = root.create_dataset(
         var_name,
         shape=shape,
         chunks=chunks,
@@ -148,21 +176,23 @@ def ensure_new_array_in_group(
         compressor=compressor,
         fill_value=np.float32(np.nan),
         overwrite=False,
-        dimension_separator=".",
+        dimension_separator=".",  # keep consistent with existing stores
         filters=None,
         order="C",
     )
-    # Note: coords/attrs not touched
+    # Add dims attribute for xarray
+    try:
+        arr.attrs["_ARRAY_DIMENSIONS"] = array_dims or ["time", "scenario", "location"]
+    except Exception:
+        pass
 
 def read_points_from_src(src_path: Path, var_name: str, t0: int, t1: int, iy: np.ndarray, ix: np.ndarray) -> np.ndarray:
     """Read (t1-t0, B) from (time, lat, lon) source for given point list."""
     with xr.open_dataset(src_path, decode_times=False) as ds:
         da = ds[var_name]
         da = da.isel(time=slice(t0, t1))  # (t_sel, lat, lon)
-        # figure lat/lon dim names
         lat_dim = next(d for d in ("lat", "latitude", "y") if d in da.dims)
         lon_dim = next(d for d in ("lon", "longitude", "x") if d in da.dims)
-        # pull exact points
         pts = xr.DataArray(np.arange(iy.size), dims=("points",))
         sub = da.transpose("time", lat_dim, lon_dim).isel(
             {lat_dim: (pts.dims[0], iy), lon_dim: (pts.dims[0], ix)}
@@ -171,7 +201,9 @@ def read_points_from_src(src_path: Path, var_name: str, t0: int, t1: int, iy: np
 
 # ---------- Main ----------
 def main(argv=None):
-    _ = argparse.ArgumentParser(description="Add variable(s) to existing Zarrs (monthly only), no skeleton/ensure.").parse_args(argv)
+    _ = argparse.ArgumentParser(
+        description="Add variable(s) to existing Zarrs (monthly only), no skeleton/ensure."
+    ).parse_args(argv)
 
     # Build masked indices with the SAME shuffle/seed as the main training Zarrs
     masked_idx_by_code: Dict[int, np.ndarray] = {
@@ -190,41 +222,35 @@ def main(argv=None):
                 raise KeyError(f"{var_name} missing in {src_path}; have {list(ds.data_vars)}")
             src_days_all = to_days_since_1901(ds["time"])
         src_time_res = detect_source_time_res(src_days_all)
-        logger.info(f"[VAR] {var_name}: src={src_path.name} cadence={src_time_res} "
-                    f"span=[{int(src_days_all.min())}..{int(src_days_all.max())}] "
-                    f"len={src_days_all.size}")
+        logger.info(
+            f"[VAR] {var_name}: src={src_path.name} cadence={src_time_res} "
+            f"span=[{int(src_days_all.min())}..{int(src_days_all.max())}] len={src_days_all.size}"
+        )
 
-        # We only write monthly
         if src_time_res != "monthly":
             logger.info(f"[SKIP] {var_name}: source cadence {src_time_res} != monthly")
             continue
 
         scen_idx = scenario_index(NEW_VAR_MODE["scenario"])
 
-        # Loop sets/periods we care about (with corrected mapping)
-        # Prepare a work list of (set_name, mask_code, period_key)
+        # Work list (no SLURM sharding)
         work_list = [
             (set_name, mask_code, period_key)
             for set_name, mask_code, period_keys in SET_SPECS
             for period_key in period_keys
         ]
-
-        # Split across SLURM array jobs if running under sbatch
-        total_items = len(work_list)
-        work_list = slurm_shard(work_list)
-        logger.info(f"[SLURM] This shard has {len(work_list)} of {total_items} total items.")
+        logger.info(f"[INFO] Processing {len(work_list)} set/period targets (no sharding).")
 
         for set_name, mask_code, period_key in work_list:
-            # locations aligned to FINAL_LOCATION_CHUNK
-            # directory naming + which mask to use for L
+            # Which location mask to use for this period?
             if period_key == "whole_period":
-                loc_key = set_name                 # val_location_* or test_location_* or train_location_*
-                loc_mask_code = mask_code          # use the set's mask
+                loc_key = set_name
+                loc_mask_code = mask_code
             else:
-                loc_key = "train"                  # train_location_{period} under val/test dirs
-                loc_mask_code = 0                  # BUT locations are the TRAIN set
+                loc_key = "train"
+                loc_mask_code = 0
 
-            # locations aligned to FINAL_LOCATION_CHUNK (use loc_mask_code, not mask_code)
+            # Align locations to chunk size
             loc_idx_full = masked_idx_by_code[loc_mask_code]
             n_locations = (len(loc_idx_full) // FINAL_LOCATION_CHUNK) * FINAL_LOCATION_CHUNK
             if n_locations == 0:
@@ -233,19 +259,17 @@ def main(argv=None):
             loc_idx = loc_idx_full[:n_locations]
             iy, ix = flat_to_ij(loc_idx)
 
+            time_res = "monthly"  # fixed here
+            store_path = out_store_path(OUT_ROOT, set_name, loc_key, period_key, time_res)
 
-            time_res = "monthly"  # fixed
-            store = out_store_path(OUT_ROOT, set_name, loc_key, period_key, time_res)
-
-            # Open existing store; do NOT create skeletons
-            if not Path(store).exists():
-                logger.warning(f"[MISS] Store does not exist, skipping: {store}")
+            if not Path(store_path).exists():
+                logger.warning(f"[MISS] Store does not exist, skipping: {store_path}")
                 continue
-            root = zarr.open_group(str(store), mode="a")
+            root = zarr.open_group(str(store_path), mode="a")
 
             # Use the store's own time axis (must exist)
             if "time" not in root:
-                logger.warning(f"[BAD] No 'time' coord in store, skipping: {store}")
+                logger.warning(f"[BAD] No 'time' coord in store, skipping: {store_path}")
                 continue
             ref_days = np.asarray(root["time"][:], dtype=np.int64)
             n_time = ref_days.size
@@ -253,45 +277,46 @@ def main(argv=None):
             # Overlap with source
             src_idx, tgt_idx = overlap_days(src_days_all, ref_days)
             if src_idx.size == 0:
-                logger.info(f"[SKIP] No time overlap for {store}")
+                logger.info(f"[SKIP] No time overlap for {store_path}")
                 continue
 
-            # --- New: print the time window that will be written ---
+            # Log human-readable overlap
             tgt_start_day = int(ref_days[tgt_idx.min()])
             tgt_end_day   = int(ref_days[tgt_idx.max()])
             src_start_day = int(src_days_all[src_idx.min()])
             src_end_day   = int(src_days_all[src_idx.max()])
             logger.info(
-                f"[OVERLAP] {var_name} → {store}\n"
-                f"          source: {days_to_iso(src_start_day)} .. {days_to_iso(src_end_day)} "
-                f"(len={src_idx.size})\n"
-                f"          target: {days_to_iso(tgt_start_day)} .. {days_to_iso(tgt_end_day)} "
-                f"(len={tgt_idx.size})"
+                f"[OVERLAP] {var_name} → {store_path}\n"
+                f"          source: {days_to_iso(src_start_day)} .. {days_to_iso(src_end_day)} (len={src_idx.size})\n"
+                f"          target: {days_to_iso(tgt_start_day)} .. {days_to_iso(tgt_end_day)} (len={tgt_idx.size})"
             )
 
-            # Ensure the target array exists (create once from a reference var)
+            # Reference array to copy shape/chunks + dims attr
             try:
                 ref_arr = pick_reference_array(root)
+                ref_name = ref_arr.path.split("/")[-1] if hasattr(ref_arr, "path") else None
             except RuntimeError as e:
-                logger.warning(f"[MISS] {e} Store: {store}")
+                logger.warning(f"[MISS] {e} Store: {store_path}")
                 continue
 
             T_ref, S_ref, L_ref = ref_arr.shape
             if T_ref != n_time or L_ref != n_locations:
-                logger.warning(f"[MISMATCH] {store}: ref var shape {ref_arr.shape} "
-                                f"!= expected (T={n_time}, S=?, L={n_locations}). Skipping.")
+                logger.warning(
+                    f"[MISMATCH] {store_path}: ref var shape {ref_arr.shape} "
+                    f"!= expected (T={n_time}, S=?, L={n_locations}). Skipping."
+                )
                 continue
 
-            # Copy chunks from reference (keep S chunk=1, L chunk=FINAL_LOCATION_CHUNK usually)
-            chunks = ref_arr.chunks
-            if var_name not in root:
-                ensure_new_array_in_group(
-                    root,
-                    var_name,
-                    shape=(n_time, S_ref, n_locations),
-                    chunks=chunks,
-                    compressor=DEFAULT_COMP,
-                )
+            # Prepare target array (create if needed) and set _ARRAY_DIMENSIONS
+            array_dims = _array_dims_from_ref(root, ref_name)
+            ensure_new_array_in_group(
+                root,
+                var_name,
+                shape=(n_time, S_ref, n_locations),
+                chunks=ref_arr.chunks,
+                compressor=DEFAULT_COMP,
+                array_dims=array_dims,
+            )
 
             # Read minimal source window and scatter into full n_time
             t0, t1 = int(src_idx.min()), int(src_idx.max()) + 1
@@ -301,25 +326,28 @@ def main(argv=None):
             rel = src_idx - t0
             full_block[tgt_idx, :] = data_sel[rel, :]
 
-            # Write into the single scenario; leave others as is (NaN prefill)
+            # Write into the single scenario
             arr = root[var_name]
             arr.oindex[0:n_time, scen_idx:scen_idx+1, 0:n_locations] = full_block[:, None, :]
 
-            # Optional flag
-            done_dir = Path(store) / ".done"
+            # Write a simple "done" flag
+            done_dir = Path(store_path) / ".done"
             done_dir.mkdir(exist_ok=True)
             flag = done_dir / f"{var_name}__{NEW_VAR_MODE['scenario']}__{period_key}__{time_res}.done"
-            flag.write_text(json.dumps({"var": var_name,
-                                        "scenario": NEW_VAR_MODE["scenario"],
-                                        "period": period_key,
-                                        "time_res": time_res}), encoding="utf-8")
+            flag.write_text(json.dumps({
+                "var": var_name,
+                "scenario": NEW_VAR_MODE["scenario"],
+                "period": period_key,
+                "time_res": time_res
+            }), encoding="utf-8")
 
+            # Consolidate metadata so xarray.open_zarr(..., consolidated=True) is robust
             try:
-                zarr.consolidate_metadata(str(store))
+                zarr.consolidate_metadata(str(store_path))
             except Exception as e:
-                logger.warning(f"[WARN] consolidate_metadata failed for {store}: {e}")
+                logger.warning(f"[WARN] consolidate_metadata failed for {store_path}: {e}")
 
-            logger.info(f"[OK] Wrote {var_name} → {store} (scenario={NEW_VAR_MODE['scenario']})")
+            logger.info(f"[OK] Wrote {var_name} → {store_path} (scenario={NEW_VAR_MODE['scenario']})")
 
     logger.info("[DONE] All variables processed.")
 
