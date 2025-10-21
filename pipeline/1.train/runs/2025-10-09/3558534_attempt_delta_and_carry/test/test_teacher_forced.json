@@ -1,0 +1,9 @@
+{
+  "sum_loss": 136338.75624847412,
+  "count": 1120,
+  "num_batches": 1,
+  "carry_horizon_forced": 0.0,
+  "global_sum_loss": 545355.0249938965,
+  "global_count": 4480.0,
+  "global_avg_loss": 121.73103236470904
+}

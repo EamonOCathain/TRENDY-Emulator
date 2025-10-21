@@ -1,0 +1,9 @@
+{
+  "sum_loss": NaN,
+  "count": 750680,
+  "num_batches": 539,
+  "carry_horizon_forced": 0.0,
+  "global_sum_loss": NaN,
+  "global_count": 6002080.0,
+  "global_avg_loss": NaN
+}

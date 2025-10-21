@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints/
+.venv/
+.env
+
+# Data & artifacts
+*.npz
+*.npy
+*.h5
+*.hdf5
+*.zarr/
+*.zarr
+*.nc
+*.tar
+*.zip
+*.tgz
+*.tif
+*.png
+data/
+outputs/
+logs/
+wandb/
+mlruns/
+checkpoints/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store

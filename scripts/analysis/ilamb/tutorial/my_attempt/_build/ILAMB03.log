@@ -1,0 +1,154 @@
+[INFO][0][<module>] Linux node-r6-he39.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-10-06 12:06:27.776656
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][CLASSIC]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('1')' to 'Unit('kg m-2 s-1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][JSBACH]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('1')' to 'Unit('kg m-2 s-1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][ORCHIDEE]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('1')' to 'Unit('kg m-2 s-1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][CLASSIC]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1022, in convert
+    src_unit = Unit(self.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 756, in __init__
+    raise value_error from None
+ValueError: [UT_SUCCESS] Failed to parse unit "kg m$^{-2}$ s$^{-1}$"
+
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][JSBACH] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][ORCHIDEE] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][CLM] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][CLM] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][JSBACH] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][ORCHIDEE] Success
+[INFO][0][<module>][total time] 443.1 s

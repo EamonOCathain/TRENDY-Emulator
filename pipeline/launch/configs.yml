@@ -1,0 +1,117 @@
+env:
+  conda_env: /Net/Groups/BGI/people/ecathain/envs/ilamb
+  workdir: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel
+
+paths:
+  train_script: scripts/train/train.sh
+  predict_script: scripts/predict/predict.sh
+  bench_script:  scripts/bench/ilamb_run.sh
+
+train:
+  # --- Training loop ---
+  resume: null                # path to checkpoint .pt OR null
+  epochs: 1
+  mb_size: 1
+  accum_steps: null           # int or null
+  grad_clip: null             # float or null
+  shuffle_windows: false      # --shuffle-windows (store_true)
+  subset_frac: null           # e.g. 0.1
+  exclude_vars: []            # list, e.g. ["var1", "var2"]
+  use_foundation: null        # path to weights OR null
+
+  # --- Optimiser & scheduler ---
+  lr: 3.0e-5
+  scheduler: none             # one of [none, cosine_wr]
+  sched_t0: epoch             # "epoch" or int-as-string (e.g., "1000")
+  sched_tmult: 1
+  eta_min: 0.0
+
+  # --- Validation ---
+  validation_frequency: 1.0
+  validation_size: 1.0
+
+  # --- Data loading ---
+  num_workers: 8
+
+  # --- Misc / logging ---
+  job_name: transformer_run
+  log_batches_per_rank: false   # --log-batches-per-rank (store_true)
+
+  # --- Loss ---
+  loss_type: mse                # [mse, mae]
+  use_mass_balances: false      # --use-mass-balances (store_true)
+  water_balance_weight: 0.0
+  npp_balance_weight: 0.0
+  nbp_balance_weight: 0.0
+  carbon_partition_weight: 0.0
+  ctotal_mon_ann_weight: 0.0
+  nbp_delta_ctotal_weight: 0.0
+
+  # --- Early Stopping ---
+  early_stop: false             # --early-stop (store_true)
+  early_stop_patience: 10
+  early_stop_min_delta: 0.0
+  early_stop_warmup_epochs: 0
+
+  # --- Checkpointing ---
+  ckpt_every_epochs: 1
+  keep_last: 5
+
+  # Any extra passthrough args appended verbatim
+  extra_args: []
+
+predict:
+  # Required in your script
+  job_name: my_predict_run
+  forcing_dir: /path/to/forcing_root
+  weights: /path/to/checkpoints/best.pt
+  out_dir: /path/to/output/root
+
+  # Optional scenario / namespacing
+  scenario: S3                 # or null
+  array_name: null             # e.g. "variant-a" or null
+
+  # Period controls (YYYY-MM-DD:YYYY-MM-DD)
+  store_period: null           # only used to create/validate shapes
+  write_period: null           # actual span to read/write
+
+  # Runtime / device
+  device: cuda                 # "cuda" | "cpu"
+
+  # Exports (store_true)
+  export_nc: false
+
+  # SLURM/tiling
+  tile_index: null             # int or null (process single tile then exit)
+  shards: null                 # total workers (e.g., 8) or null
+  shard_id: null               # [0..shards-1] or null (defaults to $SLURM_ARRAY_TASK_ID)
+  tile_h: 30
+  tile_w: 30
+
+  # Overwrite (store_true)
+  overwrite_skeleton: false
+  overwrite_data: false
+  repair_coords: false
+
+  # Nudging
+  nudge_mode: none             # one of [none, original, z_shrink, z_mirror, z_adaptive]
+  nudge_lambda: null           # float or null (unset/0 disables)
+
+  # Carrying (boolean)
+  carry_forward_states: false  # True/False
+
+  # Any extra passthrough args appended verbatim
+  extra_args: []
+
+bench:
+  ilamb_root: /Net/Groups/BGI/.../ilamb/tutorial/my_attempt
+  config: sample.cfg
+  regions: global
+  extra_args: []
+
+slurm:
+  qos: normal
+  time: "1-00:00:00"
+  mem: "64G"
+  cpus: 8
+  partition: big

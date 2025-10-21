@@ -1,0 +1,6 @@
+{
+  "split": "train",
+  "year_windows": 5185,
+  "shard_id": 4,
+  "n_shards": 32
+}

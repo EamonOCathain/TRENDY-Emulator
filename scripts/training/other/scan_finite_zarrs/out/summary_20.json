@@ -1,0 +1,14 @@
+{
+  "groups": [
+    {
+      "zarr_path": "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/training_new/val/val_location_whole_period/monthly.zarr",
+      "arrays_scanned": [],
+      "L": 0,
+      "range_start": 0,
+      "range_end": 0,
+      "num_bad_locations": 0,
+      "bad_locations_unique": [],
+      "bad_counts_by_array": {}
+    }
+  ]
+}
