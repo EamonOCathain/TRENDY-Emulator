@@ -1,4 +1,3 @@
-
 import os
 import sys
 import time
@@ -82,7 +81,7 @@ def parse_args():
     parser.add_argument("--grad_clip", type=float, default=None,
                         help="Gradient norm clip (None disables)")
     parser.add_argument("--shuffle_windows", action="store_true",
-                        help="Shuffle windows in the dataloader (disabled if carry>0)")
+                        help="Shuffle windows in the dataloader")
     parser.add_argument("--subset_frac", type=float, default=None,
                         help="Subsample fraction for train/val splits")
     parser.add_argument("--exclude_vars", nargs="*", default=[],
@@ -145,13 +144,6 @@ def parse_args():
     parser.add_argument("--keep_last", type=int, default=5,
                         help="Keep last K rolling checkpoints")
 
-    # --- Carry years ---
-    parser.add_argument("--carry_years", type=str, default="0",
-                        help='Carry horizon across years. Single numeric value: "0", a float ("2.5"), or "3/12".')
-    parser.add_argument("--carry_granularity", type=str, default="annual", choices=["monthly", "annual"],
-                        help=("Carry coupling across years: 'monthly' (last-month state to next Jan) "
-                              "or 'annual' (annual-mean state broadcast across all days of next year)."))
-
     # --- Other ---
     parser.add_argument("--scan_finite", action="store_true",
                         help="Scan datasets for non-finite values before training (warns if any found)")
@@ -183,46 +175,10 @@ _check_frac("subset_frac", args.subset_frac)
 _check_frac("test_frac", args.test_frac)
 
 # =============================================================================
-# Carry-years normalization (single value only)
-# =============================================================================
-def _to_float(token: str) -> float:
-    """Parse a numeric or fractional string (e.g., '3/12') into a float."""
-    token = token.strip().lower()
-    if "/" in token:
-        num, den = token.split("/", 1)
-        return float(num) / float(den)
-    return float(token)
-
-
-try:
-    carry_value = _to_float(args.carry_years)
-except Exception as e:
-    raise SystemExit(f"Invalid --carry_years value '{args.carry_years}': {e}")
-
-if carry_value < 0:
-    raise SystemExit("--carry_years must be >= 0")
-
-# In annual mode: clamp 0 < carry < 1 to 1.0 (keep exact 0.0)
-if args.carry_granularity == "annual" and 0.0 < carry_value < 1.0:
-    logging.getLogger(args.job_name).warning(
-        f"[carry] annual granularity: clamped carry years {carry_value} -> 1.0 (no fractional carry)"
-    )
-    carry_value = 1.0
-
-# If any positive carry is used, disable window shuffling
-if carry_value > 0.0 and getattr(args, "shuffle_windows", False):
-    args.shuffle_windows = False
-
-
-# =============================================================================
 # Utility: non-finite scan (optional)
 # =============================================================================
 @torch.no_grad()
 def scan_for_nonfinite(dl, max_batches=None):
-    """
-    Iterate over a dataloader (optionally capped) and report if any tensor contains non-finite values.
-    Returns (idx, (x_ok, m_ok, a_ok)) or (None, (True, True, True)) if all good.
-    """
     for bi, (x, m, a) in enumerate(dl):
         if max_batches and bi >= max_batches:
             break
@@ -240,8 +196,6 @@ def scan_for_nonfinite(dl, max_batches=None):
 # =============================================================================
 # Load and filter with standardisation stats
 # =============================================================================
-# This removes any variables which have S.D or mean 0
-
 std_dict, pruned = load_and_filter_standardisation(
     standardisation_path= std_dict_path,
     all_vars=all_vars,
@@ -290,14 +244,12 @@ def main():
     run_leaf = f"{slurm_id}_{args.job_name}"
     run_dir = training_dir / "runs" / today / run_leaf
 
-    # Ensure expected subfolders exist
     (run_dir / "saves").mkdir(parents=True, exist_ok=True)
     (run_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
     (run_dir / "logs").mkdir(parents=True, exist_ok=True)
     (run_dir / "plots").mkdir(parents=True, exist_ok=True)
     (run_dir / "info").mkdir(parents=True, exist_ok=True)
 
-    # Logger: main rank emits, others stay quiet (no propagation to root)
     log = setup_logging(run_dir, args.job_name) if is_main else logging.getLogger(args.job_name)
     if not is_main:
         log.propagate = False
@@ -327,7 +279,7 @@ def main():
     # -------------------------------------------------------------------------
     # Dataset loading (train/val/test splits)
     # -------------------------------------------------------------------------
-    ds_dict = get_train_val_test(std_dict, block_locs=70, carry_years=carry_value)
+    ds_dict = get_train_val_test(std_dict, block_locs=70)
 
     if is_main:
         print("Number of location chunks in full dataset:",
@@ -427,7 +379,6 @@ def main():
     if hasattr(base_train, "schema"):
         schema = base_train.schema  # dataset-provided schema (preferred)
     else:
-        # Legacy path: synthesize schema from dataset var_names
         schema = VarSchema(
             daily_forcing=sorted(base_train.var_names['daily_forcing']),
             monthly_forcing=sorted(base_train.var_names['monthly_forcing']),
@@ -445,23 +396,18 @@ def main():
     schema_sig = schema.signature()
     schema_dims = dims
 
-    # Minimal sanity
     assert len(INPUT_ORDER) > 0 and len(INPUT_ORDER) == len(set(INPUT_ORDER)), "INPUT_ORDER empty or has duplicates"
     assert len(OUTPUT_ORDER) > 0 and len(OUTPUT_ORDER) == len(set(OUTPUT_ORDER)), "OUTPUT_ORDER empty or has duplicates"
 
-    # Names per head (used for loss/metrics)
-    monthly_names = schema.out_monthly_names()  # monthly head: fluxes + states
-    annual_names = schema.out_annual_names()    # annual head: states
+    monthly_names = schema.out_monthly_names()
+    annual_names = schema.out_annual_names()
     output_names = monthly_names + annual_names
 
-    # Indices for loss heads (local to the combined vector)
     idx_monthly = list(range(len(monthly_names)))
     idx_annual = list(range(len(monthly_names), len(output_names)))
 
-    # For balance penalties & diagnostics: name -> combined-index
     out_idx = {name: i for i, name in enumerate(output_names)}
 
-    # Stable snapshot for checkpoint metadata
     if hasattr(base_train, "var_names"):
         varnames_snapshot = {k: sorted(list(v)) for k, v in base_train.var_names.items()}
     else:
@@ -496,7 +442,7 @@ def main():
             print("[mass-balance] missing variables:", missing)
 
     # -------------------------------------------------------------------------
-    # Rollout configuration (carry behavior + calendar)
+    # Rollout configuration (calendar only; no carry)
     # -------------------------------------------------------------------------
     rollout_cfg = {
         "in_monthly_state_idx": schema.in_monthly_state_idx(),
@@ -506,8 +452,6 @@ def main():
         "out_monthly_names": monthly_names,
         "out_annual_names": annual_names,
         "month_lengths": schema.month_lengths,
-        "carry_horizon": float(carry_value),
-        "carry_granularity": str(args.carry_granularity),
         "output_order": OUTPUT_ORDER,
         "schema_sig": schema_sig,
     }
@@ -524,23 +468,18 @@ def main():
     # -------------------------------------------------------------------------
     # Loss function (base + optional balance penalties)
     # -------------------------------------------------------------------------
-    # Set the variable weights to 1 for all vars, can be customized later
     monthly_weights = [1.0 for _ in monthly_names]
     annual_weights  = [1.0 for _ in annual_names]
-    
-    # Build a list of mu/sd to pass for output denormalization
     mu_out = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
     sd_out = [float(std_dict.get(name, {}).get("std",  1.0))  for name in output_names]
-    
     
     loss_fn = build_loss_fn(
         idx_monthly=idx_monthly,
         idx_annual=idx_annual,
-        use_mass_balances=args.use_mass_balances,  # from your CLI
+        use_mass_balances=args.use_mass_balances,
         loss_type=args.loss_type,
         monthly_weights=monthly_weights,
         annual_weights=annual_weights,
-        # the following only matter if use_mass_balances=True:
         mb_var_idx=mb_var_idx,
         water_balance_weight=args.water_balance_weight,
         npp_balance_weight=args.npp_balance_weight,
@@ -565,7 +504,6 @@ def main():
     ).float().to(DEVICE)
 
     def _ckpt_io_dims(ckpt: dict) -> tuple[int, int]:
-        """Helper to read io dims from a training-style checkpoint (optional)."""
         return int(ckpt.get("input_dim", -1)), int(ckpt.get("output_dim", -1))
 
     # Optional: initialize from foundation checkpoint (weights only)
@@ -575,7 +513,6 @@ def main():
 
         ckpt_f = torch.load(args.use_foundation, map_location="cpu", weights_only=True)
 
-        # Accept either a full state_dict or a wrapped training checkpoint dict
         if isinstance(ckpt_f, dict) and any(k.startswith(("module.", "inner.")) for k in ckpt_f.keys()):
             sd_f = ckpt_f
         else:
@@ -635,12 +572,10 @@ def main():
     )
 
     def save_cb_main(epoch, best, val, history):
-        """Main-rank-only save callback wrapper."""
         if not is_main:
             return
         base_save_cb(epoch, best, val, history)
 
-    # GPU memory tracking (peaks) — best to reset before training
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats(device=torch.cuda.current_device())
 
@@ -683,11 +618,9 @@ def main():
     history = None
     best_val = float("inf")
 
-    # Best checkpoint reloader (used before test/plots)
     BEST_PATH = run_dir / "checkpoints" / "best.pt"
 
     def reload_best_weights() -> bool:
-        """Load checkpoints/best.pt into `model` if present. Returns True if loaded."""
         try:
             if not BEST_PATH.exists():
                 return False
@@ -710,55 +643,42 @@ def main():
     best_val = float("inf")
 
     # -------------------------------------------------------------------------
-    # Training loop
+    # Training loop (single stage, no carry)
     # -------------------------------------------------------------------------
     try:
         if not args.test_only:
-            
-            # We define a wrapper to run a single carry years stage - if we wanted mutliple stages in a single run this would make it easier later
-            def run_one_stage(carry_val: float):
-                """
-                Single-stage training wrapper.
-                Applies (optional) resume payload and forwards to fit(...).
-                """
-                nonlocal resume_pending, resume_payload
-                rollout_cfg["carry_horizon"] = float(carry_val)
 
-                if resume_pending:
-                    se = resume_payload.get("start_epoch", 0)
-                    bvi = resume_payload.get("best_val_init", float("inf"))
-                    hs = resume_payload.get("history_seed", None)
-                    sss = resume_payload.get("samples_seen_seed", 0)
-                    resume_pending = False
-                else:
-                    se, bvi, hs, sss = 0, float("inf"), None, 0
+            if resume_pending:
+                se  = resume_payload.get("start_epoch", 0)
+                bvi = resume_payload.get("best_val_init", float("inf"))
+                hs  = resume_payload.get("history_seed", None)
+                sss = resume_payload.get("samples_seen_seed", 0)
+                resume_pending = False
+            else:
+                se, bvi, hs, sss = 0, float("inf"), None, 0
 
-                # Main Training Core Function
-                return fit(
-                    args.epochs, model, loss_fn, opt, train_dl, valid_dl,
-                    log=(log if is_main else None),
-                    save_cb=save_cb_main,
-                    accum_steps=args.accum_steps,
-                    grad_clip=args.grad_clip,
-                    scheduler=scheduler,
-                    val_plan=val_plan,
-                    mb_size=args.mb_size,
-                    ddp=ddp,
-                    early_stop_patience=args.early_stop_patience if args.early_stop else None,
-                    early_stop_min_delta=args.early_stop_min_delta,
-                    early_stop_warmup_epochs=args.early_stop_warmup_epochs,
-                    start_dt=start_dt,
-                    run_dir=run_dir,
-                    args=args,
-                    start_epoch=se,
-                    best_val_init=bvi,
-                    history_seed=hs,
-                    samples_seen_seed=sss,
-                    rollout_cfg=rollout_cfg
-                )
-
-            # Single carry value path
-            history, _, _ = run_one_stage(float(carry_value))
+            history, _, _ = fit(
+                args.epochs, model, loss_fn, opt, train_dl, valid_dl,
+                log=(log if is_main else None),
+                save_cb=save_cb_main,
+                accum_steps=args.accum_steps,
+                grad_clip=args.grad_clip,
+                scheduler=scheduler,
+                val_plan=val_plan,
+                mb_size=args.mb_size,
+                ddp=ddp,
+                early_stop_patience=args.early_stop_patience if args.early_stop else None,
+                early_stop_min_delta=args.early_stop_min_delta,
+                early_stop_warmup_epochs=args.early_stop_warmup_epochs,
+                start_dt=start_dt,
+                run_dir=run_dir,
+                args=args,
+                start_epoch=se,
+                best_val_init=bvi,
+                history_seed=hs,
+                samples_seen_seed=sss,
+                rollout_cfg=rollout_cfg
+            )
 
     except KeyboardInterrupt:
         if is_main:
@@ -774,27 +694,22 @@ def main():
         real_model = model.module if isinstance(model, DDP) else model
 
         if is_main:
-            # Persist training curves
             hist_dir = run_dir / "info"
             h = history if history is not None else History(real_model)
             h.save_json(hist_dir / "loss_history.json")
             h.save_npz(hist_dir / "loss_history.npz")
             log.info(f"Saved loss history to {hist_dir}")
 
-            # Persist final weights snapshot (independent of best)
             final_path = run_dir / "saves" / "model_final_state_dict.pt"
             torch.save(real_model.state_dict(), final_path)
             log.info(f"Model weights saved to {final_path}")
 
-        # Keep ranks aligned before evaluation
         if ddp and dist.is_initialized():
             dist.barrier()
 
-        # Testing + metrics + plots (unless train-only)
         if not args.train_only:
 
             def _safe(fn, name: str):
-                """Run helper to avoid aborting the pipeline if a plot step fails."""
                 try:
                     return fn()
                 except Exception as e:

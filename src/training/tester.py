@@ -26,7 +26,6 @@ from torch.utils.data import DataLoader
 from src.analysis.vis_modular import scatter_grid_from_pairs
 from src.training.carry import gather_pred_label_pairs, _rollout_core
 
-
 # =============================================================================
 # Utilities: finite checks & small DDP helper
 # =============================================================================

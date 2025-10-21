@@ -52,7 +52,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name test_new_carry_diff \
+  --job_name test_core_branch \
   --subset_frac 0.0001 \
   --epochs 1 \
   --mb_size 1470 \
@@ -65,5 +65,4 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
   --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/new_loss/base_model_new_loss/checkpoints/best.pt \
-  --carry_years 1 \
 

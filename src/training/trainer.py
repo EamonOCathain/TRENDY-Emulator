@@ -29,7 +29,6 @@ sys.path.append(str(project_root))
 
 from src.training.distributed import ddp_mean_scalar
 from src.training.history import History
-from src.training.carry import rollout_eval_outer_batch, rollout_train_outer_batch
 
 # ---------------------------------------------------------------------------
 # Early stopping helper
@@ -116,7 +115,7 @@ def fit(
     best_val_init: float = float("inf"),
     history_seed: Optional[dict] = None,
     samples_seen_seed: int = 0,
-    rollout_cfg: Optional[dict] = None,
+    rollout_cfg: Optional[dict] = None,  # kept for calendar metadata passthrough; not used for carry
 ) -> Tuple["History", float, bool]:
     """
     Train with micro-batching + grad accumulation, optional DDP, mid-epoch validation,
@@ -177,26 +176,10 @@ def fit(
     global_batch_idx = len(history.batch_step) if history.batch_step else 0
     global_opt_step  = len(history.lr_steps)   if history.lr_steps   else 0
 
-    # --- Carry flag (for windowed rollout path) ---
-    carry_on = False
-    if rollout_cfg is not None:
-        try:
-            carry_on = float(rollout_cfg.get("carry_horizon", 0.0)) > 0.0
-        except Exception:
-            carry_on = False
-
     if log and is_main_fit:
         sig = (rollout_cfg or {}).get("schema_sig")
         if sig:
             log.info("[schema] signature=%s", sig)
-
-    # --- If prior stage autotuned a microbatch size, reuse it ---
-    if carry_on and isinstance(rollout_cfg, dict) and rollout_cfg.get("autotuned_mb_size"):
-        mb_size = int(rollout_cfg["autotuned_mb_size"])
-        if ddp and dist.is_available() and dist.is_initialized():
-            t = torch.tensor([mb_size], device=model_device, dtype=torch.int64)
-            dist.broadcast(t, src=0)
-            mb_size = int(t.item())
 
     # -----------------------------------------------------------------------
     # Epoch loop
@@ -232,109 +215,85 @@ def fit(
             n_years = int(labels_a.shape[1])
             n_locs  = int(inputs.shape[2])
 
-            # Determine horizon and update samples_seen (tail-only ownership if H>0)
-            try:
-                H = float((rollout_cfg or {}).get("carry_horizon", 0.0) or 0.0)
-            except Exception:
-                H = 0.0
-            carry_on = H > 0.0
+            # samples_seen (teacher-forced windows)
+            history.samples_seen += max(0, n_years - 1) * n_locs
 
-            if carry_on:
-                D = int(math.ceil(H))
-                history.samples_seen += max(0, n_years - D) * n_locs
-            else:
-                history.samples_seen += max(0, n_years - 1) * n_locs
+            # ----------------------- teacher-forced path -----------------------
+            # Stack all (year, location) windows -> per-window mini-batch
+            x_list, yM_list, yA_list = [], [], []
+            yM_prev_last_list, yA_prev_list = [], []
 
-            # ----------------------- teacher-forced path (no carry) -----------------------
-            if not carry_on:
-                # Stack all (year, location) windows -> per-window mini-batch
-                x_list, yM_list, yA_list = [], [], []
-                yM_prev_last_list, yA_prev_list = [], []
+            for y in range(1, n_years):
+                # slices for current supervision window y
+                x_slice  = inputs[:,   y*365:(y+1)*365, :].permute(2, 1, 0)  # [nl,365,nin]
+                yM_slice = labels_m[:, y*12:(y+1)*12,  :].permute(2, 1, 0)  # [nl,12,nm]
+                yA_slice = labels_a[:, y:(y+1),        :].permute(2, 1, 0)  # [nl,1, na]
 
-                for y in range(1, n_years):
-                    # slices for current supervision window y
-                    x_slice  = inputs[:,   y*365:(y+1)*365, :].permute(2, 1, 0)  # [nl,365,nin]
-                    yM_slice = labels_m[:, y*12:(y+1)*12,  :].permute(2, 1, 0)  # [nl,12,nm]
-                    yA_slice = labels_a[:, y:(y+1),        :].permute(2, 1, 0)  # [nl,1, na]
+                # previous-year anchors (Dec of y-1, and annual of y-1)
+                dec_prev = labels_m[:, y*12 - 1, :].permute(1, 0).unsqueeze(1)   # [nl,1,nm]
+                ann_prev = labels_a[:, y - 1,    :].permute(1, 0).unsqueeze(1)   # [nl,1,na]
 
-                    # previous-year anchors (Dec of y-1, and annual of y-1)
-                    dec_prev = labels_m[:, y*12 - 1, :].permute(1, 0).unsqueeze(1)   # [nl,1,nm]
-                    ann_prev = labels_a[:, y - 1,    :].permute(1, 0).unsqueeze(1)   # [nl,1,na]
+                x_list.append(x_slice);      yM_list.append(yM_slice);  yA_list.append(yA_slice)
+                yM_prev_last_list.append(dec_prev);  yA_prev_list.append(ann_prev)
 
-                    x_list.append(x_slice);      yM_list.append(yM_slice);  yA_list.append(yA_slice)
-                    yM_prev_last_list.append(dec_prev);  yA_prev_list.append(ann_prev)
+            Xw   = torch.cat(x_list,            dim=0)  # [Nw,365,nin]
+            YMw  = torch.cat(yM_list,           dim=0)  # [Nw,12,nm]
+            YAw  = torch.cat(yA_list,           dim=0)  # [Nw,1, na]
+            YMwP = torch.cat(yM_prev_last_list, dim=0)  # [Nw,1, nm]  (Dec_{y-1})
+            YAwP = torch.cat(yA_prev_list,      dim=0)  # [Nw,1, na]  (Annual_{y-1})
+            Nw   = int(Xw.shape[0])
 
-                Xw   = torch.cat(x_list,            dim=0)  # [Nw,365,nin]
-                YMw  = torch.cat(yM_list,           dim=0)  # [Nw,12,nm]
-                YAw  = torch.cat(yA_list,           dim=0)  # [Nw,1, na]
-                YMwP = torch.cat(yM_prev_last_list, dim=0)  # [Nw,1, nm]  (Dec_{y-1})
-                YAwP = torch.cat(yA_prev_list,      dim=0)  # [Nw,1, na]  (Annual_{y-1})
-                Nw   = int(Xw.shape[0])
+            if getattr(args, "shuffle_windows", False) and Nw > 1:
+                perm = torch.randperm(Nw, device=Xw.device)
+                Xw, YMw, YAw, YMwP, YAwP = Xw[perm], YMw[perm], YAw[perm], YMwP[perm], YAwP[perm]
 
-                if getattr(args, "shuffle_windows", False) and Nw > 1:
-                    perm = torch.randperm(Nw, device=Xw.device)
-                    Xw, YMw, YAw, YMwP, YAwP = Xw[perm], YMw[perm], YAw[perm], YMwP[perm], YAwP[perm]
+            micro_size = min(mb_size, Nw)
+            num_micro  = (Nw + micro_size - 1) // micro_size
+            microbatches_done = 0
+            running_sum_loss  = 0.0
 
-                micro_size = min(mb_size, Nw)
-                num_micro  = (Nw + micro_size - 1) // micro_size
-                microbatches_done = 0
-                running_sum_loss  = 0.0
+            for mb_idx in range(num_micro):
+                s = mb_idx * micro_size
+                e = min((mb_idx + 1) * micro_size, Nw)
 
-                for mb_idx in range(num_micro):
-                    s = mb_idx * micro_size
-                    e = min((mb_idx + 1) * micro_size, Nw)
+                xb   = Xw[s:e]
+                yb_m = YMw[s:e]
+                yb_a = YAw[s:e]
 
-                    xb   = Xw[s:e]
-                    yb_m = YMw[s:e]
-                    yb_a = YAw[s:e]
+                # Guard minibatch inputs
+                if not torch.isfinite(xb).all():
+                    if log:
+                        log.warning(
+                            "[train/teacher] non-finite INPUT minibatch: shape=%s, finite=%s",
+                            tuple(xb.shape), bool(torch.isfinite(xb).all().item())
+                        )
+                    # Skip this microbatch
+                    del xb, yb_m, yb_a
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    continue
 
-                    # Guard minibatch inputs
-                    if not torch.isfinite(xb).all():
-                        if log:
-                            log.warning(
-                                "[train/teacher] non-finite INPUT minibatch: shape=%s, finite=%s",
-                                tuple(xb.shape), bool(torch.isfinite(xb).all().item())
-                            )
-                        # Skip this microbatch
-                        del xb, yb_m, yb_a
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
+                preds = model(xb)  # [B,365,nm+na]
 
-                    preds = model(xb)  # [B,365,nm+na] (deltas if --delta)
+                if not torch.isfinite(preds).all():
+                    if log:
+                        log.warning(
+                            "[train/teacher] non-finite PRED minibatch: x_shape=%s, pred_shape=%s",
+                            tuple(xb.shape), tuple(preds.shape)
+                        )
+                    del preds, xb, yb_m, yb_a
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    continue
 
-                    if not torch.isfinite(preds).all():
-                        if log:
-                            log.warning(
-                                "[train/teacher] non-finite PRED minibatch: x_shape=%s, pred_shape=%s",
-                                tuple(xb.shape), tuple(preds.shape)
-                            )
-                        del preds, xb, yb_m, yb_a
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
+                loss = loss_func(preds, yb_m, yb_a)
 
-                    loss = loss_func(preds, yb_m, yb_a)
+                running_sum_loss += float(loss.detach().cpu()) * (e - s)
 
-                    running_sum_loss += float(loss.detach().cpu()) * (e - s)
+                (loss / eff_accum).backward()
+                microbatches_done += 1
 
-                    (loss / eff_accum).backward()
-                    microbatches_done += 1
-
-                    if microbatches_done % eff_accum == 0:
-                        if eff_clip is not None:
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
-                        opt.step()
-                        opt.zero_grad(set_to_none=True)
-                        if scheduler is not None:
-                            scheduler.step()
-                        lr_now = opt.param_groups[0]["lr"]
-                        history.lr_values.append(float(lr_now))
-                        history.lr_steps.append(global_opt_step)
-                        global_opt_step += 1
-
-                # Flush remainder if needed
-                if microbatches_done % eff_accum != 0:
+                if microbatches_done % eff_accum == 0:
                     if eff_clip is not None:
                         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
                     opt.step()
@@ -346,32 +305,23 @@ def fit(
                     history.lr_steps.append(global_opt_step)
                     global_opt_step += 1
 
-                avg_batch_loss = running_sum_loss / max(1, Nw)
-                train_losses.append(avg_batch_loss)
-                history.add_batch(avg_batch_loss, global_batch_idx)
-                global_batch_idx += 1
+            # Flush remainder if needed
+            if microbatches_done % eff_accum != 0:
+                if eff_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
+                opt.step()
+                opt.zero_grad(set_to_none=True)
+                if scheduler is not None:
+                    scheduler.step()
+                lr_now = opt.param_groups[0]["lr"]
+                history.lr_values.append(float(lr_now))
+                history.lr_steps.append(global_opt_step)
+                global_opt_step += 1
 
-            # -------------------------- carry rollout path --------------------------
-            else:
-                avg_batch_loss, global_opt_step = rollout_train_outer_batch(
-                    model=model,
-                    loss_func=loss_func,
-                    opt=opt,
-                    scheduler=scheduler,
-                    inputs=inputs,
-                    labels_m=labels_m,
-                    labels_a=labels_a,
-                    mb_size=mb_size,
-                    eff_accum=eff_accum,
-                    eff_clip=eff_clip,
-                    history=history,
-                    global_opt_step=global_opt_step,
-                    device=model_device,
-                    rollout_cfg=rollout_cfg,
-                )
-                train_losses.append(avg_batch_loss)
-                history.add_batch(avg_batch_loss, global_batch_idx)
-                global_batch_idx += 1
+            avg_batch_loss = running_sum_loss / max(1, Nw)
+            train_losses.append(avg_batch_loss)
+            history.add_batch(avg_batch_loss, global_batch_idx)
+            global_batch_idx += 1
 
             # --------------------------- in-epoch validation ---------------------------
             if val_plan is not None:
@@ -578,7 +528,6 @@ def plan_validation(
     val_batches_to_use = min(val_total_batches, max(1, val_batches_to_use))
 
     # fixed subset of val batch indices (same across the run)
-    import random
     rng = random.Random(42)  # constant seed (deterministic subset)
     indices = list(range(val_total_batches))
     rng.shuffle(indices)
@@ -602,7 +551,7 @@ def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
         return list(range(total_batches))
     return random.sample(range(total_batches), k)
 
-# Main validation function
+# Main validation function (teacher-forced only)
 def validate(
     model: torch.nn.Module,
     loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
@@ -610,31 +559,15 @@ def validate(
     device: Optional[torch.device] = None,
     max_batches: Optional[int] = None,
     batch_indices: Optional[Iterable[int]] = None,
-    rollout_cfg: Optional[dict] = None,
+    rollout_cfg: Optional[dict] = None,  # accepted but not used for carry
 ) -> Tuple[float, int]:
     """
-    Evaluate on a validation dataloader. Uses the same semantics as training:
-      - carry_horizon > 0.0 → windowed carry evaluation
-      - carry_horizon = 0.0 → teacher-forced evaluation
+    Evaluate on a validation dataloader using teacher-forced per-(year,location) windows.
     Returns (avg_loss, num_windows).
     """
     model.eval()
     if device is None:
         device = next(model.parameters()).device
-
-    # carry flag
-    carry_on = False
-    if rollout_cfg is not None:
-        try:
-            carry_on = float(rollout_cfg.get("carry_horizon", 0.0)) > 0.0
-        except Exception:
-            carry_on = False
-
-    # month metadata (only needed for shape consistency / future use)
-    month_lengths = (rollout_cfg or {}).get("month_lengths", [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    bounds = [0]
-    for Lm in month_lengths:
-        bounds.append(bounds[-1] + Lm)
 
     use_index_subset = batch_indices is not None
     index_set = set(batch_indices) if use_index_subset else None
@@ -655,39 +588,24 @@ def validate(
             labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
             labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
-            if carry_on:
-                # Delegate to carry evaluation kernel (tail-only, windowed)
-                batch_sum_loss, n_windows = rollout_eval_outer_batch(
-                    model=model,
-                    loss_func=loss_func,
-                    inputs=inputs,
-                    labels_m=labels_m,
-                    labels_a=labels_a,
-                    device=device,
-                    rollout_cfg=rollout_cfg,
-                )
-                total_loss += float(batch_sum_loss)
-                total_cnt  += int(n_windows)
+            # Teacher-forced evaluation per (year, location) window
+            n_locations = int(inputs.shape[2])
+            n_years     = int(labels_a.shape[1])
 
-            else:
-                # Teacher-forced evaluation per (year, location) window
-                n_locations = int(inputs.shape[2])
-                n_years     = int(labels_a.shape[1])
+            for loc in range(n_locations):
+                for year_idx in range(1, n_years):
+                    x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
+                    yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
+                    yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]   # [na,1]
 
-                for loc in range(n_locations):
-                    for year_idx in range(1, n_years):
-                        x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
-                        yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
-                        yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]   # [na,1]
+                    xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
+                    yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
+                    yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
 
-                        xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
-                        yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
-                        yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
-
-                        preds_daily = model(xb)      # [1,365,out]
-                        loss  = loss_func(preds_daily, yb_m, yb_a)
-                        total_loss += float(loss.item())
-                        total_cnt  += 1
+                    preds_daily = model(xb)      # [1,365,out]
+                    loss  = loss_func(preds_daily, yb_m, yb_a)
+                    total_loss += float(loss.item())
+                    total_cnt  += 1
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -709,5 +627,3 @@ def validate(
 
     avg = (total_loss / total_cnt) if total_cnt > 0 else float("inf")
     return avg, total_cnt
-
-

@@ -33,6 +33,4 @@ early_stop_min_delta: 0.0
 early_stop_warmup_epochs: 0
 ckpt_every_epochs: 1
 keep_last: 5
-carry_years: '0'
-carry_granularity: annual
 scan_finite: false
