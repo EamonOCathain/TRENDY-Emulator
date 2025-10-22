@@ -154,7 +154,7 @@ rolling_means = [
 # ---------------------------------------------------------------------------
 # Transfer learning channels (optional inputs)
 # ---------------------------------------------------------------------------
-avh15c1_lai = ["lai_avh15c1"]
+lai_avh15c1 = ["lai_avh15c1"]
 
 # ---------------------------------------------------------------------------
 # Groupings by domain/time-resolution
@@ -172,7 +172,7 @@ monthly_forcing = ndep
 annual_forcing  = nfert + jsbach_static + land_use_vars + pop + co2 + rolling_means
 
 # Transfer learning
-monthly_transfer = avh15c1_lai
+monthly_transfer = lai_avh15c1
 transfer_vars  = monthly_transfer
 
 # Convenience groupings by time resolution (inputs + outputs)

@@ -39,6 +39,7 @@ def get_train_val_test(
     std_dict: dict,
     block_locs: int = 70,
     carry_years: float = 0,
+    tl_activated: bool = False,
     exclude_vars: Optional[list] = None,
     tl_start: Optional[int] = None,
     tl_end: Optional[int] = None,
@@ -91,21 +92,21 @@ def get_train_val_test(
             print(f"[INFO] Dataloader in carry mode (carry_years={carry_val}) using: {rechunked_dir}")
             
     # Transfer learning mode
-    elif tl_start is not None:
+    elif tl_activated:
         ds_train = CustomDataset(
             data_dir=data_dir, std_dict=std_dict, tensor_type="train",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end, tl_scenario=tl_scenario
+            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
         )
         ds_val = CustomDataset(
             data_dir=data_dir, std_dict=std_dict, tensor_type="val",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end, tl_scenario=tl_scenario
+            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
         )
         ds_test = CustomDataset(
             data_dir=data_dir, std_dict=std_dict, tensor_type="test",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end, tl_scenario=tl_scenario
+            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
         )
         if is_main_rank:
-            print(f"[INFO] Dataloader in transfer learning mode using years {tl_start}-{tl_end} for scenario {tl_scenario} with data from: {data_dir}")
+            print(f"[INFO] Dataloader in transfer learning mode using years {tl_start}-{tl_end} with data from: {data_dir}")
     # Basic Mode
     else:
         ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train", exclude_vars=exclude_vars_set)
