@@ -1,11 +1,10 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Dict, Tuple, List, Set
+from typing import Iterable, Optional, Dict, Tuple, Set
 from pathlib import Path
 import random
 import json
 import numpy as np
 import torch
-
 
 # ---------------------------------------------------------------------------
 # 1. Batch & window statistics
@@ -107,74 +106,36 @@ def set_seed(seed: int = 42) -> None:
 # 3. Standardisation dictionary loader & filter
 # ---------------------------------------------------------------------------
 
-def load_and_filter_standardisation(
+
+def load_standardisation_only(
     standardisation_path: Path,
-    all_vars: List[str],
-    daily_vars: List[str],
-    monthly_vars: List[str],
-    annual_vars: List[str],
-    monthly_states: List[str],
-    annual_states: List[str],
-    exclude_vars: Set[str] = None,
-) -> Tuple[Dict[str, Dict[str, float]], Dict[str, List[str]]]:
+) -> Tuple[Dict[str, Dict[str, float]], Set[str]]:
     """
-    Load and filter the standardisation dictionary from JSON, pruning invalid or excluded variables.
-
-    The returned dicts ensure all entries have finite, positive std values.
-
-    Args:
-        standardisation_path: Path to `standardisation_dict.json`.
-        all_vars: Complete variable list.
-        daily_vars, monthly_vars, annual_vars: Time-resolution variable lists.
-        monthly_states, annual_states: State variable lists.
-        exclude_vars: Extra variables to exclude manually.
+    Load standardisation stats and drop invalid entries.
 
     Returns:
-        tuple:
-            - std_dict: Filtered normalisation dictionary {var: {"mean": µ, "std": σ}}
-            - pruned_vars: Dict with pruned variable lists keyed by category.
+        std_dict: {var: {"mean": float, "std": float}} with finite mean, std>0
+        invalid_vars: set of variable names dropped due to invalid stats
     """
 
-    # --- Helper: validate that a stats record is usable ---
-    def is_valid_stat(obj: Dict[str, float]) -> bool:
+    def is_valid_stat(obj) -> bool:
         try:
-            return (
-                np.isfinite(float(obj["mean"])) and
-                np.isfinite(float(obj["std"])) and
-                float(obj["std"]) > 0
-            )
+            mu = float(obj["mean"])
+            sd = float(obj["std"])
+            return np.isfinite(mu) and np.isfinite(sd) and sd > 0.0
         except Exception:
             return False
 
-    # --- Load raw stats JSON ---
     with open(standardisation_path, "r") as f:
         raw_stats = json.load(f)
 
-    # Keep only finite & positive entries
-    std_dict = {
-        k: {"mean": float(v["mean"]), "std": float(v["std"])}
-        for k, v in raw_stats.items()
-        if is_valid_stat(v)
-    }
+    std_dict = {}
+    invalid_vars = set()
 
-    # --- Build exclusion set ---
-    exclude = set(exclude_vars or set()) | (set(raw_stats) - set(std_dict))
+    for k, v in raw_stats.items():
+        if is_valid_stat(v):
+            std_dict[k] = {"mean": float(v["mean"]), "std": float(v["std"])}
+        else:
+            invalid_vars.add(k)
 
-    # --- Helper: prune invalid vars from a list ---
-    def prune(vars_list: List[str]) -> List[str]:
-        return [v for v in vars_list if v not in exclude]
-
-    # --- Apply pruning to all variable groups ---
-    pruned_vars = {
-        "all_vars": prune(all_vars),
-        "daily_vars": prune(daily_vars),
-        "monthly_vars": prune(monthly_vars),
-        "annual_vars": prune(annual_vars),
-        "monthly_states": prune(monthly_states),
-        "annual_states": prune(annual_states),
-    }
-
-    # --- Remove excluded keys from stats ---
-    std_dict = {k: v for k, v in std_dict.items() if k not in exclude}
-
-    return std_dict, pruned_vars
+    return std_dict, invalid_vars

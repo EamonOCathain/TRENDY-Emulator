@@ -39,6 +39,7 @@ def get_train_val_test(
     std_dict: dict,
     block_locs: int = 70,
     carry_years: float = 0,
+    exclude_vars: Optional[list] = None,
 ) -> dict:
     """
     Return train/val/test datasets depending on *single* carry setting.
@@ -60,6 +61,9 @@ def get_train_val_test(
         carry_val = 0.0
 
     use_carry_ds = (carry_val > 0.0)
+    
+    # Normalise exclude vars to set
+    exclude_vars_set = set(exclude_vars or [])
 
     # Base locations for data
     data_dir = training_zarr_dir
@@ -83,9 +87,9 @@ def get_train_val_test(
         if is_main_rank:
             print(f"[INFO] Dataloader in carry mode (carry_years={carry_val}) using: {rechunked_dir}")
     else:
-        ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train")
-        ds_val   = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="val")
-        ds_test  = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="test")
+        ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train", exclude_vars=exclude_vars_set)
+        ds_val   = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="val", exclude_vars=exclude_vars_set)
+        ds_test  = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="test", exclude_vars=exclude_vars_set)
         if is_main_rank:
             print(f"[INFO] Dataloader in non-carry mode (carry_years={carry_val}) using: {data_dir}")
 

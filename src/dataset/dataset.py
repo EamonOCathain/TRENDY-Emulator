@@ -10,9 +10,13 @@ import numpy as np
 import torch
 import xarray as xr
 from torch.utils.data import Dataset, Subset, random_split
+import sys
+
+project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
+sys.path.append(str(project_root))
 
 from src.dataset.variables import var_names
-
+from src.training.varschema import VarSchema
 
 # ---------------------------------------------------------------------------
 # Dataset
@@ -32,28 +36,32 @@ class CustomDataset(Dataset):
     """
 
     def __init__(
-        self,
-        data_dir: str,
-        std_dict: Dict,
-        tensor_type: str,        # "train" | "val" | "test"
-        chunk_size: int = 70,    # locations per sample
-    ):
-        self.std_dict = std_dict
-        self.tensor_type = tensor_type
-        self.chunk_size = chunk_size
-        self.n_scenarios = 4
-        self.base_path = Path(data_dir) / tensor_type
-        self.unfiltered_var_names = var_names
+            self,
+            data_dir: str,
+            std_dict: Dict,
+            tensor_type: str,        # "train" | "val" | "test"
+            chunk_size: int = 70,    # locations per sample
+            exclude_vars: Sequence[str] | None = None
+        ):
+            self.std_dict = std_dict
+            self.tensor_type = tensor_type
+            self.chunk_size = chunk_size
+            self.n_scenarios = 4
+            self.base_path = Path(data_dir) / tensor_type
+            self.unfiltered_var_names = var_names
 
-        # Discover file layout and open datasets
-        self._get_paths()
-        self._open_datasets()
+            # NEW: options
+            self.exclude_vars = set(exclude_vars or [])
 
-        # Select/validate variable names and build I/O orders
-        self._filter_var_names()
+            # Discover file layout and open datasets
+            self._get_paths()
+            self._open_datasets()
 
-        # Precompute sample plan for __len__/__getitem__
-        self._plan_samples()
+            # Select/validate variable names and build I/O orders
+            self._filter_var_names()
+
+            # Precompute sample plan for __len__/__getitem__
+            self._plan_samples()
 
     # -----------------------------------------------------------------------
     # Paths / opening
@@ -117,25 +125,47 @@ class CustomDataset(Dataset):
 
     def _filter_var_names(self) -> None:
         """
-        Filter out variables with missing stats, non-positive std, or absent in Zarr.
-        Build stable input/output orders for consistent channel layout.
+        Build filtered var lists by:
+        - applying optional renames (e.g., "lai" -> "lai_avh15c1"),
+        - requiring valid std stats,
+        - requiring presence in the Zarr stores,
+        - applying exclude list.
+        Then build stable input/output orders and a VarSchema snapshot.
         """
+        def present_in_any_zarr(name: str) -> bool:
+            return any(name in ds.data_vars for ds in self.all_datasets)
+
+        def add_unique(dst: List[str], name: str):
+            if name not in dst:
+                dst.append(name)
+
         filtered: Dict[str, List[str]] = {}
         for group, var_list in self.unfiltered_var_names.items():
             keep: List[str] = []
             for v in var_list:
-                stats = self.std_dict.get(v)
-                if not stats:
+                actual = v
+
+                # respect excludes
+                if actual in self.exclude_vars:
                     continue
-                if stats.get("std", 0) <= 0:
+
+                # require std stats
+                stats = self.std_dict.get(actual)
+                if not stats or float(stats.get("std", 0.0)) <= 0.0:
+                    # drop silently; you can log if you want
                     continue
-                if not any(v in ds.data_vars for ds in self.all_datasets):
-                    raise AssertionError(f"Zarr datasets are missing variable: {v}")
-                keep.append(v)
+
+                # require presence in Zarr
+                if not present_in_any_zarr(actual):
+                    raise AssertionError(f"Zarr datasets are missing variable: {actual}")
+
+                add_unique(keep, actual)
+
             filtered[group] = keep
 
-        # Stable, sorted orders used everywhere (model I/O, stacking, etc.)
+        # Freeze final filtered lists (sorted for stable channel layout)
         self.var_names = filtered
+
         self.input_order = (
             sorted(self.var_names["daily_forcing"]) +
             sorted(self.var_names["monthly_forcing"]) +
@@ -149,15 +179,25 @@ class CustomDataset(Dataset):
             sorted(self.var_names["annual_states"])
         )
 
-        # Optional indices (handy for debugging)
+        # Guardrails
+        if not self.input_order:
+            raise RuntimeError("Empty input_order after filtering.")
+        if not self.output_order:
+            raise RuntimeError("Empty output_order after filtering.")
+
+        # Optional indices
         self.input_index  = {v: i for i, v in enumerate(self.input_order)}
         self.output_index = {v: i for i, v in enumerate(self.output_order)}
 
-        # Guardrails
-        if len(self.input_order) == 0:
-            raise RuntimeError("Empty input_order after filtering.")
-        if len(self.output_order) == 0:
-            raise RuntimeError("Empty output_order after filtering.")
+        # EXPOSE a canonical schema so main can consume it (and checkpoints record it)
+        self.schema = VarSchema(
+            daily_forcing   = sorted(self.var_names["daily_forcing"]),
+            monthly_forcing = sorted(self.var_names["monthly_forcing"]),
+            monthly_states  = sorted(self.var_names["monthly_states"]),
+            annual_forcing  = sorted(self.var_names["annual_forcing"]),
+            annual_states   = sorted(self.var_names["annual_states"]),
+            monthly_fluxes  = sorted(self.var_names["monthly_fluxes"]),
+        )
 
     # -----------------------------------------------------------------------
     # Sampling plan

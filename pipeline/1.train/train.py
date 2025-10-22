@@ -31,7 +31,6 @@ start_dt_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
 # Local imports (after sys.path updated)
 # -----------------------------------------------------------------------------#
 from src.paths.paths import *                      # noqa: F401,F403
-from src.dataset.variables import *                # noqa: F401,F403
 
 from src.models.custom_transformer import YearProcessor
 from src.training.checkpoints import save_cb, extract_state_dict_for_foundation
@@ -42,7 +41,7 @@ from src.dataset.dataloader import get_train_val_test, get_data
 from src.training.distributed import init_distributed
 from src.training.logging import save_args, setup_logging
 from src.training.scheduler import build_cosine_wr_scheduler
-from src.training.stats import get_split_stats, set_seed, load_and_filter_standardisation
+from src.training.stats import get_split_stats, set_seed, load_standardisation_only
 from src.dataset.dataset import base, get_subset
 from src.training.tester import (
     run_and_save_test_suite,
@@ -196,25 +195,9 @@ def scan_for_nonfinite(dl, max_batches=None):
 # =============================================================================
 # Load and filter with standardisation stats
 # =============================================================================
-std_dict, pruned = load_and_filter_standardisation(
-    standardisation_path= std_dict_path,
-    all_vars=all_vars,
-    daily_vars=daily_vars,
-    monthly_vars=monthly_vars,
-    annual_vars=annual_vars,
-    monthly_states=monthly_states,
-    annual_states=annual_states,
-    exclude_vars=set(getattr(args, "exclude_vars", [])),
-)
-
-# Unpack back into variable lists
-all_vars       = pruned["all_vars"]
-daily_vars     = pruned["daily_vars"]
-monthly_vars   = pruned["monthly_vars"]
-annual_vars    = pruned["annual_vars"]
-monthly_states = pruned["monthly_states"]
-annual_states  = pruned["annual_states"]
-
+std_dict, invalid_vars = load_standardisation_only(std_dict_path)
+if invalid_vars:
+    print(f"[std] dropped {len(invalid_vars)} invalid vars: {sorted(list(invalid_vars))[:10]} ...")
 
 # =============================================================================
 # Main
@@ -279,7 +262,8 @@ def main():
     # -------------------------------------------------------------------------
     # Dataset loading (train/val/test splits)
     # -------------------------------------------------------------------------
-    ds_dict = get_train_val_test(std_dict, block_locs=70)
+    exclude_vars = set(getattr(args, "exclude_vars", []))
+    ds_dict = get_train_val_test(std_dict, block_locs=70, exclude_vars=exclude_vars)
 
     if is_main:
         print("Number of location chunks in full dataset:",
@@ -407,6 +391,11 @@ def main():
     idx_annual = list(range(len(monthly_names), len(output_names)))
 
     out_idx = {name: i for i, name in enumerate(output_names)}
+    
+    # Check that std_dict matches the dataset outputs
+    missing_stats = [v for v in (schema.input_order() + schema.output_order()) if v not in std_dict]
+    if missing_stats:
+        raise SystemExit(f"[std] Missing stats for variables: {missing_stats[:8]} ... (total {len(missing_stats)})")
 
     if hasattr(base_train, "var_names"):
         varnames_snapshot = {k: sorted(list(v)) for k, v in base_train.var_names.items()}
