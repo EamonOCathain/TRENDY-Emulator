@@ -16,6 +16,7 @@ sys.path.append(str(project_root))
 
 # Project imports
 from src.dataset.dataset import CustomDataset
+from src.dataset.dataset_TL import CustomDatasetTL
 from src.dataset.dataset_carry import CarryBlockDataset
 from src.paths.paths import training_zarr_dir, training_zarr_rechunked_dir
 
@@ -43,6 +44,7 @@ def get_train_val_test(
     exclude_vars: Optional[list] = None,
     tl_start: Optional[int] = None,
     tl_end: Optional[int] = None,
+    replace_map: Optional[Dict[str, str]] = None,
 ) -> dict:
     """
     Return train/val/test datasets depending on *single* carry setting.
@@ -93,17 +95,17 @@ def get_train_val_test(
             
     # Transfer learning mode
     elif tl_activated:
-        ds_train = CustomDataset(
-            data_dir=data_dir, std_dict=std_dict, tensor_type="train",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
+        ds_train = CustomDatasetTL(
+            data_dir=data_dir, std_dict=std_dict, tensor_type="train", exclude_vars=exclude_vars_set,
+            tl_activated=True, tl_start=tl_start, tl_end=tl_end, replace_map =replace_map
         )
-        ds_val = CustomDataset(
-            data_dir=data_dir, std_dict=std_dict, tensor_type="val",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
+        ds_val = CustomDatasetTL(
+            data_dir=data_dir, std_dict=std_dict, tensor_type="val", exclude_vars=exclude_vars_set,
+            tl_activated=True, tl_start=tl_start, tl_end=tl_end, replace_map=replace_map
         )
-        ds_test = CustomDataset(
-            data_dir=data_dir, std_dict=std_dict, tensor_type="test",
-            transfer_learn=True, tl_start=tl_start, tl_end=tl_end
+        ds_test = CustomDatasetTL(
+            data_dir=data_dir, std_dict=std_dict, tensor_type="test", exclude_vars=exclude_vars_set,
+            tl_activated=True, tl_start=tl_start, tl_end=tl_end, replace_map=replace_map
         )
         if is_main_rank:
             print(f"[INFO] Dataloader in transfer learning mode using years {tl_start}-{tl_end} with data from: {data_dir}")

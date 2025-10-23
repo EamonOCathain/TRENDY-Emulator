@@ -1,0 +1,6 @@
+/User/homes/ecathain/miniconda3/lib/python3.12/site-packages/xarray/core/dataset.py:277: UserWarning: The specified chunks separate the stored chunks along dimension "time" starting at index 240. This could degrade performance. Instead, consider rechunking after loading.
+  warnings.warn(
+/User/homes/ecathain/miniconda3/lib/python3.12/site-packages/xarray/core/dataset.py:277: UserWarning: The specified chunks separate the stored chunks along dimension "lat" starting at index 256. This could degrade performance. Instead, consider rechunking after loading.
+  warnings.warn(
+/User/homes/ecathain/miniconda3/lib/python3.12/site-packages/xarray/core/dataset.py:277: UserWarning: The specified chunks separate the stored chunks along dimension "lon" starting at index 256. This could degrade performance. Instead, consider rechunking after loading.
+  warnings.warn(

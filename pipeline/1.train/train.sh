@@ -65,4 +65,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
   --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/new_loss/base_model_new_loss/checkpoints/best.pt \
+  --transfer_learn \
+  --transfer_learn_vars lai_avh15c1 \
+  --transfer_learn_years 1982-2018 \
 

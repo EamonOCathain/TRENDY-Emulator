@@ -146,8 +146,7 @@ def parse_args():
     # Transfer Learning
     parser.add_argument("--transfer_learn", action="store_true",
                         help="Enable transfer learning (off by default)")
-    parser.add_argument("--transfer_learn_vars", type=str, default="lai_avh15c1", choices=["lai_avh15c1"],
-                        help="Name of the variable to use in transfer learning")
+    parser.add_argument("--transfer_learn_vars", type=str, nargs="+", default=["lai_avh15c1"], help="Variable names to use in transfer learning (space-separated list)")
     parser.add_argument("--transfer_learn_years", type=str, default="1981-2019", help="Year range for transfer learning, e.g. '1990-2005'")
 
     # --- Other ---
@@ -264,13 +263,30 @@ def main():
 
         info_file = save_args(run_dir, args)
         log.info(f"Saved run arguments to {info_file}")
+    
+    # -------------------------------------------------------------------------
+    # Some Small TL Setup
+    # -------------------------------------------------------------------------
+    
+    # Set up start and end years
+    try:
+        tl_start_year = int(args.transfer_learn_years.split("-")[0])
+        tl_end_year = int(args.transfer_learn_years.split("-")[1])
+    except Exception:
+        raise SystemExit(f"Bad --transfer_learn_years: {args.transfer_learn_years!r}. Expected 'YYYY-YYYY'.")
+    
+    # Set up replacement map for variables
+    if args.transfer_learn:
+        replace_map = {}
+        if 'lai_avh15c1' in args.transfer_learn_vars:
+            replace_map['lai'] = 'lai_avh15c1'
+    else:
+        replace_map = None
 
     # -------------------------------------------------------------------------
     # Dataset loading (train/val/test splits)
     # -------------------------------------------------------------------------
     exclude_vars = set(getattr(args, "exclude_vars", []))
-    tl_start_year = args.transfer_learn_years.split("-")[0]
-    tl_end_year = args.transfer_learn_years.split("-")[1]
     
     # Build Datasets from Dataloader
     ds_dict = get_train_val_test(std_dict, 
@@ -278,7 +294,8 @@ def main():
                                  exclude_vars=exclude_vars, 
                                  tl_activated=args.transfer_learn,
                                  tl_start=tl_start_year, 
-                                 tl_end=tl_end_year)
+                                 tl_end=tl_end_year, 
+                                 replace_map=replace_map)
 
     if is_main:
         print("Number of location chunks in full dataset:",
