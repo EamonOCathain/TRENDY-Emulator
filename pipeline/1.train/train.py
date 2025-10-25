@@ -126,11 +126,11 @@ def parse_args():
     parser.add_argument("--loss_type", type=str, default="mse", choices=["mse", "mae"])
     parser.add_argument("--use_mass_balances", action="store_true",
                         help="Enable mass-balance penalties in the loss (off by default)")
-    parser.add_argument("--water_balance_weight", type=float, default=0.0)
-    parser.add_argument("--npp_balance_weight", type=float, default=0.0)
-    parser.add_argument("--nbp_balance_weight", type=float, default=0.0)
-    parser.add_argument("--carbon_partition_weight", type=float, default=0.0)
-    parser.add_argument("--nbp_delta_ctotal_weight", type=float, default=0.0)
+    parser.add_argument("--water_balance", type=float, default=0.0)
+    parser.add_argument("--npp_balance", type=float, default=0.0)
+    parser.add_argument("--nbp_balance", type=float, default=0.0)
+    parser.add_argument("--carbon_partition_balance", type=float, default=0.0)
+    parser.add_argument("--nbp_d_ctotal_balance", type=float, default=0.0)
 
     # --- Early Stopping ---
     parser.add_argument("--early_stop", action="store_true",
@@ -250,11 +250,11 @@ def main():
 
     # Gate mass-balance penalties if disabled
     if not args.use_mass_balances:
-        args.water_balance_weight = 0.0
-        args.npp_balance_weight = 0.0
-        args.nbp_balance_weight = 0.0
-        args.carbon_partition_weight = 0.0
-        args.nbp_delta_ctotal_weight = 0.0
+        args.water_balance = 0.0
+        args.npp_balance = 0.0
+        args.nbp_balance = 0.0
+        args.carbon_partition_balance = 0.0
+        args.nbp_d_ctotal_balance = 0.0
 
     if is_main:
         log.info(f"Early stopping: {'ON' if args.early_stop else 'OFF'}")
@@ -446,6 +446,31 @@ def main():
         }
 
     # -------------------------------------------------------------------------
+    # Rollout configuration (calendar only; no carry) + standardisation vectors
+    # -------------------------------------------------------------------------
+    rollout_cfg = {
+        "in_monthly_state_idx": schema.in_monthly_state_idx(),
+        "in_annual_state_idx": schema.in_annual_state_idx(),
+        "out_monthly_state_idx": schema.out_monthly_state_idx_local(),
+        "out_annual_state_idx": schema.out_annual_state_idx_local(),
+        "out_monthly_names": monthly_names,
+        "out_annual_names": annual_names,
+        "month_lengths": schema.month_lengths,
+        "output_order": OUTPUT_ORDER,
+        "input_order": INPUT_ORDER, 
+        "schema_sig": schema_sig,
+    }
+
+    if is_main:
+        nm = len(rollout_cfg["out_monthly_names"])
+        na = len(rollout_cfg["out_annual_names"])
+        log.info(f"[rollout_cfg] nm={nm} monthly names, na={na} annual names")
+        log.info(f"[rollout_cfg] out_monthly_state_idx (local) = {rollout_cfg['out_monthly_state_idx']}")
+        log.info(f"[rollout_cfg] out_annual_state_idx  (local) = {rollout_cfg['out_annual_state_idx']}")
+        log.info(f"[schema] sig={schema.signature()} | input_dim={input_dim} | output_dim={output_dim} "
+                f"| nm={nm} | na={na}")
+        
+    # -------------------------------------------------------------------------
     # Optional mass-balance variable index mapping
     # -------------------------------------------------------------------------
     mb_var_idx = None
@@ -465,48 +490,37 @@ def main():
                 missing.append(v)
         if missing and is_main:
             print("[mass-balance] missing variables:", missing)
-
-    # -------------------------------------------------------------------------
-    # Rollout configuration (calendar only; no carry) + standardisation vectors
-    # -------------------------------------------------------------------------
-    rollout_cfg = {
-        "in_monthly_state_idx": schema.in_monthly_state_idx(),
-        "in_annual_state_idx": schema.in_annual_state_idx(),
-        "out_monthly_state_idx": schema.out_monthly_state_idx_local(),
-        "out_annual_state_idx": schema.out_annual_state_idx_local(),
-        "out_monthly_names": monthly_names,
-        "out_annual_names": annual_names,
-        "month_lengths": schema.month_lengths,
-        "output_order": OUTPUT_ORDER,
-        "schema_sig": schema_sig,
-    }
-
-    # Standardisation (means/stds) for each output var (for de-normalisation & loss)
-    mu_out = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
-    sd_out = [float(std_dict.get(name, {}).get("std",  1.0)) for name in output_names]
-
-    # Map needed by plotting/metrics to convert back to PHYSICAL units
-    rollout_cfg["std_out"] = {
-        name: {"mean": mu_out[i], "std": sd_out[i]}
-        for i, name in enumerate(output_names)
-    }
-
-    if is_main:
-        nm = len(rollout_cfg["out_monthly_names"])
-        na = len(rollout_cfg["out_annual_names"])
-        log.info(f"[rollout_cfg] nm={nm} monthly names, na={na} annual names")
-        log.info(f"[rollout_cfg] out_monthly_state_idx (local) = {rollout_cfg['out_monthly_state_idx']}")
-        log.info(f"[rollout_cfg] out_annual_state_idx  (local) = {rollout_cfg['out_annual_state_idx']}")
-        log.info(f"[schema] sig={schema.signature()} | input_dim={input_dim} | output_dim={output_dim} "
-                f"| nm={nm} | na={na}")
+    
+    # Pass through pre location, mean and std for water balance in loss   
+    daily_forcing_order = sorted(base_train.var_names["daily_forcing"])
+    rollout_cfg.update({
+        "daily_forcing_order": daily_forcing_order,
+        "std_stats_in": {
+            "pre": {
+                "mean": float(std_dict.get("pre", {}).get("mean", 0.0)),
+                "std":  float(std_dict.get("pre", {}).get("std",  1.0)),
+            }
+        },
+    })
     
     # -------------------------------------------------------------------------
     # Loss function (base + optional balance penalties)
     # -------------------------------------------------------------------------
+    # --- Standardisation (means/stds) for each output var (for de-normalisation & loss)
+    mu_out_list = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
+    sd_out_list = [float(std_dict.get(name, {}).get("std",  1.0)) for name in output_names]
+    mu_out_t = torch.tensor(mu_out_list, dtype=torch.float32, device=DEVICE)
+    sd_out_t = torch.tensor(sd_out_list, dtype=torch.float32, device=DEVICE)
+
+    # Map needed by plotting/metrics to convert back to PHYSICAL units
+    rollout_cfg["std_out"] = {
+        name: {"mean": mu_out_list[i], "std": sd_out_list[i]}
+        for i, name in enumerate(output_names)
+    }
+
+    # --- Loss function (base + optional balance penalties)
     monthly_weights = [1.0 for _ in monthly_names]
     annual_weights  = [1.0 for _ in annual_names]
-    mu_out = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
-    sd_out = [float(std_dict.get(name, {}).get("std",  1.0))  for name in output_names]
     
     loss_fn = build_loss_fn(
         idx_monthly=idx_monthly,
@@ -516,14 +530,15 @@ def main():
         monthly_weights=monthly_weights,
         annual_weights=annual_weights,
         mb_var_idx=mb_var_idx,
-        water_balance_weight=args.water_balance_weight,
-        npp_balance_weight=args.npp_balance_weight,
-        nbp_balance_weight=args.nbp_balance_weight,
-        nbp_delta_ctotal_weight=args.nbp_delta_ctotal_weight,
-        carbon_partition_weight=args.carbon_partition_weight,
-        mu_out=mu_out, sd_out=sd_out,
+        water_balance_weight=args.water_balance,
+        npp_balance_weight=args.npp_balance,
+        nbp_balance_weight=args.nbp_balance,
+        nbp_delta_ctotal_weight=args.nbp_d_ctotal_balance,
+        carbon_partition_weight=args.carbon_partition_balance,
+        mu_out=mu_out_t,
+        sd_out=sd_out_t,
     )
-
+    
     # -------------------------------------------------------------------------
     # Model + optional DDP wrapper
     # -------------------------------------------------------------------------

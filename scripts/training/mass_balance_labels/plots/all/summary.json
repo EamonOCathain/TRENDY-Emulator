@@ -2,48 +2,48 @@
   "split": "ALL",
   "per_balance_stats_from_residuals": {
     "water_balance": {
-      "count": 4057900,
-      "mean": 0.03487518653018874,
-      "std": 1.3762043605981051,
-      "mean_abs": 1.021373921371386,
-      "mse": 1.8951547207647568
+      "count": 128543800,
+      "mean": 0.9069693668566168,
+      "std": 27.325385377934502,
+      "mean_abs": 15.92838445319364,
+      "mse": 747.4992794850584
     },
     "npp_balance": {
-      "count": 4426800,
-      "mean": -0.06557959138109909,
-      "std": 0.8638229760470949,
-      "mean_abs": 0.7557456733738591,
-      "mse": 0.7504908167525715
+      "count": 140229600,
+      "mean": 6.03792315206924e-14,
+      "std": 1.407242648487071e-12,
+      "mean_abs": 8.223077472659876e-13,
+      "mse": 1.9839775233199398e-24
     },
     "nbp_balance": {
-      "count": 4426800,
-      "mean": -0.2216711983034528,
-      "std": 1.065410983496725,
-      "mean_abs": 0.7839494472857919,
-      "mse": 1.1842386839127492
+      "count": 140229600,
+      "mean": 4.423425746007876e-08,
+      "std": 1.332527837484723e-07,
+      "mean_abs": 4.435574414873986e-08,
+      "mse": 1.9712973909761705e-14
     },
     "nbp_vs_delta_ctotal_monthly": {
-      "count": 4057900,
-      "mean": 0.0155255349997959,
-      "std": 0.9060207887588196,
-      "mean_abs": 0.622166926839813,
-      "mse": 0.8211147119001845
+      "count": 128543800,
+      "mean": 0.0005505070345599606,
+      "std": 0.015286522463637486,
+      "mean_abs": 0.010192193400879294,
+      "mse": 0.00023398082702639217
     },
     "carbon_partition_december": {
-      "count": 368900,
-      "mean": 0.0897809218876873,
-      "std": 1.3715954280160172,
-      "mean_abs": 1.225223170601079,
-      "mse": 1.8893346320894449
+      "count": 11685800,
+      "mean": 0.0023665619490768563,
+      "std": 0.012134095494038861,
+      "mean_abs": 0.00795480674755648,
+      "mse": 0.00015283688891727277
     }
   },
-  "overall_mean_penalty_weighted": null,
+  "overall_mean_penalty_weighted": 747.4996497737728,
   "per_balance_mean_penalty_weighted": {
-    "water_balance": null,
-    "npp_balance": null,
-    "nbp_balance": null,
+    "water_balance": 747.4992793528208,
+    "npp_balance": 1.9839774806699044e-24,
+    "nbp_balance": 1.9712973787417044e-14,
     "nbp_vs_delta_ctotal_monthly": null,
-    "carbon_partition_december": null
+    "carbon_partition_december": 0.00015283688833722862
   },
   "total_series_is_true_per_window_total": false
 }

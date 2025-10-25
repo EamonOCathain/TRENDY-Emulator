@@ -9,10 +9,20 @@ import matplotlib.pyplot as plt
 import csv
 from typing import Dict, List, Tuple, Any, Optional
 
+# ----------------------------
+# Small helpers
+# ----------------------------
+
 def _np_isfinite(a: np.ndarray) -> np.ndarray:
     return a[np.isfinite(a)]
 
 def _load_npz_and_meta(npz_path: Path) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+    """
+    Load a shard NPZ and its sidecar JSON (if present).
+    Returns (arrays, meta_from_sidecar_json_only).
+    NOTE: Weighted means & counts are pulled in load_split() from
+    metrics_balances.json, not here.
+    """
     data = np.load(npz_path)
     meta_path = npz_path.with_suffix(".json")
     meta: Dict[str, Any] = {}
@@ -24,27 +34,59 @@ def _load_npz_and_meta(npz_path: Path) -> Tuple[Dict[str, np.ndarray], Dict[str,
     arrays = {k: data[k] for k in data.files}
     return arrays, meta
 
+# ----------------------------
+# Ingestion & merging
+# ----------------------------
+
 def load_split(dir_for_split: Path) -> Tuple[Dict[str, np.ndarray], List[Dict[str, Any]]]:
     """
-    Load all residual arrays and metadata JSONs for a split directory.
+    Load all residual arrays and metadata for a split directory.
+    - Recursively finds shard NPZs under <split>/shard_XXX_of_YYY/.
+    - Also merges fields from metrics_balances.json in the shard directory:
+        mean_all_on, means_per_balance, year_windows.
     Returns:
       residuals_by_key: dict[name] -> concatenated np.ndarray (across shards)
-      shard_meta: list of JSON dicts per shard (if present)
+      shard_meta: list of per-shard meta dicts (year_windows & weighted means included if available)
     """
-    files = sorted(dir_for_split.glob("residuals_*.npz"))
+    files = sorted(dir_for_split.rglob("residuals_*.npz"))
     if not files:
         raise SystemExit(f"No shard npz files found in {dir_for_split}")
+
     accum: Dict[str, List[np.ndarray]] = {}
     shard_meta: List[Dict[str, Any]] = []
+
     for f in files:
         arrays, meta = _load_npz_and_meta(f)
+
+        # Try to merge shard-level metrics (same directory as npz)
+        metrics_path = f.parent / "metrics_balances.json"
+        if metrics_path.exists():
+            try:
+                metrics = json.loads(metrics_path.read_text())
+                # Merge the fields we need for weighting (be tolerant with names)
+                merged = dict(meta)  # copy of sidecar meta
+                if isinstance(metrics, dict):
+                    # expected fields from producer script
+                    if "mean_all_on" in metrics:
+                        merged["mean_all_on"] = metrics["mean_all_on"]
+                    if "means_per_balance" in metrics and isinstance(metrics["means_per_balance"], dict):
+                        merged["means_per_balance"] = metrics["means_per_balance"]
+                    # weighting key
+                    if "year_windows" in metrics and metrics["year_windows"] is not None:
+                        merged["year_windows"] = metrics["year_windows"]
+                meta = merged
+            except Exception:
+                # ignore metrics parsing errors silently
+                pass
+
         # concat residual arrays by balance name
         for k, arr in arrays.items():
             if arr.ndim == 0:
                 continue
             accum.setdefault(k, []).append(arr)
-        if meta:
-            shard_meta.append(meta)
+
+        shard_meta.append(meta)
+
     residuals = {k: np.concatenate(v, axis=0) for k, v in accum.items()}
     return residuals, shard_meta
 
@@ -70,10 +112,12 @@ def compute_residual_stats(residuals_np: Dict[str, np.ndarray]) -> Dict[str, Dic
 def combine_weighted_shard_means(shard_meta: List[Dict[str, Any]],
                                  key_chain: List[str]) -> Optional[float]:
     """
-    Combine shard-level mean_penalty using weights = year_windows.
-    key_chain lets us fetch nested per-balance means if present, e.g.:
-      key_chain=["per_balance","water_balance","mean_penalty"]
-    Returns None if insufficient metadata.
+    Combine shard-level means using weights = year_windows.
+    key_chain navigates within each shard meta dict (which has fields merged from
+    metrics_balances.json when available). The leaf is a numeric value.
+    Example:
+      overall: key_chain=["mean_all_on"]
+      per-balance: key_chain=["means_per_balance", "<balance_name>"]
     """
     num, den = 0.0, 0.0
     for m in shard_meta:
@@ -83,7 +127,7 @@ def combine_weighted_shard_means(shard_meta: List[Dict[str, Any]],
             continue
 
         # navigate to value
-        cur = m
+        cur: Any = m
         for k in key_chain:
             if not isinstance(cur, dict) or k not in cur:
                 cur = None
@@ -91,13 +135,15 @@ def combine_weighted_shard_means(shard_meta: List[Dict[str, Any]],
             cur = cur[k]
         if cur is None:
             continue
+
         try:
-            mp = float(cur)
+            val = float(cur)
         except Exception:
             continue
 
-        num += mp * float(yw)
+        num += val * float(yw)
         den += float(yw)
+
     return (num / den) if den > 0 else None
 
 def extract_per_window_totals(shard_meta: List[Dict[str, Any]]) -> Optional[np.ndarray]:
@@ -121,6 +167,10 @@ def extract_per_window_totals(shard_meta: List[Dict[str, Any]]) -> Optional[np.n
     if chunks:
         return np.concatenate(chunks, axis=0)
     return None
+
+# ----------------------------
+# Plotting
+# ----------------------------
 
 def make_boxplot_single(residuals_np: Dict[str, np.ndarray],
                         total_series: np.ndarray,
@@ -179,6 +229,10 @@ def make_hist_grid(residuals_np: Dict[str, np.ndarray],
     fig.savefig(out_png, dpi=150)
     plt.close(fig)
 
+# ----------------------------
+# Summaries
+# ----------------------------
+
 def save_summary(outdir: Path,
                  split: str,
                  stats: Dict[str, Dict[str, Optional[float]]],
@@ -211,6 +265,10 @@ def save_summary(outdir: Path,
         w.writerow(["overall_mean_penalty_weighted", overall_weighted])
         w.writerow(["total_series_is_true_per_window_total", total_series_is_true_total])
 
+# ----------------------------
+# Split pipeline
+# ----------------------------
+
 def process_split(split: str, in_dir: Path, out_dir: Path):
     split_dir = in_dir / split
     residuals_np, shard_meta = load_split(split_dir)
@@ -218,18 +276,18 @@ def process_split(split: str, in_dir: Path, out_dir: Path):
     # Per-balance residual stats (from arrays)
     stats = compute_residual_stats(residuals_np)
 
-    # Weighted overall mean (from shard JSON, if present)
-    overall_weighted = combine_weighted_shard_means(shard_meta, ["mean_penalty"])
+    # Weighted overall mean (from shard metrics, if present)
+    overall_weighted = combine_weighted_shard_means(shard_meta, ["mean_all_on"])
 
-    # Per-balance weighted means (from shard JSON, if present)
+    # Per-balance weighted means (from shard metrics, if present)
     per_balance_weighted: Dict[str, Optional[float]] = {}
     for k in residuals_np.keys():
         per_balance_weighted[k] = combine_weighted_shard_means(
-            shard_meta, ["per_balance", k, "mean_penalty"]
+            shard_meta, ["means_per_balance", k]
         )
 
     # TOTAL series
-    per_window_total = extract_per_window_totals(shard_meta)  # preferred
+    per_window_total = extract_per_window_totals(shard_meta)  # preferred, if ever present
     if per_window_total is not None and per_window_total.size > 0:
         total_series = per_window_total
         total_is_true = True
@@ -260,10 +318,14 @@ def process_split(split: str, in_dir: Path, out_dir: Path):
     # Return combined for ALL
     return residuals_np, shard_meta, total_series, total_is_true
 
+# ----------------------------
+# Main
+# ----------------------------
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--in_dir", type=Path, required=True,
-                    help="Directory with per-split folders (each holds residuals_*.npz + .json)")
+                    help="Directory with per-split folders (each holds shard_*/residuals_*.npz + metrics_balances.json)")
     ap.add_argument("--out_dir", type=Path, required=True,
                     help="Where to write merged plots & summaries")
     ap.add_argument("--splits", nargs="+",
@@ -292,12 +354,12 @@ def main():
         all_np = {k: np.concatenate(v, axis=0) for k, v in overall_residuals_accum.items()}
         all_stats = compute_residual_stats(all_np)
 
-        # Weighted overall and per-balance means from JSON
-        overall_weighted = combine_weighted_shard_means(overall_meta, ["mean_penalty"])
+        # Weighted overall and per-balance means from merged shard meta
+        overall_weighted = combine_weighted_shard_means(overall_meta, ["mean_all_on"])
         per_balance_weighted: Dict[str, Optional[float]] = {}
         for k in all_np.keys():
             per_balance_weighted[k] = combine_weighted_shard_means(
-                overall_meta, ["per_balance", k, "mean_penalty"]
+                overall_meta, ["means_per_balance", k]
             )
 
         # TOTAL series for ALL: only “true” if every split had true per-window totals

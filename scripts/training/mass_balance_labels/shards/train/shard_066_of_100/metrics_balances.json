@@ -1,0 +1,15 @@
+{
+  "split": "train",
+  "year_windows": 1615,
+  "shard_id": 66,
+  "n_shards": 100,
+  "means_per_balance": {
+    "water_balance": 757.7912999014367,
+    "npp_balance": 1.9902542265856584e-24,
+    "nbp_balance": 2.3750652393027488e-14,
+    "carbon_partition_december": 0.00015830024376076548,
+    "nbp_delta_ctotal": 0.00023662589398326623,
+    "all_on": 757.7916949859714
+  },
+  "mean_all_on": 757.7916949859714
+}

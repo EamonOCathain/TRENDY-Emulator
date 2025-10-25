@@ -401,11 +401,16 @@ def make_supervised_plus_mass_balance_loss(
         w_a    = annual_weights.to(device)
 
         # 1) Supervised terms
-        total = _supervised_terms_only(
+        L_sup = _supervised_terms_only(
             preds, labels_monthly, labels_annual,
             idx_monthly, idx_annual, loss_type,
             mlen, mmask, w_m, w_a,
         )
+        total = L_sup
+
+        # --- NEW: prepare breakdown dicts
+        raw_mb: Dict[str, float] = {}
+        w_mb:   Dict[str, float] = {}
 
         # 2) Mass-balance penalties (on destandardized preds)
         if mb_var_idx:
@@ -413,8 +418,9 @@ def make_supervised_plus_mass_balance_loss(
 
             def _bl(pred, targ):
                 return F.mse_loss(pred, targ, reduction="mean") if loss_type.lower() == "mse" \
-                       else F.l1_loss(pred, targ, reduction="mean")
+                    else F.l1_loss(pred, targ, reduction="mean")
 
+            # water
             if water_balance_weight > 0.0:
                 pw = water_balance_penalty(
                     preds_phys, mb_var_idx,
@@ -422,8 +428,12 @@ def make_supervised_plus_mass_balance_loss(
                     extra_daily=extra_daily,
                 )
                 if pw is not None:
+                    v = float(pw.detach().item())
+                    raw_mb["water_balance"] = v
+                    w_mb["water_balance"]   = water_balance_weight * v
                     total = total + water_balance_weight * pw
 
+            # npp
             if npp_balance_weight > 0.0:
                 pnpp = npp_balance_penalty(
                     preds_phys, mb_var_idx,
@@ -431,8 +441,12 @@ def make_supervised_plus_mass_balance_loss(
                     extra_daily=extra_daily,
                 )
                 if pnpp is not None:
+                    v = float(pnpp.detach().item())
+                    raw_mb["npp_balance"] = v
+                    w_mb["npp_balance"]   = npp_balance_weight * v
                     total = total + npp_balance_weight * pnpp
 
+            # nbp
             if nbp_balance_weight > 0.0:
                 pnbp = nbp_balance_penalty(
                     preds_phys, mb_var_idx,
@@ -440,8 +454,12 @@ def make_supervised_plus_mass_balance_loss(
                     extra_daily=extra_daily,
                 )
                 if pnbp is not None:
+                    v = float(pnbp.detach().item())
+                    raw_mb["nbp_balance"] = v
+                    w_mb["nbp_balance"]   = nbp_balance_weight * v
                     total = total + nbp_balance_weight * pnbp
 
+            # Δctotal vs nbp
             if nbp_delta_ctotal_weight > 0.0:
                 pdc = nbp_vs_delta_ctotal_monthly_penalty(
                     preds_phys, mb_var_idx,
@@ -449,8 +467,12 @@ def make_supervised_plus_mass_balance_loss(
                     extra_daily=extra_daily,
                 )
                 if pdc is not None:
+                    v = float(pdc.detach().item())
+                    raw_mb["nbp_vs_delta_ctotal_monthly"] = v
+                    w_mb["nbp_vs_delta_ctotal_monthly"]   = nbp_delta_ctotal_weight * v
                     total = total + nbp_delta_ctotal_weight * pdc
 
+            # partition
             if carbon_partition_weight > 0.0:
                 pcp = carbon_partition_penalty(
                     preds_phys, mb_var_idx,
@@ -458,7 +480,20 @@ def make_supervised_plus_mass_balance_loss(
                     extra_daily=extra_daily,
                 )
                 if pcp is not None:
+                    v = float(pcp.detach().item())
+                    raw_mb["carbon_partition_december"] = v
+                    w_mb["carbon_partition_december"]   = carbon_partition_weight * v
                     total = total + carbon_partition_weight * pcp
+
+        # --- NEW: publish breakdown on the function for the trainer/validator
+        try:
+            loss_fn.last_breakdown = {
+                "supervised": float(L_sup.detach().item()),
+                "weighted":   dict(w_mb),   # contributions that sum (with supervised) to total
+                "raw":        dict(raw_mb), # raw penalty values (pre-weight)
+            }
+        except Exception:
+            pass
 
         return total
 
