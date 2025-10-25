@@ -42,7 +42,8 @@ class CustomDataset(Dataset):
             tensor_type: str,        # "train" | "val" | "test"
             chunk_size: int = 70,    # locations per sample
             exclude_vars: Sequence[str] | None = None, 
-            delta_luh: bool = False  
+            delta_luh: bool = False,
+            delta_labels: bool = False,
         ):
             self.std_dict = std_dict
             self.tensor_type = tensor_type
@@ -52,6 +53,7 @@ class CustomDataset(Dataset):
             self.unfiltered_var_names = var_names
             self.delta_luh = delta_luh  
             self.exclude_vars = set(exclude_vars or [])
+            self.delta_labels = bool(delta_labels) 
 
             # Discover file layout and open datasets
             self._get_paths()
@@ -294,6 +296,54 @@ class CustomDataset(Dataset):
                 coords={"time": ds[var]["time"].values, "location": ds[var]["location"].values},
             )
         return xr.Dataset(out, coords={"time": ds["time"].values, "location": ds["location"].values})
+    
+    # -----------------------------------------------------------------------
+    # Delta Helpers
+    # -----------------------------------------------------------------------
+    @staticmethod
+    def _shift_along_time(x: torch.Tensor, pad_value: float = 0.0) -> torch.Tensor:
+        """
+        Shift one step forward along time axis (dim=1) and pad the first step.
+        Expects x of shape [C, T, L]. Returns same shape.
+        """
+        if x.dim() != 3:
+            raise ValueError(f"_shift_along_time expects [C,T,L], got shape={tuple(x.shape)}")
+        C, T, L = x.shape
+        if T == 0:
+            return x
+        out = torch.empty_like(x)
+        out[:, 0, :] = pad_value
+        if T > 1:
+            out[:, 1:, :] = x[:, :-1, :]
+        return out
+
+    @staticmethod
+    def shift_outputs_by_one(
+        monthly: torch.Tensor,
+        annual: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Shift monthly and annual labels by one step along time, zero-padding the first step.
+        Shapes preserved:
+          monthly: [C_m, 12*(Y-1), L]
+          annual:  [C_a, (Y-1),    L]
+        """
+        return (
+            CustomDataset._shift_along_time(monthly, 0.0),
+            CustomDataset._shift_along_time(annual, 0.0),
+        )
+
+    @staticmethod
+    def make_delta_outputs(
+        monthly: torch.Tensor,
+        annual: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Compute per-step deltas: delta = current - shifted.
+        First time step is 0 by construction. Shapes preserved.
+        """
+        m_shift, a_shift = CustomDataset.shift_outputs_by_one(monthly, annual)
+        return monthly - m_shift, annual - a_shift
 
     # -----------------------------------------------------------------------
     # Chunk extraction / time expansion
@@ -498,9 +548,14 @@ class CustomDataset(Dataset):
         # Build tensors
         input_tensor = self._create_input_tensor(chunk_daily, chunk_monthly, chunk_annual)
         label_tensor_monthly, label_tensor_annual = self._create_output_tensor(chunk_monthly, chunk_annual)
+        
+        # Optionally convert labels to deltas (in normalized space)
+        if self.delta_labels:
+            label_tensor_monthly, label_tensor_annual = self.make_delta_outputs(
+                label_tensor_monthly, label_tensor_annual
+            )
 
         return input_tensor, label_tensor_monthly, label_tensor_annual
-
 
 # ---------------------------------------------------------------------------
 # Utilities

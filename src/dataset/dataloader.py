@@ -45,7 +45,8 @@ def get_train_val_test(
     tl_start: Optional[int] = None,
     tl_end: Optional[int] = None,
     replace_map: Optional[Dict[str, str]] = None,
-    delta_luh: bool = False,                        
+    delta_luh: bool = False,           
+    delta_labels: bool = False,             
 ) -> dict:
     """
     Return train/val/test datasets depending on *single* carry setting.
@@ -112,9 +113,9 @@ def get_train_val_test(
             print(f"[INFO] Dataloader in transfer learning mode using years {tl_start}-{tl_end} with data from: {data_dir}")
     # Basic Mode
     else:
-        ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train", exclude_vars=exclude_vars_set, delta_luh=delta_luh)
-        ds_val   = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="val", exclude_vars=exclude_vars_set, delta_luh=delta_luh)
-        ds_test  = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="test", exclude_vars=exclude_vars_set, delta_luh=delta_luh)
+        ds_train = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="train", exclude_vars=exclude_vars_set, delta_luh=delta_luh, delta_labels=delta_labels)
+        ds_val   = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="val", exclude_vars=exclude_vars_set, delta_luh=delta_luh, delta_labels=delta_labels)
+        ds_test  = CustomDataset(data_dir=data_dir, std_dict=std_dict, tensor_type="test", exclude_vars=exclude_vars_set, delta_luh=delta_luh, delta_labels=delta_labels)
         if is_main_rank:
             print(f"[INFO] Dataloader in non-carry mode (carry_years={carry_val}) using: {data_dir}")
             

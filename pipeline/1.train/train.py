@@ -154,6 +154,10 @@ def parse_args():
     # --- Other ---
     parser.add_argument("--scan_finite", action="store_true",
                         help="Scan datasets for non-finite values before training (warns if any found)")
+    
+    # Delta
+    parser.add_argument("--delta_labels", action="store_true",
+                        help="Use delta of the labels instead of absolute values")
 
     return parser.parse_args()
 
@@ -298,7 +302,8 @@ def main():
         tl_start=tl_start_year,
         tl_end=tl_end_year,
         replace_map=replace_map,
-        delta_luh=args.delta_luh,         
+        delta_luh=args.delta_luh,
+        delta_labels=args.delta_labels,         
     )
 
     if is_main:
@@ -537,6 +542,7 @@ def main():
         carbon_partition_weight=args.carbon_partition_balance,
         mu_out=mu_out_t,
         sd_out=sd_out_t,
+        delta_labels=args.delta_labels,
     )
     
     # -------------------------------------------------------------------------

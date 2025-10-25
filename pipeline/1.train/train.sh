@@ -52,7 +52,8 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name mass_balance_train \
+  --job_name delta_test \
+  --subset_frac 0.0001 \
   --epochs 30 \
   --mb_size 2940 \
   --num_workers 8 \
@@ -63,11 +64,6 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --early_stop_patience 10 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/base_model_new_loss/checkpoints/best.pt \
-  --use_mass_balances \
-  --npp_balance 1000 \
-  --nbp_balance 1000 \
-  --nbp_d_ctotal_balance 2 \
-  --carbon_partition_balance 1
+  --delta_labels
 
 
