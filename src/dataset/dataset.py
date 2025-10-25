@@ -15,7 +15,7 @@ import sys
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
-from src.dataset.variables import var_names
+from src.dataset.variables import var_names, luh2_deltas
 from src.training.varschema import VarSchema
 
 # ---------------------------------------------------------------------------
@@ -41,7 +41,8 @@ class CustomDataset(Dataset):
             std_dict: Dict,
             tensor_type: str,        # "train" | "val" | "test"
             chunk_size: int = 70,    # locations per sample
-            exclude_vars: Sequence[str] | None = None
+            exclude_vars: Sequence[str] | None = None, 
+            delta_luh: bool = False  
         ):
             self.std_dict = std_dict
             self.tensor_type = tensor_type
@@ -49,8 +50,7 @@ class CustomDataset(Dataset):
             self.n_scenarios = 4
             self.base_path = Path(data_dir) / tensor_type
             self.unfiltered_var_names = var_names
-
-            # NEW: options
+            self.delta_luh = delta_luh  
             self.exclude_vars = set(exclude_vars or [])
 
             # Discover file layout and open datasets
@@ -61,7 +61,7 @@ class CustomDataset(Dataset):
             self._filter_var_names()
 
             # Precompute sample plan for __len__/__getitem__
-            self._plan_samples()
+            self._plan_samples() 
 
     # -----------------------------------------------------------------------
     # Paths / opening
@@ -138,9 +138,17 @@ class CustomDataset(Dataset):
         def add_unique(dst: List[str], name: str):
             if name not in dst:
                 dst.append(name)
+                
+        # safe copy so we don't mutate the global var_names
+        base_vars = {k: list(v) for k, v in self.unfiltered_var_names.items()}
+
+        # If requested, append LUH deltas into annual_forcing (dedup here)
+        if self.delta_luh:
+            extra = [v for v in luh2_deltas if v not in base_vars["annual_forcing"]]
+            base_vars["annual_forcing"].extend(extra)
 
         filtered: Dict[str, List[str]] = {}
-        for group, var_list in self.unfiltered_var_names.items():
+        for group, var_list in base_vars.items():
             keep: List[str] = []
             for v in var_list:
                 actual = v
@@ -152,11 +160,13 @@ class CustomDataset(Dataset):
                 # require std stats
                 stats = self.std_dict.get(actual)
                 if not stats or float(stats.get("std", 0.0)) <= 0.0:
-                    # drop silently; you can log if you want
                     continue
 
-                # require presence in Zarr
+                # require presence in Zarr; for LUH deltas, skip quietly if absent
                 if not present_in_any_zarr(actual):
+                    if self.delta_luh and actual in luh2_deltas:
+                        # silently skip optional LUH deltas if not present in the data
+                        continue
                     raise AssertionError(f"Zarr datasets are missing variable: {actual}")
 
                 add_unique(keep, actual)

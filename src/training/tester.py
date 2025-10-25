@@ -25,9 +25,11 @@ from torch.utils.data import DataLoader
 # ---------------------------------------------------------------------------
 from src.analysis.vis_modular import scatter_grid_from_pairs
 from src.training.carry import gather_pred_label_pairs, _rollout_core
+from src.dataset.variables import output_attributes
+
 
 # =============================================================================
-# Utilities: finite checks & small DDP helper
+# Helpers (top-level)
 # =============================================================================
 
 def _finite_mask_np(y: np.ndarray, yhat: np.ndarray) -> np.ndarray:
@@ -52,13 +54,172 @@ def _ddp_sum_int(v: int, device: torch.device) -> int:
     return int(v)
 
 
+def _to_physical_pairs(
+    pairs_norm: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    std_map: Mapping[str, Mapping[str, float]],
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """
+    Convert normalized (z-scored) pairs back to physical units using
+    std_map[var] = {"mean": μ, "std": σ}. Falls back to identity if missing.
+    """
+    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for var, (y, yhat) in pairs_norm.items():
+        stats = std_map.get(var, {})
+        mu = float(stats.get("mean", 0.0))
+        sd = float(stats.get("std", 1.0))
+        if not np.isfinite(sd) or sd == 0.0:
+            sd = 1.0
+        out[var] = (y * sd + mu, yhat * sd + mu)
+    return out
+
+
+def _save_pairs_npz(
+    out_path: Path,
+    pairs_phys: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    meta: Optional[Mapping[str, dict]] = None,
+) -> None:
+    """
+    Save pairs as an .npz with keys like '<var>__y' and '<var>__yhat'.
+    Also writes a '<file>.meta.json' with units/long names if provided.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    arrays = {}
+    for k, (y, yhat) in pairs_phys.items():
+        arrays[f"{k}__y"] = y
+        arrays[f"{k}__yhat"] = yhat
+    np.savez_compressed(out_path, **arrays)
+    if meta:
+        out_path.with_suffix(".meta.json").write_text(json.dumps(meta, indent=2))
+
+
+def clean_pairs(
+    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    min_points: int = 50
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Mask non-finite values and drop variables with too few points."""
+    cleaned: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for k, (y, p) in (pairs or {}).items():
+        m = np.isfinite(y) & np.isfinite(p)
+        if np.count_nonzero(m) >= min_points:
+            cleaned[k] = (y[m], p[m])
+    return cleaned
+
+
+def name_unit_maps(
+    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """
+    Build:
+      - name_map:   var -> display name (long_name or var)
+      - xlabel_map: display name -> 'Observed (unit)'
+      - ylabel_map: display name -> 'Predicted (unit)'
+    """
+    name_map: dict[str, str] = {}
+    xlabel_map: dict[str, str] = {}
+    ylabel_map: dict[str, str] = {}
+
+    for var in pairs.keys():
+        meta = output_attributes.get(var, {})
+        disp = meta.get("long_name", var)
+        unit = meta.get("units", "")
+        name_map[var] = disp
+        suffix = f" ({unit})" if unit else ""
+        xlabel_map[disp] = f"Observed{suffix}"
+        ylabel_map[disp] = f"Predicted{suffix}"
+    return name_map, xlabel_map, ylabel_map
+
+
+def title_for_r2(
+    pairs_display_named: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    base: str
+) -> str:
+    """Compose a title with global R² if computable (metrics run on the given arrays)."""
+    try:
+        _, g = _compute_metrics_per_variable(pairs_display_named)
+        r2 = g["R2"]
+        if math.isfinite(r2):
+            return f"{base} • R²={r2:.3f}"
+    except Exception:
+        pass
+    return base
+
+
+def save_scatter_grid(
+    *,
+    pairs_phys: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    base_title: str,
+    out_png: Path,
+    logger: Optional[logging.Logger] = None,
+    subsample_points: int = 200_000,
+) -> None:
+    """Clean, relabel with long names/units, and save a combined scatter grid."""
+    if not pairs_phys:
+        if logger:
+            logger.warning(f"[Plots] No valid pairs to plot for {out_png.name}; skipping.")
+        return
+
+    pairs_clean = clean_pairs(pairs_phys)
+    if not pairs_clean:
+        if logger:
+            logger.warning(f"[Plots] Insufficient finite pairs for {out_png.name}; skipping.")
+        return
+
+    # Build display names + axis labels
+    name_map, xlabel_map, ylabel_map = name_unit_maps(pairs_clean)
+    pairs_pretty = {name_map[k]: v for k, v in pairs_clean.items()}
+
+    title = title_for_r2(pairs_pretty, base_title)
+
+    scatter_grid_from_pairs(
+        pairs_pretty,
+        ncols=3,
+        suptitle=title,
+        out_path=out_png,
+        subsample=subsample_points,
+        density_alpha=True,
+        xlabel_by_name=xlabel_map,
+        ylabel_by_name=ylabel_map,
+        dpi=700,
+    )
+    if logger:
+        logger.info(f"[Plots] Saved → {out_png}")
+        
+def gather_pairs_phys(
+    *,
+    model,
+    test_dl,
+    device,
+    rollout_cfg,
+    carry_horizon: float,
+    std_map: Mapping[str, Mapping[str, float]],
+    max_points_per_var: int,
+    logger: Optional[logging.Logger] = None,
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Gather normalized pairs → convert to physical; on error return {}."""
+    try:
+        pairs_norm = gather_pred_label_pairs(
+            model=model,
+            test_dl=test_dl,
+            device=device,
+            rollout_cfg=rollout_cfg,
+            carry_horizon=carry_horizon,
+            max_points_per_var=max_points_per_var,
+        )
+        return _to_physical_pairs(pairs_norm, std_map)
+    except Exception as e:
+        if logger:
+            which = "teacher-forced" if carry_horizon == 0.0 else f"carry({carry_horizon}y)"
+            logger.warning(f"[Plots] Pair gathering failed for {which}: {e}", exc_info=True)
+        return {}
+
+
 # =============================================================================
-# Metrics (computed in NORMALIZED space)
+# Metrics (computed on arrays passed in; for CSV we pass PHYSICAL pairs)
 # =============================================================================
 
 def metric_r2(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Coefficient of determination R^2 on NORMALIZED values:
+    Coefficient of determination R^2:
       R^2 = 1 - sum((y - yhat)^2) / sum((y - mean(y))^2)
     Returns NaN if variance(y) == 0 or there are no finite pairs.
     """
@@ -76,8 +237,8 @@ def metric_r2(y: np.ndarray, yhat: np.ndarray) -> float:
 
 def metric_nrmse(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Normalized RMSE on NORMALIZED values:
-      nRMSE = RMSE / std(y)  (on normalized data, std≈1, so ~RMSE)
+    Normalized RMSE:
+      nRMSE = RMSE / std(y)
     Returns NaN if std(y) == 0 or no finite pairs.
     """
     m = _finite_mask_np(y, yhat)
@@ -94,7 +255,7 @@ def metric_nrmse(y: np.ndarray, yhat: np.ndarray) -> float:
 
 def metric_acc(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Anomaly Correlation Coefficient on NORMALIZED values:
+    Anomaly Correlation Coefficient:
       Pearson correlation of mean-removed series.
     Returns NaN if either centered variance is 0 or no finite pairs.
     """
@@ -113,16 +274,12 @@ def metric_acc(y: np.ndarray, yhat: np.ndarray) -> float:
     return float(num / den)
 
 
-# =============================================================================
-# CSV metrics: compute per-variable + a global equal-weight row (no NSE)
-# =============================================================================
-
 def _compute_metrics_per_variable(
     pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]
 ) -> tuple[list[dict], dict]:
     """
     Args:
-      pairs: {var_name: (y, yhat)} arrays in NORMALIZED units.
+      pairs: {var_name: (y, yhat)} arrays (assumed already in the target unit space).
 
     Returns:
       rows: list of dicts, one per variable
@@ -186,7 +343,11 @@ def write_metrics_csv(
         # Per-variable rows
         for r in var_rows_sorted:
             w.writerow([r["variable"], r["n"], _fmt(r["R2"]), _fmt(r["nRMSE"]), _fmt(r["ACC"])])
+            
 
+# =============================================================================
+# Main functions (bottom)
+# =============================================================================
 
 def run_and_save_metrics_csv(
     *,
@@ -199,44 +360,82 @@ def run_and_save_metrics_csv(
     subsample_points: int = 2_000_000,  # matches plotting default
 ) -> dict:
     """
-    Produce two CSVs (teacher-forced and carry=123y):
-      columns: variable, n, R2, nRMSE, ACC
-    All metrics computed in NORMALIZED space.
+    Produce two CSVs (teacher-forced and carry=123y), with columns:
+      variable, n, R2, nRMSE, ACC
+
+    - Pairs are gathered from the model in NORMALIZED space, then converted
+      back to PHYSICAL units using rollout_cfg["std_out"] (per-variable mean/std).
+    - Metrics are computed on PHYSICAL units.
+    - The physical pairs are also saved to NPZ for later reuse, alongside a
+      meta JSON containing units and long names from output_attributes.
     """
     test_root = run_dir / "test"
     test_root.mkdir(parents=True, exist_ok=True)
 
-    # Teacher-forced
-    tf_pairs = gather_pred_label_pairs(
+    # Map of output variable -> {"mean": μ, "std": σ}
+    std_map = (rollout_cfg or {}).get("std_out", {})
+
+    # =========================
+    # Teacher-forced (physical)
+    # =========================
+    tf_pairs_norm = gather_pred_label_pairs(
         model=model, test_dl=test_dl, device=device,
         rollout_cfg=rollout_cfg, carry_horizon=0.0,
         max_points_per_var=subsample_points,
     )
+    tf_pairs = _to_physical_pairs(tf_pairs_norm, std_map)
+
+    # Save metrics CSV
     tf_csv = test_root / "metrics_teacher_forced.csv"
     write_metrics_csv(out_csv_path=tf_csv, pairs=tf_pairs)
     if logger:
         logger.info(f"[Metrics] Wrote {tf_csv}")
 
-    # Carry=123y
-    c_pairs = gather_pred_label_pairs(
+    # Save physical pairs for reuse
+    tf_npz = test_root / "pairs_teacher_forced.npz"
+    tf_meta = {
+        var: {
+            "units": output_attributes.get(var, {}).get("units", ""),
+            "long_name": output_attributes.get(var, {}).get("long_name", var),
+        }
+        for var in tf_pairs.keys()
+    }
+    _save_pairs_npz(tf_npz, tf_pairs, tf_meta)
+    if logger:
+        logger.info(f"[Pairs] Saved physical pairs → {tf_npz}")
+
+    # =========================
+    # Carry = 123y (physical)
+    # =========================
+    c_pairs_norm = gather_pred_label_pairs(
         model=model, test_dl=test_dl, device=device,
         rollout_cfg=rollout_cfg, carry_horizon=123.0,
         max_points_per_var=subsample_points,
     )
+    c_pairs = _to_physical_pairs(c_pairs_norm, std_map)
+
     c_csv = test_root / "metrics_carry_123y.csv"
     write_metrics_csv(out_csv_path=c_csv, pairs=c_pairs)
     if logger:
         logger.info(f"[Metrics] Wrote {c_csv}")
 
-    # Return global rows for quick logging (no NSE key)
+    c_npz = test_root / "pairs_carry_123y.npz"
+    c_meta = {
+        var: {
+            "units": output_attributes.get(var, {}).get("units", ""),
+            "long_name": output_attributes.get(var, {}).get("long_name", var),
+        }
+        for var in c_pairs.keys()
+    }
+    _save_pairs_npz(c_npz, c_pairs, c_meta)
+    if logger:
+        logger.info(f"[Pairs] Saved physical pairs → {c_npz}")
+
+    # Return global rows (computed on PHYSICAL units)
     _, tf_global = _compute_metrics_per_variable(tf_pairs)
     _, c_global  = _compute_metrics_per_variable(c_pairs)
     return {"teacher_forced": tf_global, "carry_123y": c_global}
 
-
-# =============================================================================
-# Scatter grids: teacher-forced vs carry (titles now R² only)
-# =============================================================================
 
 def run_and_save_scatter_grids(
     *,
@@ -246,110 +445,61 @@ def run_and_save_scatter_grids(
     rollout_cfg,
     run_dir: Path,
     logger=None,
-    subsample_points: int = 200_000,  # safer default for plots; override if needed
+    subsample_points: int = 200_000,
 ) -> None:
     """
-    Generates two scatter grids:
+    Generates two scatter grids in PHYSICAL units:
       1) Teacher-forced (carry_horizon=0.0)
       2) Full carry (carry_horizon=123.0)
-    Robust to empty/malformed variables; falls back to counts JSON on failure.
+
+    Uses `output_attributes` for pretty names and axis units.
+    Saves combined figures under <run_dir>/test/plots/{teacher,carry}.png.
     """
     test_root = run_dir / "test"
     plots_dir = test_root / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
-    def _clean_pairs(
-        pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
-        min_points: int = 50
-    ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-        """Mask non-finite values and drop variables with too few points."""
-        cleaned: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-        for k, (y, p) in (pairs or {}).items():
-            try:
-                m = np.isfinite(y) & np.isfinite(p)
-                if np.count_nonzero(m) >= min_points:
-                    cleaned[k] = (y[m], p[m])
-            except Exception:
-                if logger:
-                    logger.warning(f"[Plots] Skipping variable {k} due to malformed arrays.", exc_info=True)
-        return cleaned
+    std_map = (rollout_cfg or {}).get("std_out", {})
 
-    def _safe_gather(carry_horizon: float) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-        """Gather pairs; on error return empty dict and log warning."""
-        try:
-            return gather_pred_label_pairs(
-                model=model, test_dl=test_dl, device=device,
-                rollout_cfg=rollout_cfg, carry_horizon=carry_horizon,
-                max_points_per_var=subsample_points,
-            )
-        except Exception as e:
-            if logger:
-                which = "teacher-forced" if carry_horizon == 0.0 else f"carry({carry_horizon}y)"
-                logger.warning(f"[Plots] Pair gathering failed for {which}: {e}", exc_info=True)
-            return {}
+    # Teacher-forced
+    tf_pairs_phys = gather_pairs_phys(
+        model=model,
+        test_dl=test_dl,
+        device=device,
+        rollout_cfg=rollout_cfg,
+        carry_horizon=0.0,
+        std_map=std_map,
+        max_points_per_var=subsample_points,
+        logger=logger,
+    )
+    save_scatter_grid(
+        pairs_phys=tf_pairs_phys,
+        base_title="Observed vs Predicted (Teacher-Forced)",
+        out_png=plots_dir / "scatter_teacher_forced.png",
+        logger=logger,
+        subsample_points=subsample_points,
+    )
 
-    def _title_for(
-        pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
-        base: str,
-    ) -> str:
-        """Compose a title with global R² if computable."""
-        try:
-            _, g = _compute_metrics_per_variable(pairs)
-            r2 = g["R2"]
-            if math.isfinite(r2):
-                return f"{base} • R²={r2:.3f}"
-        except Exception:
-            pass
-        return base
+    # Carry = 123y
+    c_pairs_phys = gather_pairs_phys(
+        model=model,
+        test_dl=test_dl,
+        device=device,
+        rollout_cfg=rollout_cfg,
+        carry_horizon=123.0,
+        std_map=std_map,
+        max_points_per_var=subsample_points,
+        logger=logger,
+    )
+    save_scatter_grid(
+        pairs_phys=c_pairs_phys,
+        base_title="Observed vs Predicted (Carry = 123 years)",
+        out_png=plots_dir / "scatter_carry_123y.png",
+        logger=logger,
+        subsample_points=subsample_points,
+    )
 
-    def _safe_plot(
-        pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
-        title: str,
-        out_path: Path,
-    ) -> None:
-        """Try to render grid; on failure save counts JSON as fallback."""
-        if not pairs:
-            if logger:
-                logger.warning(f"[Plots] No valid pairs to plot for {out_path.name}; skipping.")
-            return
-        try:
-            scatter_grid_from_pairs(
-                pairs,
-                ncols=3,
-                suptitle=title,
-                out_path=out_path,
-                subsample=subsample_points,
-                density_alpha=True,
-            )
-            if logger:
-                logger.info(f"[Plots] Saved scatter grid → {out_path}")
-        except Exception as e:
-            if logger:
-                logger.warning(
-                    f"[Plots] Failed to render {out_path.name}: {e}. "
-                    f"Writing counts snapshot instead.",
-                    exc_info=True,
-                )
-            counts = {k: int(len(v[0])) for k, v in pairs.items()}
-            out_path.with_suffix(".counts.json").write_text(json.dumps(counts, indent=2))
-
-    # 1) Teacher-forced
-    tf_pairs_raw = _safe_gather(0.0)
-    tf_pairs     = _clean_pairs(tf_pairs_raw)
-    tf_title     = _title_for(tf_pairs, "Observed vs Predicted (Teacher-Forced)")
-    _safe_plot(tf_pairs, tf_title, plots_dir / "scatter_teacher_forced.png")
-
-    # 2) Carry = 123y
-    c_pairs_raw = _safe_gather(123.0)
-    c_pairs     = _clean_pairs(c_pairs_raw)
-    c_title     = _title_for(c_pairs, "Observed vs Predicted (Carry = 123 years)")
-    _safe_plot(c_pairs, c_title, plots_dir / "scatter_carry_123y.png")
-
-
-# =============================================================================
-# Loss-only testing (teacher-forced and carry=123y)
-# =============================================================================
-
+# Main testing function
 def test(
     model: torch.nn.Module,
     loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
@@ -475,10 +625,6 @@ def test_with_and_without_carry(
 
     return {"teacher_forced": tf_out, "carry_123y": carry_out}
 
-
-# =============================================================================
-# Full suite wrapper: run both tests, DDP-reduce, log, and save JSONs
-# =============================================================================
 
 def run_and_save_test_suite(
     *,

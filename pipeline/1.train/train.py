@@ -92,6 +92,8 @@ def parse_args():
                         help="Skip testing after training.")
     parser.add_argument("--test_only", action="store_true",
                         help="Run only the testing suite (skip training/validation).")
+    parser.add_argument("--delta_luh", action="store_true",
+                        help="If set, include luh2_deltas in the annual forcing list.")
 
     # --- Optimiser & scheduler ---
     parser.add_argument("--lr", type=float, default=9e-5)
@@ -201,8 +203,6 @@ def scan_for_nonfinite(dl, max_batches=None):
 # Load and filter with standardisation stats
 # =============================================================================
 std_dict, invalid_vars = load_standardisation_only(std_dict_path)
-if invalid_vars:
-    print(f"[std] dropped {len(invalid_vars)} invalid vars: {sorted(list(invalid_vars))[:10]} ...")
 
 # =============================================================================
 # Main
@@ -289,13 +289,17 @@ def main():
     exclude_vars = set(getattr(args, "exclude_vars", []))
     
     # Build Datasets from Dataloader
-    ds_dict = get_train_val_test(std_dict, 
-                                 block_locs=70,
-                                 exclude_vars=exclude_vars, 
-                                 tl_activated=args.transfer_learn,
-                                 tl_start=tl_start_year, 
-                                 tl_end=tl_end_year, 
-                                 replace_map=replace_map)
+    # where you call get_train_val_test(...)
+    ds_dict = get_train_val_test(
+        std_dict,
+        block_locs=70,
+        exclude_vars=exclude_vars,
+        tl_activated=args.transfer_learn,
+        tl_start=tl_start_year,
+        tl_end=tl_end_year,
+        replace_map=replace_map,
+        delta_luh=args.delta_luh,         
+    )
 
     if is_main:
         print("Number of location chunks in full dataset:",
@@ -463,7 +467,7 @@ def main():
             print("[mass-balance] missing variables:", missing)
 
     # -------------------------------------------------------------------------
-    # Rollout configuration (calendar only; no carry)
+    # Rollout configuration (calendar only; no carry) + standardisation vectors
     # -------------------------------------------------------------------------
     rollout_cfg = {
         "in_monthly_state_idx": schema.in_monthly_state_idx(),
@@ -477,6 +481,16 @@ def main():
         "schema_sig": schema_sig,
     }
 
+    # Standardisation (means/stds) for each output var (for de-normalisation & loss)
+    mu_out = [float(std_dict.get(name, {}).get("mean", 0.0)) for name in output_names]
+    sd_out = [float(std_dict.get(name, {}).get("std",  1.0)) for name in output_names]
+
+    # Map needed by plotting/metrics to convert back to PHYSICAL units
+    rollout_cfg["std_out"] = {
+        name: {"mean": mu_out[i], "std": sd_out[i]}
+        for i, name in enumerate(output_names)
+    }
+
     if is_main:
         nm = len(rollout_cfg["out_monthly_names"])
         na = len(rollout_cfg["out_annual_names"])
@@ -484,7 +498,7 @@ def main():
         log.info(f"[rollout_cfg] out_monthly_state_idx (local) = {rollout_cfg['out_monthly_state_idx']}")
         log.info(f"[rollout_cfg] out_annual_state_idx  (local) = {rollout_cfg['out_annual_state_idx']}")
         log.info(f"[schema] sig={schema.signature()} | input_dim={input_dim} | output_dim={output_dim} "
-                 f"| nm={nm} | na={na}")
+                f"| nm={nm} | na={na}")
     
     # -------------------------------------------------------------------------
     # Loss function (base + optional balance penalties)
@@ -777,6 +791,8 @@ def main():
                     subsample_points=200_000,
                 ), "full_plots")
 
+    if is_main:
+        log.info("Succesfully completed training: %s", run_dir)
 
 # =============================================================================
 # Entrypoint

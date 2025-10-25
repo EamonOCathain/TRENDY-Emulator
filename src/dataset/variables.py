@@ -112,11 +112,28 @@ luh2_states = [
     "secma",
 ]
 
+luh2_deltas = [
+    "primf_delta",
+    "primn_delta",
+    "secdf_delta",
+    "secdn_delta",
+    "urban_delta",
+    "c3ann_delta",
+    "c4ann_delta",
+    "c3per_delta",
+    "c4per_delta",
+    "c3nfx_delta",
+    "pastr_delta",
+    "range_delta",
+    "secmb_delta",
+    "secma_delta",
+]
+
 # Annual LUH2 management / interventions
 luh2_management = [
     "fertl_c3ann",
     "irrig_c3ann",
-    "crpbf_c3ann",
+    "crpbf_c3ann",      # Blank variable
     "fertl_c4ann",
     "irrig_c4ann",
     "crpbf_c4ann",
@@ -128,14 +145,14 @@ luh2_management = [
     "crpbf_c4per",
     "fertl_c3nfx",
     "irrig_c3nfx",
-    "crpbf_c3nfx",
-    "fharv_c3per",
+    "crpbf_c3nfx",      # Blank variable
+    "fharv_c3per",      # Blank variable
     "fharv_c4per",
     "flood",
     "rndwd",
-    "fulwd",
-    "combf",
-    "crpbf_total",
+    "fulwd",            # Blank variable
+    "combf",            # Blank variable
+    "crpbf_total",      # Blank variable
 ]
 
 # Annual population, CO2
@@ -216,6 +233,109 @@ var_names = {
 
     # All variables
     "all": all_vars,
+}
+
+# Units and Long Names for Outputs
+output_attributes = {
+    # ---- Carbon fluxes (kg m-2 s-1)
+    "nbp": {
+        "units": "kg m-2 s-1",
+        "long_name": "Net Biome Productivity",
+        "standard_name": "net_biome_productivity_of_biomass_expressed_as_carbon_mass_flux",
+    },
+    "gpp": {
+        "units": "kg m-2 s-1",
+        "long_name": "Gross Primary Production",
+        "standard_name": "gross_primary_productivity_of_biomass_expressed_as_carbon_mass_flux",
+    },
+    "npp": {
+        "units": "kg m-2 s-1",
+        "long_name": "Net Primary Production",
+        "standard_name": "net_primary_productivity_of_biomass_expressed_as_carbon_mass_flux",
+    },
+    "ra": {
+        "units": "kg m-2 s-1",
+        "long_name": "Autotrophic Respiration",
+        "standard_name": "autotrophic_respiration_carbon_mass_flux",
+    },
+    "rh": {
+        "units": "kg m-2 s-1",
+        "long_name": "Heterotrophic Respiration",
+        "standard_name": "heterotrophic_respiration_carbon_mass_flux",
+    },
+    "fLuc": {
+        "units": "kg m-2 s-1",
+        "long_name": "Land-Use Change Emissions",
+        "standard_name": "land_use_change_carbon_mass_flux",
+    },
+    "fFire": {
+        "units": "kg m-2 s-1",
+        "long_name": "Fire Emissions",
+        "standard_name": "fire_carbon_mass_flux",
+    },
+
+    # ---- Water fluxes (kg m-2 s-1)
+    "mrro": {
+        "units": "kg m-2 s-1",
+        "long_name": "Total Runoff",
+        "standard_name": "total_runoff_flux",
+    },
+    "evapotrans": {
+        "units": "kg m-2 s-1",
+        "long_name": "Evapotranspiration",
+        "standard_name": "evapotranspiration_flux",
+    },
+
+    # ---- Carbon stocks / states (kg m-2)
+    "cLitter": {
+        "units": "kg m-2",
+        "long_name": "Carbon in Litter Pool",
+        "standard_name": "carbon_mass_content_of_litter",
+    },
+    "cSoil": {
+        "units": "kg m-2",
+        "long_name": "Carbon in Soil Pool",
+        "standard_name": "carbon_mass_content_of_soil",
+    },
+    "cVeg": {
+        "units": "kg m-2",
+        "long_name": "Carbon in Vegetation",
+        "standard_name": "carbon_mass_content_of_vegetation",
+    },
+    "cTotal": {
+        "units": "kg m-2",
+        "long_name": "Total Carbon in Ecosystem",
+        "standard_name": "carbon_mass_content_of_ecosystem",
+    },
+    "cTotal_monthly": {
+        "units": "kg m-2",
+        "long_name": "Total Carbon in Ecosystem",
+        "standard_name": "carbon_mass_content_of_ecosystem",
+    },
+    
+    # ---- Water state (kg m-2)
+    "mrso": {
+        "units": "kg m-2",
+        "long_name": "Total Soil Moisture Content",
+        "standard_name": "soil_moisture_content",
+    },
+
+    # ---- Dimensionless index
+    "lai": {
+        "units": "m2 m-2",
+        "long_name": "Leaf Area Index",
+        "standard_name": "leaf_area_index",
+    },
+    "lai_avh15c1": {
+        "units": "m2 m-2",
+        "long_name": "Leaf Area Index",
+        "standard_name": "leaf_area_index",
+    },
+    "lai_modis": {
+        "units": "m2 m-2",
+        "long_name": "Leaf Area Index",
+        "standard_name": "leaf_area_index",
+    },
 }
 
 # ---------------------------------------------------------------------------

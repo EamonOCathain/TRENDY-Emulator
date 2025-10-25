@@ -15,7 +15,7 @@ import sys
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
-from src.dataset.variables import var_names
+from src.dataset.variables import var_names, luh2_deltas
 from src.training.varschema import VarSchema
 
 # ---------------------------------------------------------------------------
@@ -46,6 +46,7 @@ class CustomDatasetTL(Dataset):
         tl_start: int | None = None,
         tl_end: int | None = None,
         replace_map: Dict[str, str] | None = None,
+        delta_luh: bool = False
     ):
         self.std_dict = std_dict
         self.tensor_type = tensor_type
@@ -53,13 +54,14 @@ class CustomDatasetTL(Dataset):
         self.n_scenarios = 1
         self.base_path = Path(data_dir) / tensor_type
         self.unfiltered_var_names = var_names
+        self.delta_luh = delta_luh
 
         # Variabes to exclude from CLI
         self.exclude_vars = set(exclude_vars or [])
 
         # Transfer learning flags
         self.transfer_learn = bool(tl_activated)
-        self.tl_start = int(tl_start) if tl_start is not None else None
+        self.tl_start =  int(tl_start) if tl_start is not None else None
         self.tl_end   = int(tl_end)   if tl_end   is not None else None
         self.replace_map = replace_map
         # TL Guards
@@ -221,27 +223,54 @@ class CustomDatasetTL(Dataset):
             
     def _filter_var_names(self) -> None:
         """
-        Build filtered var lists with a single replace_map applied to *all* groups
-        (inputs and outputs). We validate presence/stats on the mapped names.
+        Build filtered var lists with a replace_map applied ONLY to label groups
+        (monthly_fluxes, monthly_states, annual_states). Forcing groups are never
+        replaced (so LUH deltas, etc. remain untouched).
         """
         replace_map = self.replace_map or {}
 
+        # Safe copy so we don't mutate the global dict
+        base_vars = {k: list(v) for k, v in self.unfiltered_var_names.items()}
+
+        # Optionally add LUH deltas into annual_forcing (dedup here)
+        if self.delta_luh:
+            extra = [v for v in luh2_deltas if v not in base_vars.get("annual_forcing", [])]
+            base_vars.setdefault("annual_forcing", []).extend(extra)
+
+        # Which groups are "labels" (where we allow replacements)?
+        label_groups = {"monthly_fluxes", "monthly_states", "annual_states"}
+
         filtered: Dict[str, List[str]] = {}
-        for group, var_list in self.unfiltered_var_names.items():
+        for group, var_list in base_vars.items():
             keep: List[str] = []
             for logical in var_list:
-                actual = replace_map.get(logical, logical)
+                # Apply replace_map ONLY on labels; never on forcings
+                actual = replace_map.get(logical, logical) if group in label_groups else logical
 
-                # honor excludes on either form
+                # Honor excludes on either name
                 if logical in self.exclude_vars or actual in self.exclude_vars:
                     continue
 
-                # validate mapped name
-                if not self._has_valid_stats(actual):
+                # Require valid stats
+                stats = self.std_dict.get(actual)
+                try:
+                    if (
+                        stats is None
+                        or not np.isfinite(float(stats.get("mean", np.nan)))
+                        or not np.isfinite(float(stats.get("std", np.nan)))
+                        or float(stats["std"]) <= 0.0
+                    ):
+                        continue
+                except Exception:
                     continue
+
+                # Presence in Zarrs; for LUH deltas, skip quietly if missing
                 if not self._present_in_any_zarr(actual):
+                    if self.delta_luh and group == "annual_forcing" and logical in luh2_deltas:
+                        # optional LUH delta not present → skip without error
+                        continue
                     raise AssertionError(
-                        f"Zarr datasets are missing variable after replacement: {actual}"
+                        f"Zarr datasets are missing variable{(' after replacement' if actual != logical else '')}: {actual}"
                     )
 
                 self._add_unique(keep, actual)
@@ -250,7 +279,6 @@ class CustomDatasetTL(Dataset):
 
         # Freeze final filtered lists (sorted for stable channel layout)
         self.var_names = filtered
-
         self.input_order = (
             sorted(self.var_names.get("daily_forcing", [])) +
             sorted(self.var_names.get("monthly_forcing", [])) +
@@ -272,7 +300,7 @@ class CustomDatasetTL(Dataset):
         self.input_index  = {v: i for i, v in enumerate(self.input_order)}
         self.output_index = {v: i for i, v in enumerate(self.output_order)}
 
-        # Schema mirrors the *mapped* channel names the model will see/produce
+        # Schema mirrors the mapped channel names the model will see/produce
         self.schema = VarSchema(
             daily_forcing   = sorted(self.var_names.get("daily_forcing", [])),
             monthly_forcing = sorted(self.var_names.get("monthly_forcing", [])),

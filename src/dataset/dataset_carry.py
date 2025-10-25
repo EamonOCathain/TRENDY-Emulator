@@ -1,29 +1,21 @@
 # src/dataset/dataset_carry.py
 from __future__ import annotations
 
-# ---------------------------------------------------------------------------
-# Imports
-# ---------------------------------------------------------------------------
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Sequence
 
 import numpy as np
 import torch
 import xarray as xr
 from torch.utils.data import Dataset
 
-# Project root on path (unchanged)
 import sys
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
-from src.dataset.variables import var_names
+from src.dataset.variables import var_names, luh2_deltas
 from src.training.varschema import VarSchema
 
-
-# ---------------------------------------------------------------------------
-# Dataset (carry-optimised)
-# ---------------------------------------------------------------------------
 
 class CarryBlockDataset(Dataset):
     """
@@ -48,18 +40,22 @@ class CarryBlockDataset(Dataset):
         std_dict: Dict,
         tensor_type: str,
         block_locs: int = 512,
+        delta_luh: bool = False,
+        exclude_vars: Sequence[str] | None = None,
     ):
         self.std_dict    = std_dict
         self.tensor_type = tensor_type
         self.block_locs  = int(block_locs)
         self.base_path   = Path(data_dir) / tensor_type
-        self.var_names_all = var_names  # same global variable map used elsewhere
+        self.unfiltered_var_names = var_names  # same source as other datasets
+        self.delta_luh  = bool(delta_luh)
+        self.exclude_set = set(exclude_vars or [])
 
         # ------------------------- Resolve split paths -------------------------
         if tensor_type == "train":
-            self.daily_paths =   [self.base_path / "train_location_train_period/daily.zarr"]
+            self.daily_paths   = [self.base_path / "train_location_train_period/daily.zarr"]
             self.monthly_paths = [self.base_path / "train_location_train_period/monthly.zarr"]
-            self.annual_paths =  [self.base_path / "train_location_train_period/annual.zarr"]
+            self.annual_paths  = [self.base_path / "train_location_train_period/annual.zarr"]
 
         elif tensor_type == "val":
             self.daily_paths = [
@@ -98,32 +94,95 @@ class CarryBlockDataset(Dataset):
             raise ValueError(f"Unknown tensor_type: {tensor_type!r}")
 
         # ---------------------------- Open Zarrs ------------------------------
-        # Open group handles (no chunk reads yet); decode_times disabled for speed.
         opts = dict(consolidated=True, decode_times=False, chunks={})
         self.daily   = [xr.open_zarr(p, **opts) for p in self.daily_paths]
         self.monthly = [xr.open_zarr(p, **opts) for p in self.monthly_paths]
         self.annual  = [xr.open_zarr(p, **opts) for p in self.annual_paths]
+        self._all    = self.daily + self.monthly + self.annual
 
         # -------------------------- Plan sample grid --------------------------
         self._plan_samples()  # builds self.meta = [(ds_idx, scenario, loc0, loc1), ...]
 
-        # ------------------ Build & save filtered variable lists --------------
-        df   = self._filter_by_stats(sorted(self.var_names_all["daily_forcing"]),   "daily")
-        mf   = self._filter_by_stats(sorted(self.var_names_all["monthly_forcing"]), "monthly")
-        ms   = self._filter_by_stats(sorted(self.var_names_all["monthly_states"]),  "monthly")
-        af   = self._filter_by_stats(sorted(self.var_names_all["annual_forcing"]),  "annual")
-        a_s  = self._filter_by_stats(sorted(self.var_names_all["annual_states"]),   "annual")
-        mfx  = self._filter_by_stats(sorted(self.var_names_all["monthly_fluxes"]),  "monthly")
+        # ---------------------- Build filtered variable lists -----------------
+        self._filter_var_names()  # sets self.* lists and self.schema
 
-        # Persist lists for __getitem__
-        self.daily_forc     = df
-        self.monthly_forc   = mf
-        self.monthly_state  = ms
-        self.annual_forc    = af
-        self.annual_state   = a_s
-        self.monthly_fluxes = mfx
+        # Optional: expose canonical orders (if referenced downstream)
+        self.input_order    = self.schema.input_order()
+        self.output_order_m = self.schema.out_monthly_names()
+        self.output_order_a = self.schema.out_annual_names()
 
-        # Var schema (useful elsewhere; preserves channel orders)
+    # -----------------------------------------------------------------------
+    # Filtering / schema (harmonised with other datasets)
+    # -----------------------------------------------------------------------
+    def _present_in_any_zarr(self, name: str) -> bool:
+        return any(name in ds.data_vars for ds in self._all)
+
+    def _has_valid_stats(self, name: str) -> bool:
+        stats = self.std_dict.get(name)
+        try:
+            return (
+                stats is not None
+                and np.isfinite(float(stats.get("mean", np.nan)))
+                and np.isfinite(float(stats.get("std",  np.nan)))
+                and float(stats["std"]) > 0.0
+            )
+        except Exception:
+            return False
+
+    def _add_unique(self, dst: List[str], name: str):
+        if name not in dst:
+            dst.append(name)
+
+    def _filter_var_names(self) -> None:
+        """
+        Build filtered var lists by:
+        - (optionally) extending annual_forcing with LUH deltas,
+        - requiring valid std stats,
+        - requiring presence in the Zarr stores (LUH deltas skipped quietly if missing),
+        - applying exclude list.
+        Then build stable input/output orders and a VarSchema snapshot.
+        """
+        # Safe copy so we don't mutate global map
+        base_vars = {k: list(v) for k, v in self.unfiltered_var_names.items()}
+
+        # If requested, append LUH deltas into annual_forcing (dedup here)
+        if self.delta_luh:
+            extra = [v for v in luh2_deltas if v not in base_vars["annual_forcing"]]
+            base_vars["annual_forcing"].extend(extra)
+
+        filtered: Dict[str, List[str]] = {}
+        for group, var_list in base_vars.items():
+            keep: List[str] = []
+            for v in var_list:
+                actual = v
+
+                # respect excludes
+                if actual in self.exclude_set:
+                    continue
+
+                # require std stats
+                if not self._has_valid_stats(actual):
+                    continue
+
+                # require presence in Zarr; for LUH deltas, skip quietly if absent
+                if not self._present_in_any_zarr(actual):
+                    if self.delta_luh and group == "annual_forcing" and actual in luh2_deltas:
+                        continue
+                    raise AssertionError(f"Zarr datasets are missing variable: {actual}")
+
+                self._add_unique(keep, actual)
+
+            filtered[group] = keep
+
+        # Persist lists for __getitem__ (sorted for stable channel layout)
+        self.daily_forc     = sorted(filtered["daily_forcing"])
+        self.monthly_forc   = sorted(filtered["monthly_forcing"])
+        self.monthly_state  = sorted(filtered["monthly_states"])
+        self.annual_forc    = sorted(filtered["annual_forcing"])
+        self.annual_state   = sorted(filtered["annual_states"])
+        self.monthly_fluxes = sorted(filtered["monthly_fluxes"])
+
+        # Var schema (matches other datasets)
         self.schema = VarSchema(
             daily_forcing   = list(self.daily_forc),
             monthly_forcing = list(self.monthly_forc),
@@ -134,22 +193,13 @@ class CarryBlockDataset(Dataset):
             month_lengths   = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
         )
 
-        # Optional: expose canonical orders (if referenced downstream)
-        self.input_order    = self.schema.input_order()
-        self.output_order_m = self.schema.out_monthly_names()
-        self.output_order_a = self.schema.out_annual_names()
-
     # -----------------------------------------------------------------------
     # Planning & length
     # -----------------------------------------------------------------------
-
     def _plan_samples(self) -> None:
         """
         Build a flat index mapping for samples:
           meta[i] = (dataset_idx, scenario, start_loc, end_loc)
-
-        We tile each Zarr dataset into blocks of locations (≈ block_locs),
-        and replicate for each available scenario.
         """
         self.meta: List[Tuple[int, int, int, int]] = []
         for ds_idx, ds_d in enumerate(self.daily):
@@ -168,32 +218,12 @@ class CarryBlockDataset(Dataset):
         return len(self.meta)
 
     # -----------------------------------------------------------------------
-    # Stats helpers
+    # Stats helpers (keep original grouped/flat compatibility)
     # -----------------------------------------------------------------------
-
-    def _has_stats(self, name: str, group: str | None = None) -> bool:
-        """
-        True if stats for 'name' exist either under std_dict[group][name] or std_dict[name].
-        """
-        if group is not None and isinstance(self.std_dict.get(group), dict):
-            if name in self.std_dict[group]:
-                return True
-        return name in self.std_dict
-
-    def _filter_by_stats(self, names: List[str], group: str | None) -> List[str]:
-        """
-        Keep only variables that have stats; return missing list silently (no error).
-        """
-        keep = [v for v in names if self._has_stats(v, group)]
-        # (You can log 'missing' here if desired)
-        # missing = sorted(set(names) - set(keep))
-        return keep
-
     def _std(self, arr: np.ndarray, name: str, group: str | None = None) -> np.ndarray:
         """
         Standardize with stats that may be stored either flat (std_dict[name]) or
-        grouped (std_dict[group][name]).
-        If std <= 0 or not finite, return zeros (avoid NaNs).
+        grouped (std_dict[group][name]). If std <= 0 or not finite, return zeros.
         """
         stats = None
         if group is not None and isinstance(self.std_dict.get(group), dict):
@@ -202,33 +232,26 @@ class CarryBlockDataset(Dataset):
             stats = self.std_dict.get(name)
 
         if stats is None:
-            available = list(self.std_dict.keys())
-            raise KeyError(
-                f"No stats for '{name}' (group={group!r}). "
-                f"Available top-level keys: {available[:10]}{'...' if len(available) > 10 else ''}"
-            )
+            # Fallback: zeros (robust in long jobs)
+            return np.zeros_like(arr, dtype=np.float32)
 
         mean = stats.get("mean", 0.0)
         std  = stats.get("std",  None)
-        if std is None:
-            raise KeyError(f"Stats for '{name}' missing 'std' (group={group!r}): {stats}")
-
-        if not np.isfinite(std) or std <= 0:
+        if std is None or not np.isfinite(std) or std <= 0:
             return np.zeros_like(arr, dtype=np.float32)
 
         return ((arr - mean) / std).astype(np.float32, copy=False)
 
     # -----------------------------------------------------------------------
-    # Item creation
+    # Item creation (unchanged carry + block logic)
     # -----------------------------------------------------------------------
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int):
         """
         Return (inputs, labels_monthly, labels_annual) for a single sample.
 
-        Reads one scenario and a contiguous location block across *all* years
-        from the chosen dataset index, builds standardized inputs/labels, and
-        expands monthly/annual inputs to daily resolution for the model input.
+        Reads one scenario and a contiguous location block across *all* years,
+        builds standardized inputs/labels, and expands monthly/annual inputs
+        to daily resolution for the model input.
         """
         ds_idx, scenario, loc0, loc1 = self.meta[idx]
 
@@ -248,7 +271,7 @@ class CarryBlockDataset(Dataset):
         annual_forc   = self.annual_forc
         annual_state  = self.annual_state
 
-        # Accumulators across years (we concatenate at the end)
+        # Accumulators across years
         in_daily_chunks:   List[np.ndarray] = []
         in_monthly_chunks: List[np.ndarray] = []
         in_annual_chunks:  List[np.ndarray] = []
@@ -260,13 +283,12 @@ class CarryBlockDataset(Dataset):
         day2m = np.repeat(np.arange(12, dtype=np.int64), mlens)
 
         for y in range(Y):
-            # ------------------ Slice this year's data ------------------
-            d_y = Dd.isel(time=slice(y * 365, (y + 1) * 365))   # daily year window
-            m_y = Dm.isel(time=slice(y * 12,  (y + 1) * 12))    # monthly year window
-            a_y = Da.isel(time=slice(y,       y + 1))           # annual single step
+            # Year slices
+            d_y = Dd.isel(time=slice(y * 365, (y + 1) * 365))
+            m_y = Dm.isel(time=slice(y * 12,  (y + 1) * 12))
+            a_y = Da.isel(time=slice(y,       y + 1))
 
-            # ---------------- Monthly inputs (forcings + states t-1) ----------------
-            # Shift monthly states by 1 month (t-1) within the year; Jan gets zeros.
+            # --- Monthly inputs (forcings + states t-1) ---
             m_states_t1_np = {}
             for v in monthly_state:
                 arr = m_y[v].transpose("time", "location").values  # [12, L]
@@ -274,15 +296,13 @@ class CarryBlockDataset(Dataset):
                 shf[0, :] = 0.0
                 m_states_t1_np[v] = shf
 
-            # Standardize monthly forcings & shifted states separately
             m_std = {}
             for v in monthly_forc:
                 m_std[v] = self._std(m_y[v].transpose("time", "location").values, v, "monthly")
             for v in monthly_state:
                 m_std[v] = self._std(m_states_t1_np[v], v, "monthly")
 
-            # ---------------- Annual inputs (forcings + states t-1) -----------------
-            # Shift annual states by 1 year (t-1) INSIDE this 1-year window => zeros.
+            # --- Annual inputs (forcings + states t-1) ---
             a_states_t1_np = {}
             for v in annual_state:
                 a_states_t1_np[v] = np.zeros_like(a_y[v].transpose("time", "location").values)  # [1, L]
@@ -293,46 +313,31 @@ class CarryBlockDataset(Dataset):
             for v in annual_state:
                 a_std[v] = self._std(a_states_t1_np[v], v, "annual")
 
-            # ---------------- Daily inputs (forcings only) --------------------------
-            d_std = {
-                v: self._std(d_y[v].transpose("time", "location").values, v, "daily")
-                for v in daily_forc
-            }
+            # --- Daily inputs (forcings only) ---
+            d_std = {v: self._std(d_y[v].transpose("time", "location").values, v, "daily")
+                     for v in daily_forc}
 
-            # ---------------- Expand month/annual to daily --------------------------
+            # --- Expand month/annual to daily ---
             Lloc = int(d_y.sizes["location"])
-
-            # Monthly: [12, L] → index to [365, L] by repeating per month length
             m_daily_stacked = np.stack(
                 [m_std[v].reshape(12, Lloc)[day2m, :] for v in (monthly_forc + monthly_state)],
                 axis=0,
             )  # [Cm, 365, L]
-
-            # Annual: [1, L] → repeat 365 days → [365, L]
             a_daily_stacked = np.stack(
                 [np.repeat(a_std[v], 365, axis=0) for v in (annual_forc + annual_state)],
                 axis=0,
             )  # [Ca, 365, L]
-
-            # Daily forcings already daily: [365, L]
             d_daily_stacked = np.stack([d_std[v] for v in daily_forc], axis=0)  # [Cd, 365, L]
 
-            # Append inputs (per-year)
             in_daily_chunks.append(d_daily_stacked)
             in_monthly_chunks.append(m_daily_stacked)
             in_annual_chunks.append(a_daily_stacked)
 
-            # --------------------------- Labels -------------------------------------
-            # Monthly labels: monthly_fluxes + monthly_states (no shift)
-            m_lab_std = {
-                v: self._std(m_y[v].transpose("time", "location").values, v, "monthly")
-                for v in (self.monthly_fluxes + monthly_state)
-            }
-            # Annual labels: annual_states (no shift)
-            a_lab_std = {
-                v: self._std(a_y[v].transpose("time", "location").values, v, "annual")
-                for v in annual_state
-            }
+            # --- Labels (no shifts) ---
+            m_lab_std = {v: self._std(m_y[v].transpose("time", "location").values, v, "monthly")
+                         for v in (self.monthly_fluxes + monthly_state)}
+            a_lab_std = {v: self._std(a_y[v].transpose("time", "location").values, v, "annual")
+                         for v in annual_state}
 
             out_m = np.stack([m_lab_std[v] for v in (self.monthly_fluxes + monthly_state)], axis=0)  # [nm, 12, L]
             out_a = np.stack([a_lab_std[v] for v in annual_state], axis=0)                           # [na,  1, L]
@@ -340,7 +345,7 @@ class CarryBlockDataset(Dataset):
             out_m_chunks.append(out_m)
             out_a_chunks.append(out_a)
 
-        # --------------------- Concatenate years along time -------------------------
+        # --- Concatenate years along time ---
         in_daily   = np.concatenate(in_daily_chunks,   axis=1)  # [Cd, 365*Y, L]
         in_monthly = np.concatenate(in_monthly_chunks, axis=1)  # [Cm, 365*Y, L]
         in_annual  = np.concatenate(in_annual_chunks,  axis=1)  # [Ca, 365*Y, L]
@@ -349,12 +354,11 @@ class CarryBlockDataset(Dataset):
         out_m_all = np.concatenate(out_m_chunks, axis=1)  # [nm, 12*Y, L]
         out_a_all = np.concatenate(out_a_chunks, axis=1)  # [na,  1*Y, L]
 
-        # ------------------------------ Sanity checks ------------------------------
+        # Sanity checks
         assert inputs.ndim == 3 and inputs.shape[1] == 365 * Y and inputs.shape[2] == L
         assert out_m_all.ndim == 3 and out_m_all.shape[1] == 12 * Y and out_m_all.shape[2] == L
         assert out_a_all.ndim == 3 and out_a_all.shape[1] == 1 * Y  and out_a_all.shape[2] == L
 
-        # -------------------------- Convert to torch -------------------------------
         return (
             torch.from_numpy(inputs.astype(np.float32,   copy=False)),
             torch.from_numpy(out_m_all.astype(np.float32, copy=False)),

@@ -12,13 +12,32 @@ import cartopy.feature as cfeature
 from pathlib import Path
 import re
 import sys
-from matplotlib.ticker import FixedLocator, FixedFormatter  # add at top
-
+from matplotlib.ticker import FixedLocator, FixedFormatter, ScalarFormatter, FuncFormatter
 
 project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
 sys.path.append(str(project_root))
 
 from src.analysis.process_arrays import find_var_groups
+
+# =============================================================================
+#  Jelpers
+# =============================================================================
+
+def _smart_sci_formatter() -> FuncFormatter:
+    """
+    Formatter for axes ticks:
+      - Uses scientific notation if |x| >= 9999 or |x| < 0.001
+      - Otherwise prints up to 4 decimal digits, stripping trailing zeros.
+    """
+    def fmt(x, pos):
+        if x == 0:
+            return "0"
+        absx = abs(x)
+        if absx >= 9999 or absx < 0.001:
+            return f"{x:.2e}"   # scientific, 2 significant digits
+        else:
+            return f"{x:.4f}".rstrip("0").rstrip(".")
+    return FuncFormatter(fmt)
 
 # =========================
 # Public types & registry
@@ -70,7 +89,7 @@ class PlotSpec:
     show_borders: bool = False        
 
     # Saving configs
-    dpi: int = 300
+    dpi: int = 500
     bbox_inches: str = "tight"
     transparent: bool = False
 
@@ -551,43 +570,91 @@ def scatter_grid_from_pairs(
     ncols: int = 3,
     suptitle: Optional[str] = None,
     out_path: Optional[str | Path] = None,
-    subsample: Optional[int] = 200_000,   # light memory guard
+    subsample: Optional[int] = 200_000,
     density_alpha: bool = True,
+    xlabel_by_name: Optional[Dict[str, str]] = None,
+    ylabel_by_name: Optional[Dict[str, str]] = None,
+    dpi: int = 600,  
 ) -> Tuple[plt.Figure, np.ndarray] | None:
     """
     Render a grid of per-variable scatter plots from {name: (y_obs, y_pred)}.
+    Saves only the combined figure (if out_path is given). Does NOT save
+    individual subplots.
+
+    xlabel_by_name / ylabel_by_name can supply axis labels per panel title.
     """
     items: List[Tuple[np.ndarray, np.ndarray]] = []
     specs: List[PlotSpec] = []
+    names: List[str] = []
+
+    xlabel_by_name = xlabel_by_name or {}
+    ylabel_by_name = ylabel_by_name or {}
+
     for name, (y, yhat) in pairs.items():
+        names.append(name)
         items.append((y, yhat))
         specs.append(PlotSpec(
             kind="scatter",
-            title=name,
-            xlabel="Observed",
-            ylabel="Predicted",
+            title=name,  # titles are not bold
+            xlabel=xlabel_by_name.get(name, "Observed"),
+            ylabel=ylabel_by_name.get(name, "Predicted"),
             add_1to1=True,
             equal_axes=True,
             show_r2=True,
-            s=6.0,
-            alpha=0.25,  # fallback when density_alpha=False
+            s=4.0,
+            alpha=0.10,
             extras={
                 "density_alpha": density_alpha,
-                "bins": 200,
-                "alpha_min": 0.05,
-                "alpha_max": 0.9,
+                "bins": 300,
+                "alpha_min": 0.08,
+                "alpha_max": 0.95,
+                "alpha_gamma": 2.3,
                 "subsample": subsample,
+                # no bold titles
             },
         ))
+
     use_cols = 1 if len(items) == 1 else ncols
-    return stack_plots(
-        items,
-        specs=specs,
-        n_cols=use_cols,
-        figsize_per_cell=(5.0, 4.0),
-        suptitle=suptitle,
-        out_path=out_path,
-    )
+
+    # Render once
+    out = stack_plots(
+            items,
+            specs=specs,
+            n_cols=use_cols,
+            figsize_per_cell=(5.0, 4.0),
+            suptitle=suptitle,
+            out_path=None,
+        )
+    if out is None:
+        return None
+    fig, axes = out
+
+    # === APPLY FORMATTERS: scientific below 1e-3 or above/equal 1e4 ===
+    # Keep tick labels compact (e.g., 1.0) and show a single ×1eN multiplier.
+    for ax in np.ravel(axes):
+        fmt_x = ScalarFormatter(useMathText=True)
+        fmt_y = ScalarFormatter(useMathText=True)
+        fmt_x.set_scientific(True)
+        fmt_y.set_scientific(True)
+        fmt_x.set_powerlimits((-3, 4))  # switch <1e-3 or >=1e4
+        fmt_y.set_powerlimits((-3, 4))
+        fmt_x.set_useOffset(False)
+        fmt_y.set_useOffset(False)
+        ax.xaxis.set_major_formatter(fmt_x)
+        ax.yaxis.set_major_formatter(fmt_y)
+        # Ensure Matplotlib actually uses the sci style & draws the ×1eN text:
+        ax.ticklabel_format(axis="both", style="sci", scilimits=(-3, 4), useOffset=False)
+
+    # Save combined only (if requested)
+    if out_path:
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_path, dpi=dpi, bbox_inches="tight", transparent=False)
+        plt.close(fig)
+        print(f"[OK] Saved combined: {out_path}")
+        return None
+
+    return fig, axes
     
 # =========================
 # Kind inference & helpers
@@ -765,34 +832,31 @@ def _plot_scatter(item: Tuple[Union[xr.DataArray, np.ndarray], Union[xr.DataArra
 
     use_density = bool(spec.extras.get("density_alpha", False))
     if not use_density:
-        ax.scatter(x, y, s=spec.s, alpha=spec.alpha, color="C0")
+        ax.scatter(x, y, s=spec.s, alpha=spec.alpha, color="C0",
+                   marker="o", linewidths=0, edgecolors="none")
     else:
-        # 2D histogram → per-point alpha based on bin count (high density → higher alpha)
         bins = int(spec.extras.get("bins", 200))
-        alpha_min = float(spec.extras.get("alpha_min", 0.05))
-        alpha_max = float(spec.extras.get("alpha_max", 0.9))
+        alpha_min = float(spec.extras.get("alpha_min", 0.02))   # lower minimum
+        alpha_max = float(spec.extras.get("alpha_max", 0.80))   # cap the max
+        alpha_gamma = float(spec.extras.get("alpha_gamma", 2.5))  # NEW: require higher density
 
-        # Compute bin edges and counts
         H, xedges, yedges = np.histogram2d(x, y, bins=bins)
-        # Find each point's bin (clip to valid range)
         xbin = np.clip(np.digitize(x, xedges) - 1, 0, H.shape[0] - 1)
         ybin = np.clip(np.digitize(y, yedges) - 1, 0, H.shape[1] - 1)
         counts = H[xbin, ybin]
 
         if counts.max() > 0:
-            a = counts / counts.max()
+            a = (counts / counts.max()) ** alpha_gamma  # ← compress mid densities
         else:
             a = np.zeros_like(counts)
 
-        # Map density to alpha: low density → closer to alpha_min (more transparent),
-        # high density → closer to alpha_max (less transparent)
         alphas = alpha_min + (alpha_max - alpha_min) * a
-        # Draw as a single PathCollection with per-point alpha by passing RGBA
-        # (using blue channel only)
+
         colors = np.zeros((x.size, 4), dtype=float)
-        colors[:, 2] = 1.0  # blue
+        colors[:, 2] = 1.0            # blue channel
         colors[:, 3] = alphas
-        ax.scatter(x, y, s=spec.s, c=colors)
+        ax.scatter(x, y, s=spec.s, c=colors,
+                   marker="o", linewidths=0, edgecolors="none")
 
     if x.size and y.size:
         mn = float(min(x.min(), y.min()))
@@ -810,7 +874,12 @@ def _plot_scatter(item: Tuple[Union[xr.DataArray, np.ndarray], Union[xr.DataArra
     if spec.show_r2 and x.size > 1:
         r2 = _r2_score(x, y)
         title = f"{title}\nR² = {r2:.3f}"
-    ax.set_title(title)
+    # Allow caller to make titles bold (same size)
+    title_kwargs = {}
+    fw = spec.extras.get("title_fontweight")
+    if fw is not None:
+        title_kwargs["fontweight"] = fw
+    ax.set_title(title, **title_kwargs)
     return ax
 
 

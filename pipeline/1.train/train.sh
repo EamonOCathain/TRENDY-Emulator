@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=Training
+#SBATCH --job-name=Train-TL
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:A100:8
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=200G
 #SBATCH --time=3-00:00:00
@@ -45,27 +45,26 @@ echo "==== CPU RAM requested ===="
 echo "SLURM --mem = 200G (total on node)"
 free -h
 
-NPROC=${SLURM_GPUS_ON_NODE:-$(nvidia-smi -L | wc -l)}
+NPROC=${SLURM_GPUS_ON_NODE:-$(awk -F, '{print NF}' <<<"${CUDA_VISIBLE_DEVICES:-0}")}
 
 export CUDA_LAUNCH_BLOCKING=1
 export TORCH_SHOW_CPP_STACKTRACES=1 
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name test_core_branch \
+  --job_name delta_luh \
   --subset_frac 0.0001 \
-  --epochs 1 \
-  --mb_size 1470 \
+  --epochs 60 \
+  --mb_size 2940 \
   --num_workers 8 \
-  --val_frac 0.5 \
-  --val_freq 0.5 \
+  --val_frac 0.7 \
+  --test_frac 0.5 \
   --shuffle_windows \
   --early_stop \
-  --early_stop_patience 7 \
+  --early_stop_patience 10 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/new_loss/base_model_new_loss/checkpoints/best.pt \
-  --transfer_learn \
-  --transfer_learn_vars lai_avh15c1 \
-  --transfer_learn_years 1982-2018 \
+  --test_only \
+  --delta_luh \ 
+
 
