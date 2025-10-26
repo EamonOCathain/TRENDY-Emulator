@@ -3,10 +3,10 @@ import netCDF4 as nc
 from pathlib import Path
 
 # --- Parent directories to scan ---
-path_1 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/emulators_vs_ensmean")
-path_2 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/global/MODELS")
-path_3 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/test/MODELS")
-path_4 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/nudge_z_adaptive")
+path_1 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/emulators_vs_ensmean")
+path_2 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/MODELS")
+path_3 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/test/MODELS")
+path_4 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/nudge_z_adaptive")
 paths = [path_1, path_2, path_3, path_4]
 
 # ---- Hard-coded attributes for variables ----
