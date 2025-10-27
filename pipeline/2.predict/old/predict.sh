@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=predict
-#SBATCH --gres=gpu:1
+#SBATCH --job-name=exp_co2_121
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=gpu
 #SBATCH --mem=24G
@@ -8,15 +7,15 @@
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-
+#SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=transfer_learn/avh15c1_lai/no_carry/S0}"
+: "${JOB_NAME:=counter_factuals/co2_offset_121.54/S3}"
 # Scenario
-: "${SCENARIO:=S0}"
+: "${SCENARIO:=S3}"
 
 # Weights
-: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/transfer_learning/avh15c1_lai/second_train_to_epoch_22/checkpoints/best.pt}"
+: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/base_model_new_loss/checkpoints/best.pt}"
 
 # Carrying and Nudging
 : "${CARRY_FORWARD_STATES=False}"
@@ -59,6 +58,7 @@ python -u predict.py \
   --nudge_mode "${NUDGE_MODE}" \
   --carry_forward_states "${CARRY_FORWARD_STATES}" \
   --sequential_months "${SEQUENTIAL_MONTHS}" \
-  --export_nc
+  --forcing_offsets "annual:co2=121.54" \
+  --export_nc_only
 
   

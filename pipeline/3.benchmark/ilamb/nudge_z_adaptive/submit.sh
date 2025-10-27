@@ -23,8 +23,8 @@ source /User/homes/ecathain/miniconda3/etc/profile.d/conda.sh
 conda activate /Net/Groups/BGI/people/ecathain/envs/ilamb
 
 # Paths
-cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/nudge_z_adaptive
-export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/nudge_z_adaptive"
+cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/nudge_z_adaptive
+export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/nudge_z_adaptive"
 export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/masks"
 
 # Run ILAMB

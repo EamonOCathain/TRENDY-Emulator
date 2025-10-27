@@ -58,6 +58,7 @@ from src.inference.make_preds import (
     clear_tile_done,
     process_one_tile,
     export_monthly_netcdf_for_scenario,   
+    export_netcdf_sharded,
 )
 
 # ---------------------------------------------------------------------------
@@ -123,13 +124,59 @@ def main():
     ap.add_argument("--tl_vars", nargs="*", default=[], help=("Optional TL variable selections that rename base variables in the schema. Supported now: 'lai_avh15c1' (replaces 'lai'), 'lai_modis' (replaces 'lai'). You cannot pass both together."),)
     ap.add_argument("--tl_initial_state", type=int, default=None, help=("Year from which to copy monthly *state* values for TL variables to seed the simulation start (e.g., 1982 for LAI). Required when --tl_vars is provided."),)
     
+    # Counter factual forcing offsets
+    ap.add_argument(
+        "--forcing_offsets",
+        type=str,
+        default="",
+        help=(
+            "Comma-separated forcing offsets, format: "
+            "'scope:var=value,...' where scope ∈ {daily,monthly,annual}. "
+            "Example: 'annual:co2=121.54,monthly:lai=0.3'"
+        ),
+    )
+    
     args = ap.parse_args()
+    
+    # Parse the forcing offsets
+    def parse_forcing_offsets(spec: str) -> dict:
+        """Parse string like 'annual:co2=121.54,monthly:lai=0.3' → nested dict."""
+        if not spec:
+            return {"daily": {}, "monthly": {}, "annual": {}}
+        out = {"daily": {}, "monthly": {}, "annual": {}}
+        for entry in spec.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            try:
+                scope, rest = entry.split(":", 1)
+                var, val = rest.split("=", 1)
+                scope = scope.strip().lower()
+                if scope not in out:
+                    print(f"[WARN] Unknown forcing offset scope '{scope}' (ignored)")
+                    continue
+                out[scope][var.strip()] = float(val)
+            except ValueError:
+                print(f"[WARN] Could not parse forcing offset entry: '{entry}'")
+        return out
+
+    FORCING_OFFSETS = parse_forcing_offsets(args.forcing_offsets)
+    print(f"[INFO] Parsed forcing offsets: {FORCING_OFFSETS}")
     
     # export-only runs should not touch the model or GPU
     if args.export_nc_only:
         args.export_nc = True          # ensure export happens
         args.device = "cpu"            # avoid any CUDA init
 
+    # derive a safe shard id that works everywhere (incl. export-only)
+    safe_shard_id = None
+    if args.shards:
+        safe_shard_id = args.shard_id
+        if safe_shard_id is None:
+            safe_shard_id = int(os.environ.get("SLURM_ARRAY_TASK_ID", "0"))
+        if not (0 <= safe_shard_id < args.shards):
+            raise SystemExit(f"Bad shard_id {safe_shard_id} for shards={args.shards}")
+    
     # -----------------------------------------------------------------------
     # Run Metadata / Args dump
     # -----------------------------------------------------------------------
@@ -266,7 +313,35 @@ def main():
 
     print(f"[INFO] Inference input_dim={spec.nin} (should match training)")
     print(f"[INFO] Inference output_dim={len(OUTPUT_ORDER)}")
-    
+
+    # Build TL seeding config (targets limited to variables that are indeed monthly states)
+    tl_seed_cfg: Optional[dict] = None
+    if tl_vars_set:
+        # Identify mapped names that are actually in MONTHLY_STATES (e.g., 'lai_avh15c1' or 'lai_modis')
+        mapped = [rename_map.get("lai", None)]
+        state_targets = sorted([m for m in mapped if (m is not None and m in MONTHLY_STATES)])
+        if not state_targets:
+            print("[WARN] --tl_vars provided but none of the mapped variables are in MONTHLY_STATES; seeding will be a no-op.")
+        tl_seed_cfg = {
+            "seed_year": int(args.tl_initial_state),
+            "state_map": rename_map.copy(),     # e.g., {"lai": "lai_avh15c1"}
+            "state_targets": state_targets,     # e.g., ["lai_avh15c1"]
+        }
+        
+        # Optional: persist for provenance
+        with open(info_dir / "tl_seed_cfg.json", "w") as f:
+            json.dump(tl_seed_cfg, f, indent=2, sort_keys=True)
+
+    # -----------------------------------------------------------------------
+    # Scenario Resolution / Paths
+    # -----------------------------------------------------------------------
+    if args.scenario == "all":
+        scenarios = ['S0', 'S1', 'S2', 'S3']
+    elif args.scenario in ['S0', 'S1', 'S2', 'S3']:
+        scenarios = [args.scenario]
+    else:
+        raise SystemExit("Scenario argument not recognised")
+
     def resolve_roots_for(scen: str) -> tuple[Path, Path]:
         """
         Return (zarr_root, nc_root) for this scenario.
@@ -281,48 +356,15 @@ def main():
             nc_root   = nc_root   / args.array_name
         return zarr_root, nc_root
 
-    # Store S3 zarr root for TL Initial states
-    s3_zarr_root, _ = resolve_roots_for("S3")
-    s3_monthly_path = s3_zarr_root / "monthly.zarr"
-    
-    # Build TL seeding config (targets limited to variables that are indeed monthly states)
-    tl_seed_cfg: Optional[dict] = None
-    if tl_vars_set:
-        mapped = [rename_map.get("lai", None)]
-        state_targets = sorted([m for m in mapped if (m is not None and m in MONTHLY_STATES)])
-        if not state_targets:
-            print("[WARN] --tl_vars provided but none of the mapped variables are in MONTHLY_STATES; seeding will be a no-op.")
-        tl_seed_cfg = {
-            "seed_year": int(args.tl_initial_state),
-            "state_map": rename_map.copy(),
-            "state_targets": state_targets,
-            "seed_source_scenario": "S3",
-            "seed_source_monthly": str(s3_monthly_path),
-        }
-        if not s3_monthly_path.exists():
-            print(f"[INFO] S3 monthly store not found yet at {s3_monthly_path}. "
-                "That's fine if S3 hasn't completed—this run will wait until tiles are done before finalizing.")
-        with open(info_dir / "tl_seed_cfg.json", "w") as f:
-            json.dump(tl_seed_cfg, f, indent=2, sort_keys=True)
-
-    # -----------------------------------------------------------------------
-    # Scenario Resolution / Paths
-    # -----------------------------------------------------------------------
-    if args.scenario == "all":
-        scenarios = ['S0', 'S1', 'S2', 'S3']
-    elif args.scenario in ['S0', 'S1', 'S2', 'S3']:
-        scenarios = [args.scenario]
-    else:
-        raise SystemExit("Scenario argument not recognised")
-
     # -----------------------------------------------------------------------
     # Per-Scenario Processing
     # -----------------------------------------------------------------------
     for scenario in scenarios:
         zarr_root, nc_root = resolve_roots_for(scenario)
         run_root = zarr_root
-        
+
         print(f"Writing Zarr into {run_root}")
+        print(f"Exporting NetCDF into {nc_root}")
 
         # Optionally blow away existing Zarr skeleton before re-init
         if args.overwrite_skeleton:
@@ -375,10 +417,10 @@ def main():
         print(f"[INFO] Store period:  {sp0}–{sp1} (years {store_start_year}–{store_end_year})")
         print(f"[INFO] Write period:  {wp0}–{wp1} (years {write_start_year}–{write_end_year})")
         print(f"[INFO] Predicting for {len(years)} years in write window.")
-        forc = open_forcing_stores(args.forcing_dir / scenario)
 
         # Gate predictions with export-only mode
         if not args.export_nc_only:
+            forc = open_forcing_stores(args.forcing_dir / scenario)
             # -------------------------------------------------------------------
             # Device / Checkpoint / Model
             # -------------------------------------------------------------------
@@ -435,10 +477,6 @@ def main():
                 if unexpected: print("  Unexpected:", unexpected)
 
             model.eval()
-            
-            if tl_seed_cfg and scenario != "S3":
-                print(f"[INFO] TL seeding will read initial states from S3 monthly store: {s3_monthly_path} "
-                    f"(year={tl_seed_cfg['seed_year']})")
 
             # -------------------------------------------------------------------
             # Standardisation Vectors
@@ -461,23 +499,23 @@ def main():
                 idxs = [args.tile_index]
                 assigned_land  = [i for i in idxs if i not in ocean_only]
                 assigned_ocean = [i for i in idxs if i in ocean_only]
-                shard_id = None
+                safe_shard_id = None
                 total_shards = None
             else:
                 if not args.shards:
                     raise SystemExit("Either provide --tile_index or set --shards for round-robin distribution.")
-                shard_id = args.shard_id
-                if shard_id is None:
-                    shard_id = int(os.environ.get("SLURM_ARRAY_TASK_ID", "0"))
-                if not (0 <= shard_id < args.shards):
-                    raise SystemExit(f"Bad shard_id {shard_id} for shards={args.shards}")
+                safe_shard_id = args.shard_id
+                if safe_shard_id is None:
+                    safe_shard_id = int(os.environ.get("SLURM_ARRAY_TASK_ID", "0"))
+                if not (0 <= safe_shard_id < args.shards):
+                    raise SystemExit(f"Bad safe_shard_id {safe_shard_id} for shards={args.shards}")
 
                 all_tiles   = list(range(ntiles))
                 land_tiles  = [i for i in all_tiles if i not in ocean_only]
                 ocean_tiles = [i for i in all_tiles if i in ocean_only]
 
-                assigned_land  = [t for j, t in enumerate(land_tiles)  if (j % args.shards) == shard_id]
-                assigned_ocean = [t for j, t in enumerate(ocean_tiles) if (j % args.shards) == shard_id]
+                assigned_land  = [t for j, t in enumerate(land_tiles)  if (j % args.shards) == safe_shard_id]
+                assigned_ocean = [t for j, t in enumerate(ocean_tiles) if (j % args.shards) == safe_shard_id]
 
                 total_shards = args.shards
 
@@ -501,7 +539,7 @@ def main():
                     print(f"[INFO] Tile {args.tile_index} is land; it will be processed.")
             else:
                 print(
-                    f"[INFO] Shard {shard_id}/{total_shards}: "
+                    f"[INFO] Shard {safe_shard_id}/{total_shards}: "
                     f"{len(assigned_land)} land assigned, {len(assigned_ocean)} ocean assigned "
                     f"(of total {len([i for i in range(ntiles) if i not in ocean_only])} land / "
                     f"{len([i for i in range(ntiles) if i in ocean_only])} ocean)."
@@ -525,9 +563,9 @@ def main():
                         forc=forc,
                         g_daily=g_daily,
                         g_monthly=g_monthly,
-                        g_annual=g_annual,                 # will be unused, harmless
-                        monthly_vars=OUTPUT_ORDER,         # <-- aggregate ALL outputs to monthly means
-                        annual_vars=[],                    # <-- no annual aggregation
+                        g_annual=g_annual,
+                        monthly_vars=OUTPUT_ORDER,
+                        annual_vars=[],
                         years=years,
                         model=model,
                         device=device,
@@ -545,6 +583,7 @@ def main():
                         carry_forward_states=args.carry_forward_states,
                         sequential_months=args.sequential_months,
                         tl_seed_cfg=tl_seed_cfg,
+                        forcing_offsets=FORCING_OFFSETS,   
                     )
                     tiles_done += 1
                     mark_tile_done(run_root, ti, years=years)
@@ -561,63 +600,79 @@ def main():
             print("[INFO] --export_nc_only: skipping model init and tile processing")
 
         # -------------------------------------------------------------------
-        # Finalize (leader only): wait for all tiles, consolidate, optional export
+        # Finalize: wait for all tiles, consolidate once, then export
         # -------------------------------------------------------------------
+        # leader = shard 0 when sharded; otherwise the sole task
         is_leader = True
         if args.tile_index is None and args.shards:
-            is_leader = (shard_id == 0)
+            is_leader = (safe_shard_id == 0)
 
         all_land_tiles = [i for i in range(ntiles) if i not in ocean_only]
         n_total_land   = len(all_land_tiles)
 
-        if is_leader:
-            print(f"[FINALIZE] Leader waiting for all {n_total_land} land tiles to finish…")
-            while True:
-                n_done = sum(1 for t in all_land_tiles if is_tile_done(run_root, t))
-                if n_done >= n_total_land:
-                    break
-                print(f"[FINALIZE] {n_done}/{n_total_land} tiles done; sleeping 30s …")
-                time.sleep(30)
+        print(f"[FINALIZE] Waiting for all {n_total_land} land tiles to finish…")
+        while True:
+            n_done = sum(1 for t in all_land_tiles if is_tile_done(run_root, t))
+            if n_done >= n_total_land:
+                break
+            print(f"[FINALIZE] {n_done}/{n_total_land} tiles done; sleeping 30s …")
+            time.sleep(30)
 
-            finalize_lock = run_root / ".export.lock"   # reuse lock
-            try:
+        # Consolidate metadata once (leader only, idempotent)
+        finalize_lock = run_root / ".export.lock"   # re-use lock name
+        try:
+            if is_leader:
                 with simple_lock(finalize_lock, timeout=600):
-                    # re-check after lock
-                    n_done = sum(1 for t in all_land_tiles if is_tile_done(run_root, t))
-                    if n_done < n_total_land:
-                        print(f"[FINALIZE][SKIP] Re-check failed ({n_done}/{n_total_land}); another leader will retry.")
+                    consolidation_marker = run_root / ".consolidated.ok"
+                    if not consolidation_marker.exists():
+                        try:
+                            print("[FINALIZE] Consolidating Zarr metadata (daily/monthly/annual) …")
+                            for p in (daily_path, monthly_path, annual_path):
+                                if p.exists():
+                                    zarr.consolidate_metadata(zarr.DirectoryStore(str(p)))
+                            consolidation_marker.write_text("ok\n")
+                            print("[FINALIZE] Consolidation complete.")
+                        except Exception as e:
+                            print(f"[FINALIZE][WARN] Consolidation failed: {e} (continuing)")
                     else:
-                        # ---- consolidate once (idempotent guard) ----
-                        consolidation_marker = run_root / ".consolidated.ok"
-                        if not consolidation_marker.exists():
-                            try:
-                                print("[FINALIZE] Consolidating Zarr metadata (daily/monthly/annual) …")
-                                for p in (daily_path, monthly_path, annual_path):
-                                    if p.exists():
-                                        zarr.consolidate_metadata(zarr.DirectoryStore(str(p)))
-                                consolidation_marker.write_text("ok\n")
-                                print("[FINALIZE] Consolidation complete.")
-                            except Exception as e:
-                                print(f"[FINALIZE][WARN] Consolidation failed: {e} (continuing)")
-                        else:
-                            print("[FINALIZE] Consolidation marker present; skipping consolidate.")
+                        print("[FINALIZE] Consolidation marker present; skipping consolidate.")
+            else:
+                print("[FINALIZE] Non-leader shard; skipping consolidation (leader will do it).")
+        except TimeoutError as e:
+            print(f"[FINALIZE][INFO] Could not acquire finalize lock: {e}. Another task likely finalizing.")
 
-                        # ---- NetCDF export if requested ----
-                        if args.export_nc:
-                            try:
-                                export_monthly_netcdf_for_scenario(
-                                    scenario=scenario,
-                                    nc_root=nc_root,
-                                    monthly_zarr=monthly_path,
-                                    overwrite=bool(args.overwrite_data),
-                                )
-                            except Exception as e:
-                                print(f"[FINALIZE][ERR] NetCDF export failed for {scenario}: {e}")
-                                raise
-            except TimeoutError as e:
-                print(f"[FINALIZE][INFO] Could not acquire finalize lock: {e}. Another task likely finalizing.")
+        # -------------------------
+        # NetCDF export
+        # -------------------------
+        if args.export_nc:
+            if args.export_nc_only and args.shards:
+                print(f"[FINALIZE] Sharded NetCDF export: shard {safe_shard_id}/{args.shards}")
+                export_netcdf_sharded(
+                    monthly_zarr=monthly_path,
+                    nc_root=nc_root,
+                    shards=int(args.shards),
+                    shard_id=int(safe_shard_id or 0),
+                    overwrite=bool(args.overwrite_data),
+                    var_order=OUTPUT_ORDER,   
+                )
+            else:
+                # single-writer export (keep original behavior)
+                if is_leader:
+                    print("[FINALIZE] Leader performing single-process export")
+                    try:
+                        export_monthly_netcdf_for_scenario(
+                            scenario=scenario,
+                            nc_root=nc_root,
+                            monthly_zarr=monthly_path,
+                            overwrite=bool(args.overwrite_data),
+                        )
+                    except Exception as e:
+                        print(f"[FINALIZE][ERR] NetCDF export failed for {scenario}: {e}")
+                        raise
+                else:
+                    print("[FINALIZE] Non-leader shard; skipping single-process export.")
         else:
-            print("[FINALIZE] Non-leader shard; skipping consolidation/export.")
+            print("[FINALIZE] Export disabled (args.export_nc is False)")
 
 
 # ---------------------------------------------------------------------------

@@ -244,6 +244,39 @@ def _extract_dims_and_cfg(ckpt: dict) -> tuple[int, int, dict]:
 
     return int(in_dim), int(out_dim), base_cfg
 
+def _apply_forcing_offsets_to_sliced(
+    dsd_yx: xr.Dataset,
+    dsm_yx: xr.Dataset,
+    dsa_yx: xr.Dataset,
+    forcing_offsets: Optional[Dict[str, Dict[str, float]]],
+) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset]:
+    """
+    Add constant offsets (in physical units) to sliced forcing datasets.
+    Schema:
+      forcing_offsets = {
+        "daily":   {"var_name": delta, ...},
+        "monthly": {"var_name": delta, ...},
+        "annual":  {"var_name": delta, ...},
+      }
+    Only applies if the variable exists in the given dataset.
+    """
+    if not forcing_offsets:
+        return dsd_yx, dsm_yx, dsa_yx
+
+    def _assign_if_present(ds: xr.Dataset, layer_key: str) -> xr.Dataset:
+        rules = forcing_offsets.get(layer_key, {}) or {}
+        if not rules:
+            return ds
+        updates: Dict[str, Any] = {}
+        for v, delta in rules.items():
+            if v in ds:
+                updates[v] = ds[v] + float(delta)
+        return ds.assign(**updates) if updates else ds
+
+    dsd_yx = _assign_if_present(dsd_yx, "daily")
+    dsm_yx = _assign_if_present(dsm_yx, "monthly")
+    dsa_yx = _assign_if_present(dsa_yx, "annual")
+    return dsd_yx, dsm_yx, dsa_yx
 
 def _check_dims_or_die(
     *,
@@ -925,6 +958,7 @@ def process_one_tile(
     carry_forward_states: bool = True,
     sequential_months: bool = False,
     tl_seed_cfg: Optional[dict] = None,
+    forcing_offsets: Optional[Dict[str, Dict[str, float]]] = None,  
 ) -> None:
     """
     Tile-wise rollout (no land masking), vectorized per year:
@@ -962,7 +996,7 @@ def process_one_tile(
 
     # Precompute which input channels to zero-fill for nfert once
     fill_idxs: List[int] = _compute_nfert_fill_indices(input_names, nfert)
-
+ 
     prev_year_daily_states_ns: Optional[np.ndarray] = None  # (365, Y, X, Ns)
 
     for yi, year in enumerate(years):
@@ -972,6 +1006,11 @@ def process_one_tile(
 
         # Pre-slice forcing to this year & tile (fast indexed reads)
         dsd_yx, dsm_yx, dsa_yx = _preslice_forcing_for_year_and_tile(forc, year, ys, xs)
+        
+        # Apply any physical offsets to the forcing (e.g., co2 += 100) <<<
+        dsd_yx, dsm_yx, dsa_yx = _apply_forcing_offsets_to_sliced(
+            dsd_yx, dsm_yx, dsa_yx, forcing_offsets
+        )
 
         # ---- Build state input template (daily, STATE_VARS order)
         if yi == 0:
@@ -1349,15 +1388,22 @@ def export_monthly_netcdf_for_scenario(
     print(f"[EXPORT] Wrote NetCDFs to:\n  - {full_dir}\n  - {early_dir}\n  - {late_dir}")
 
 
-def export_netcdf_sharded(monthly_zarr: Path, nc_root: Path, shards: int, shard_id: int, overwrite: bool):
+def export_netcdf_sharded(
+    *,
+    monthly_zarr: Path,
+    nc_root: Path,
+    shards: int,
+    shard_id: int,
+    overwrite: bool = False,
+    var_order: Optional[list[str]] = None,
+):
     """
-    Export per-variable NetCDFs from the monthly.zarr, splitting the work across shards.
-    Each shard writes a disjoint subset of *target* variable names to avoid collisions.
+    Export per-variable NetCDFs from monthly.zarr, splitting work across shards.
 
     Rules:
       - Alias lai_* -> 'lai'; cTotal_monthly -> 'cTotal'
-      - Dedup targets so only the first source that maps to a target is exported
-      - Shard by modulo on the final target name to guarantee disjoint work
+      - Deduplicate by final *target* name (first occurrence wins)
+      - Deterministic sharding by index in the final ordered target list
       - Write to:
           <nc_root>/full/<var>.nc
           <nc_root>/test/early/<var>.nc   (1901-01-01..1918-12-31, if present)
@@ -1381,53 +1427,67 @@ def export_netcdf_sharded(monthly_zarr: Path, nc_root: Path, shards: int, shard_
     print(f"[EXPORT][{shard_id}/{shards}] Opening {monthly_zarr}")
     ds = xr.open_zarr(monthly_zarr, consolidated=True)
 
-    # Build (source_var -> target_var) pairs with de-dup on target_var
-    vars_all = sorted(ds.data_vars)
-    pairs = []
-    seen_targets = set()
-    for v in vars_all:
-        tgt = alias.get(v, v)
+    # Discover variables present in store
+    present = set(ds.data_vars)
+
+    # Build an ordered list of source variables to consider:
+    # - If var_order provided: keep that order, filtered to those actually present
+    # - Else: use store vars in sorted order (stable)
+    if var_order is not None:
+        sources_ordered = [v for v in var_order if v in present]
+    else:
+        sources_ordered = sorted(present)
+
+    # Map source -> target with de-duplication on target (first source wins)
+    pairs: list[tuple[str, str]] = []
+    seen_targets: set[str] = set()
+    for src in sources_ordered:
+        tgt = alias.get(src, src)
         if tgt in seen_targets:
             continue
         seen_targets.add(tgt)
-        pairs.append((v, tgt))
+        pairs.append((src, tgt))
 
-    # Assign work by modulo on target name (stable, avoids collisions)
-    assigned = [(src, tgt) for (src, tgt) in pairs if (hash(tgt) % shards) == shard_id]
-    print(f"[EXPORT][{shard_id}/{shards}] Assigned {len(assigned)} targets: {[t for _, t in assigned]}")
+    # Shard deterministically by *index* (not hash) in this final target list
+    # Each shard gets targets where (index % shards) == shard_id
+    my_pairs = [(src, tgt) for i, (src, tgt) in enumerate(pairs) if (i % shards) == shard_id]
+    print(f"[EXPORT][{shard_id}/{shards}] Assigned {len(my_pairs)} targets: {[t for _, t in my_pairs]}")
 
-    # Export helpers
-    def _maybe_write(path: Path, sub):
+    early_slice = slice("1901-01-01", "1918-12-31")
+    late_slice  = slice("2018-01-01", "2023-12-31")
+
+    def _maybe_write(path: Path, subset: xr.Dataset) -> bool:
         if path.exists() and not overwrite:
             return False
-        sub.to_netcdf(path)
+        subset.to_netcdf(path)
         return True
 
     n_written = 0
-    for v_in, v_out in assigned:
+    for v_in, v_out in my_pairs:
         print(f"[EXPORT][{shard_id}/{shards}] {v_in} -> {v_out}")
+
         sel = ds[[v_in]].rename({v_in: v_out})
 
-        wrote = False
-        wrote |= _maybe_write(nc_root / "full" / f"{v_out}.nc", sel)
+        wrote_any = False
+        wrote_any |= _maybe_write(nc_root / "full" / f"{v_out}.nc", sel)
 
         # early split
         try:
-            se = sel.sel(time=slice("1901-01-01", "1918-12-31"))
-            if se.time.size:
-                wrote |= _maybe_write(nc_root / "test" / "early" / f"{v_out}.nc", se)
+            se = sel.sel(time=early_slice)
+            if getattr(se, "time", None) is not None and se.time.size:
+                wrote_any |= _maybe_write(nc_root / "test" / "early" / f"{v_out}.nc", se)
         except Exception as e:
             print(f"[EXPORT][WARN] early subset failed for {v_in}: {e}")
 
         # late split
         try:
-            sl = sel.sel(time=slice("2018-01-01", "2023-12-31"))
-            if sl.time.size:
-                wrote |= _maybe_write(nc_root / "test" / "late" / f"{v_out}.nc", sl)
+            sl = sel.sel(time=late_slice)
+            if getattr(sl, "time", None) is not None and sl.time.size:
+                wrote_any |= _maybe_write(nc_root / "test" / "late" / f"{v_out}.nc", sl)
         except Exception as e:
             print(f"[EXPORT][WARN] late subset failed for {v_in}: {e}")
 
-        if wrote:
+        if wrote_any:
             n_written += 1
 
     print(f"[EXPORT][{shard_id}/{shards}] Done. Variables written or updated: {n_written}")
