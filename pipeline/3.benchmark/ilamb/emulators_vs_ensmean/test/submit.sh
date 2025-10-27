@@ -23,15 +23,14 @@ source /User/homes/ecathain/miniconda3/etc/profile.d/conda.sh
 conda activate /Net/Groups/BGI/people/ecathain/envs/ilamb
 
 # Paths
-cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/emulators_vs_ensmean/test
-export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/emulators_vs_ensmean/test"
+cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/emulators_vs_ensmean/test
+export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/emulators_vs_ensmean/test"
 export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/masks"
 
 # Run ILAMB
 /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run \
-  --build_dir "$ILAMB_ROOT/_build_combined" \
   --config "$ILAMB_ROOT/build.cfg" \
-  --model_root "$ILAMB_ROOT/MODELS/combined" \
+  --model_root "$ILAMB_ROOT/MODELS/" \
   --define_regions "$MASKS_DIR/ilamb_tvt.nc" \
   --regions global test val train
 

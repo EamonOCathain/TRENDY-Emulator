@@ -55,21 +55,56 @@ def _ddp_sum_int(v: int, device: torch.device) -> int:
 
 
 def _to_physical_pairs(
-    pairs_norm: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    pairs_norm: Mapping[str, tuple[np.ndarray, ...]],
     std_map: Mapping[str, Mapping[str, float]],
+    *,
+    delta_labels: bool = False,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
-    Convert normalized (z-scored) pairs back to physical units using
-    std_map[var] = {"mean": μ, "std": σ}. Falls back to identity if missing.
+    Convert normalized pairs back to physical space.
+
+    Normal mode (delta_labels=False):
+        input:  dict[var] -> (z_y, z_yhat)
+        output: dict[var] -> (y, yhat), where y = z*sd + mu
+
+    Delta mode (delta_labels=True):
+        input:  dict[var] -> (z_delta_label, z_delta_pred, y_prev)  # TRIPLET REQUIRED
+        output: dict[var] -> (y_abs, yhat_abs), where:
+               delta   = z*sd + mu
+               y_abs   = y_prev + delta
+               yhat_abs= y_prev + delta_pred
+
+    Notes:
+        - sd falls back to 1.0 and mu to 0.0 if missing/unusable.
+        - In delta mode, raises ValueError if a triplet isn't provided.
     """
     out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-    for var, (y, yhat) in pairs_norm.items():
+
+    for var, tup in pairs_norm.items():
         stats = std_map.get(var, {})
         mu = float(stats.get("mean", 0.0))
         sd = float(stats.get("std", 1.0))
         if not np.isfinite(sd) or sd == 0.0:
             sd = 1.0
-        out[var] = (y * sd + mu, yhat * sd + mu)
+
+        if not delta_labels:
+            # Expect a 2-tuple
+            if len(tup) != 2:
+                raise ValueError(f"Expected (z_y, z_yhat) for var '{var}', got length {len(tup)}")
+            z_y, z_yhat = tup
+            out[var] = (z_y * sd + mu, z_yhat * sd + mu)
+        else:
+            # Expect a 3-tuple: (z_delta_label, z_delta_pred, y_prev)
+            if len(tup) != 3:
+                raise ValueError(
+                    f"delta_labels=True requires (z_delta_label, z_delta_pred, y_prev) "
+                    f"for var '{var}', got length {len(tup)}"
+                )
+            z_dl, z_dp, y_prev = tup
+            delta_y   = z_dl * sd + mu
+            delta_yhat= z_dp * sd + mu
+            out[var] = (y_prev + delta_y, y_prev + delta_yhat)
+
     return out
 
 
@@ -195,7 +230,8 @@ def gather_pairs_phys(
     max_points_per_var: int,
     logger: Optional[logging.Logger] = None,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-    """Gather normalized pairs → convert to physical; on error return {}."""
+    """Gather normalized pairs (or triplets for delta mode) → convert to physical."""
+    delta_mode = bool((rollout_cfg or {}).get("delta_labels", False))
     try:
         pairs_norm = gather_pred_label_pairs(
             model=model,
@@ -205,13 +241,29 @@ def gather_pairs_phys(
             carry_horizon=carry_horizon,
             max_points_per_var=max_points_per_var,
         )
-        return _to_physical_pairs(pairs_norm, std_map)
+        # Safety guard to empty pairs
+        if not pairs_norm:
+            if logger:
+                which = "teacher-forced" if carry_horizon == 0.0 else f"carry({carry_horizon}y)"
+                logger.warning(f"[Plots] No pairs returned for {which}.")
+            return {}
+        
+        # If delta mode is requested, we require triplets
+        if delta_mode:
+            # Quick validation: any one entry should be a triplet
+            for _k, _v in pairs_norm.items():
+                if len(_v) != 3:
+                    raise ValueError(
+                        "delta_labels=True requires gather_pred_label_pairs to return "
+                        "triplets (z_delta_label, z_delta_pred, y_prev) per variable."
+                    )
+                break
+        return _to_physical_pairs(pairs_norm, std_map, delta_labels=delta_mode)
     except Exception as e:
         if logger:
             which = "teacher-forced" if carry_horizon == 0.0 else f"carry({carry_horizon}y)"
             logger.warning(f"[Plots] Pair gathering failed for {which}: {e}", exc_info=True)
         return {}
-
 
 # =============================================================================
 # Metrics (computed on arrays passed in; for CSV we pass PHYSICAL pairs)
@@ -374,6 +426,7 @@ def run_and_save_metrics_csv(
 
     # Map of output variable -> {"mean": μ, "std": σ}
     std_map = (rollout_cfg or {}).get("std_out", {})
+    delta_mode = bool((rollout_cfg or {}).get("delta_labels", False))
 
     # =========================
     # Teacher-forced (physical)
@@ -383,7 +436,16 @@ def run_and_save_metrics_csv(
         rollout_cfg=rollout_cfg, carry_horizon=0.0,
         max_points_per_var=subsample_points,
     )
-    tf_pairs = _to_physical_pairs(tf_pairs_norm, std_map)
+    if delta_mode:
+        # Validate triplets
+        for _k, _v in tf_pairs_norm.items():
+            if len(_v) != 3:
+                raise ValueError(
+                    "delta_labels=True requires triplets (z_delta_label, z_delta_pred, y_prev) "
+                    "from gather_pred_label_pairs."
+                )
+            break
+    tf_pairs = _to_physical_pairs(tf_pairs_norm, std_map, delta_labels=delta_mode)
 
     # Save metrics CSV
     tf_csv = test_root / "metrics_teacher_forced.csv"
@@ -412,7 +474,15 @@ def run_and_save_metrics_csv(
         rollout_cfg=rollout_cfg, carry_horizon=123.0,
         max_points_per_var=subsample_points,
     )
-    c_pairs = _to_physical_pairs(c_pairs_norm, std_map)
+    if delta_mode:
+        for _k, _v in c_pairs_norm.items():
+            if len(_v) != 3:
+                raise ValueError(
+                    "delta_labels=True requires triplets (z_delta_label, z_delta_pred, y_prev) "
+                    "from gather_pred_label_pairs."
+                )
+            break
+    c_pairs = _to_physical_pairs(c_pairs_norm, std_map, delta_labels=delta_mode)
 
     c_csv = test_root / "metrics_carry_123y.csv"
     write_metrics_csv(out_csv_path=c_csv, pairs=c_pairs)

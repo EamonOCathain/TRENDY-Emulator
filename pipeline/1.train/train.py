@@ -464,6 +464,7 @@ def main():
         "output_order": OUTPUT_ORDER,
         "input_order": INPUT_ORDER, 
         "schema_sig": schema_sig,
+        "delta_labels": bool(args.delta_labels),
     }
 
     if is_main:

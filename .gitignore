@@ -24,6 +24,8 @@ logs/
 wandb/
 mlruns/
 checkpoints/
+pipeline/1.train/runs
+pipeline/3.benchmark/ilamb
 
 # IDE/OS
 .vscode/

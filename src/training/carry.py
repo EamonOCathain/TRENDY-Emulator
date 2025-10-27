@@ -335,19 +335,28 @@ def _rollout_core(
     *,
     model: torch.nn.Module,
     inputs: torch.Tensor,        # [nin, 365*Y, L]
-    labels_m: torch.Tensor,      # [nm (or nm_all), 12*Y, L]  (normalized)
-    labels_a: torch.Tensor,      # [na, 1*Y, L]               (normalized)
+    labels_m: torch.Tensor,      # [nm (or nm_all), 12*Y, L]  (normalized; z if delta mode)
+    labels_a: torch.Tensor,      # [na, 1*Y, L]               (normalized; z if delta mode)
     device: torch.device,
     rollout_cfg: dict,
     training: bool,              # True enables autograd/backward in this core
     loss_func: Optional[Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]] = None,
     carry_on: bool,              # True => inject cross-year carries
-    return_pairs: bool = False,  # True => return dict[var] = (y, yhat)
+    return_pairs: bool = False,  # True => return dict[var] = (y, yhat) or triplets in delta mode
     logger: Optional[logging.Logger] = None,
 ):
     """
     Roll over locations + years with optional state carry, computing loss and/or
-    collecting (y, ŷ) pairs. Works in training or no-grad mode.
+    collecting pairs. Works in training or no-grad mode.
+
+    Delta mode (rollout_cfg['delta_labels']=True) semantics for return_pairs:
+      - For MONTHLY vars, return (z_delta_label, pred_abs, prev_abs_per_month)
+        where prev_abs_per_month is the previous-month absolute for each month:
+          prev[m] = Dec(prev_year) if m==Jan else pred_abs[m-1] (model-derived)
+      - For ANNUAL  vars, return (z_delta_label, pred_abs, prev_abs_year)
+        where prev_abs_year = annual mean of previous year (model-derived)
+
+    Non-delta mode returns the usual (label_abs, pred_abs) pairs.
     """
     assert (not training) or (loss_func is not None), "loss_func required when training=True"
 
@@ -365,12 +374,15 @@ def _rollout_core(
     out_a_idx = rollout_cfg.get("out_annual_state_idx", []) or []
 
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
-    annual_names = list(rollout_cfg.get("out_annual_names", []))
+    annual_names  = list(rollout_cfg.get("out_annual_names", []))
 
     # Granularity & horizon guard
     granularity = str(rollout_cfg.get("carry_granularity", "monthly"))
     H = float(rollout_cfg.get("carry_horizon", 0.0) or 0.0)
     _validate_granularity(granularity, H)
+
+    # Delta mode?
+    delta_mode = bool(rollout_cfg.get("delta_labels", False))
 
     # Shapes / guards
     nin, Ttot, L = int(inputs.shape[0]), int(inputs.shape[1]), int(inputs.shape[2])
@@ -381,7 +393,7 @@ def _rollout_core(
         return (0.0, 0) if loss_func is not None else None
 
     # Move once
-    inputs = inputs.to(device, non_blocking=True)
+    inputs   = inputs.to(device, non_blocking=True)
     labels_m = labels_m.to(device, non_blocking=True)
     labels_a = labels_a.to(device, non_blocking=True)
 
@@ -391,8 +403,14 @@ def _rollout_core(
 
     # Pair buffers
     if return_pairs:
-        buf_y = {n: [] for n in (monthly_names + annual_names)}
-        buf_p = {n: [] for n in (monthly_names + annual_names)}
+        if not delta_mode:
+            buf_y = {n: [] for n in (monthly_names + annual_names)}  # label_abs
+            buf_p = {n: [] for n in (monthly_names + annual_names)}  # pred_abs
+        else:
+            # (z_delta_label, pred_abs, prev_abs) — prev_abs per month/year as described above
+            buf_z = {n: [] for n in (monthly_names + annual_names)}
+            buf_p = {n: [] for n in (monthly_names + annual_names)}
+            buf_prev = {n: [] for n in (monthly_names + annual_names)}
 
     # Toggle model mode depending on granularity (only when carrying across years)
     with _model_mode(model, granularity, enabled=carry_on), (torch.enable_grad() if training else torch.no_grad()):
@@ -413,16 +431,24 @@ def _rollout_core(
                 out_m_idx_sane = []
                 out_a_idx_sane = []
 
-            prev_monthly_state = None
-            prev_annual_state = None
+            # We'll keep previous year's pooled absolutes to construct per-month prevs
+            preds_m_prev = None  # [1,12,nm]
+            preds_a_prev = None  # [1,1, na]
 
-            # Warm-up year 0 (only if carrying)
-            if carry_on:
-                x_prev = xb_full[:, 0:365, :].clone()
+            prev_monthly_state = None  # state vector (subset) used for carry injection
+            prev_annual_state  = None
+
+            # We may need prev absolutes even without carry (for delta prevs)
+            need_prev_even_without_carry = (return_pairs and delta_mode and not carry_on)
+
+            # Warm-up year 0 (only if carrying OR needed for delta prevs)
+            if carry_on or need_prev_even_without_carry:
+                s0, e0 = 0, 365
+                x_prev = xb_full[:, s0:e0, :].clone()
                 if not torch.isfinite(x_prev).all():
                     if logger:
                         logger.warning("[eval-core] non-finite warm-up INPUT (loc=%d, shape=%s)",
-                                    loc, tuple(x_prev.shape))
+                                       loc, tuple(x_prev.shape))
                     del x_prev
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -431,17 +457,22 @@ def _rollout_core(
                 preds_abs_daily_prev = model(x_prev)  # [1,365,nm+na]
                 preds_m_prev, preds_a_prev = pool_from_daily_abs(preds_abs_daily_prev, nm, na, bounds)
 
-                out_m_idx_warm = _sanitize_idx(out_m_idx, nm, "out_monthly_state_idx", logger)
-                out_a_idx_warm = _sanitize_idx(out_a_idx, na, "out_annual_state_idx", logger)
+                # State vectors (subset) for injection (if carrying)
+                if carry_on:
+                    out_m_idx_warm = _sanitize_idx(out_m_idx, nm, "out_monthly_state_idx", logger)
+                    out_a_idx_warm = _sanitize_idx(out_a_idx, na, "out_annual_state_idx", logger)
 
-                prev_monthly_state = _prev_monthly_from_preds(preds_m_prev, out_m_idx_warm, granularity)
-                if prev_monthly_state is not None:
-                    prev_monthly_state = prev_monthly_state.detach()
+                    prev_monthly_state = _prev_monthly_from_preds(preds_m_prev, out_m_idx_warm, granularity)
+                    if prev_monthly_state is not None:
+                        prev_monthly_state = prev_monthly_state.detach()
 
-                prev_annual_state = (preds_a_prev[:, 0, out_a_idx_warm].detach()
-                                     if out_a_idx_warm else None)
+                    prev_annual_state = (preds_a_prev[:, 0, out_a_idx_warm].detach()
+                                         if out_a_idx_warm else None)
+                else:
+                    prev_monthly_state = None
+                    prev_annual_state  = None
 
-                del preds_abs_daily_prev, preds_m_prev, preds_a_prev
+                del preds_abs_daily_prev, x_prev
 
             # Loop over years 1..Y-1
             for y in range(1, Y):
@@ -471,7 +502,7 @@ def _rollout_core(
                 if not torch.isfinite(x_year).all():
                     if logger:
                         logger.warning("[eval-core] non-finite INPUT (loc=%d, y=%d, shape=%s)",
-                                    loc, y, tuple(x_year.shape))
+                                       loc, y, tuple(x_year.shape))
                     del x_year
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -482,17 +513,17 @@ def _rollout_core(
                 if not torch.isfinite(preds_abs_daily).all():
                     if logger:
                         logger.warning("[eval-core] model produced non-finite (loc=%d, y=%d, x_shape=%s, pred_shape=%s)",
-                                    loc, y, tuple(x_year.shape), tuple(preds_abs_daily.shape))
+                                       loc, y, tuple(x_year.shape), tuple(preds_abs_daily.shape))
                     del preds_abs_daily, x_year
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
                     continue
 
-                # Labels (target year y)
+                # Labels (target year y) — normalized; if delta_mode, these are z-deltas
                 yb_m = ym_full[:, y * 12:(y + 1) * 12, :]
                 yb_a = ya_full[:, y:y + 1, :]
 
-                # Loss
+                # Loss (computed from daily absolutes vs labels as provided)
                 if loss_func is not None:
                     loss = loss_func(preds_abs_daily, yb_m, yb_a)
                     if (not torch.isfinite(preds_abs_daily).all()
@@ -509,27 +540,63 @@ def _rollout_core(
                     sum_loss += float(loss.detach().cpu())
                     n_windows += 1
 
-                # (y, ŷ) pairs
-                if return_pairs:
-                    preds_m, preds_a = pool_from_daily_abs(preds_abs_daily, nm, na, bounds)
-                    for j, name in enumerate(monthly_names):
-                        buf_y[name].append(yb_m[..., j].reshape(-1).detach().cpu().numpy())
-                        buf_p[name].append(preds_m[..., j].reshape(-1).detach().cpu().numpy())
-                    for j, name in enumerate(annual_names):
-                        buf_y[name].append(yb_a[..., j].reshape(-1).detach().cpu().numpy())
-                        buf_p[name].append(preds_a[..., j].reshape(-1).detach().cpu().numpy())
+                # (y, ŷ) pairs (pooled to monthly/annual absolutes)
+                preds_m, preds_a = pool_from_daily_abs(preds_abs_daily, nm, na, bounds)  # [1,12,nm], [1,1,na]
 
-                # Prepare next carry
+                if return_pairs:
+                    if not delta_mode:
+                        # Non-delta: return absolute labels vs absolute preds
+                        for j, name in enumerate(monthly_names):
+                            buf_y[name].append(yb_m[..., j].reshape(-1).detach().cpu().numpy())
+                            buf_p[name].append(preds_m[..., j].reshape(-1).detach().cpu().numpy())
+                        for j, name in enumerate(annual_names):
+                            buf_y[name].append(yb_a[..., j].reshape(-1).detach().cpu().numpy())
+                            buf_p[name].append(preds_a[..., j].reshape(-1).detach().cpu().numpy())
+                    else:
+                        # Delta mode:
+                        # MONTHLY: prev per month = concat(Dec(prev_year), months[:-1] of current year)
+                        if preds_m_prev is None:
+                            # If somehow missing (shouldn't be), approximate with current-year shift
+                            prev_m_full = torch.cat([preds_m[:, 0:1, :], preds_m[:, :-1, :]], dim=1)
+                        else:
+                            prev_m_full = torch.cat([preds_m_prev[:, -1:, :], preds_m[:, :-1, :]], dim=1)
+
+                        for j, name in enumerate(monthly_names):
+                            zlab = yb_m[..., j].reshape(-1).detach().cpu().numpy()                 # z-delta label
+                            pabs = preds_m[..., j].reshape(-1).detach().cpu().numpy()               # absolute pred
+                            pprev= prev_m_full[..., j].reshape(-1).detach().cpu().numpy()           # absolute prev(month)
+                            buf_z[name].append(zlab)
+                            buf_p[name].append(pabs)
+                            buf_prev[name].append(pprev)
+
+                        # ANNUAL: prev = previous year's annual mean
+                        if preds_a_prev is None:
+                            prev_a_full = preds_a  # degenerate first usable year (won't be used for y=1 normally)
+                        else:
+                            prev_a_full = preds_a_prev
+                        for j, name in enumerate(annual_names):
+                            zlab = yb_a[..., j].reshape(-1).detach().cpu().numpy()
+                            pabs = preds_a[:, 0, j].reshape(-1).detach().cpu().numpy()
+                            pprev= prev_a_full[:, 0, j].reshape(-1).detach().cpu().numpy()
+                            buf_z[name].append(zlab)
+                            buf_p[name].append(pabs)
+                            buf_prev[name].append(pprev)
+
+                # Prepare next carries/states for the NEXT year
                 if carry_on:
-                    preds_m, preds_a = pool_from_daily_abs(preds_abs_daily, nm, na, bounds)
-                    next_m = _prev_monthly_from_preds(preds_m, out_m_idx_sane, granularity)
-                    prev_monthly_state = (next_m if training else (next_m.detach() if next_m is not None else None))
+                    next_m_state = _prev_monthly_from_preds(preds_m, out_m_idx_sane, granularity)
+                    prev_monthly_state = (next_m_state if training else (next_m_state.detach() if next_m_state is not None else None))
                     if out_a_idx_sane:
                         a_vec = preds_a[:, 0, out_a_idx_sane]
                         prev_annual_state = (a_vec if training else a_vec.detach())
                     else:
                         prev_annual_state = None
 
+                # Also advance prev pooled absolutes for delta prev construction
+                preds_m_prev = preds_m.detach()
+                preds_a_prev = preds_a.detach()
+
+                # free
                 del preds_abs_daily, yb_m, yb_a
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -537,12 +604,24 @@ def _rollout_core(
     # Returns
     if return_pairs:
         out = {}
-        for name in (monthly_names + annual_names):
-            ys = buf_y.get(name, [])
-            ps = buf_p.get(name, [])
-            y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
-            p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
-            out[name] = (y, p)
+        names_all = monthly_names + annual_names
+        if not delta_mode:
+            for name in names_all:
+                ys = buf_y.get(name, [])
+                ps = buf_p.get(name, [])
+                y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
+                p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
+                out[name] = (y, p)
+        else:
+            for name in names_all:
+                zs   = buf_z.get(name, [])
+                ps   = buf_p.get(name, [])
+                prev = buf_prev.get(name, [])
+                zlab     = np.concatenate(zs,   axis=0) if zs   else np.empty((0,), dtype=float)
+                p_abs    = np.concatenate(ps,   axis=0) if ps   else np.empty((0,), dtype=float)
+                prev_abs = np.concatenate(prev, axis=0) if prev else np.empty((0,), dtype=float)
+                # Triplets consumed by gather_pred_label_pairs (which will convert p_abs-prev_abs to z-delta if needed)
+                out[name] = (zlab, p_abs, prev_abs)
         return out
 
     if loss_func is not None:
@@ -938,20 +1017,36 @@ def gather_pred_label_pairs(
     rollout_cfg: dict,
     carry_horizon: float = 0.0,
     max_points_per_var: int | None = 2_000_000,
-) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+) -> dict[str, tuple[np.ndarray, ...]]:
     """
-    Collect {var_name: (y_norm, yhat_norm)} pairs from test loader using the
-    SAME carry semantics as eval/test.
+    Collect pairs/triplets from the test loader using the SAME carry semantics as eval/test.
 
+    - If rollout_cfg['delta_labels'] is False:
+        returns {var: (y_norm, yhat_norm)}  # normalized absolutes
+    - If rollout_cfg['delta_labels'] is True:
+        returns {var: (z_delta_label, z_delta_pred, y_prev_abs)}
+        where z_delta_pred = ((pred_abs - prev_abs) - mu) / sd using rollout_cfg['std_out'].
+
+    Notes:
       - carry_horizon == 0.0 → teacher-forced (no cross-year injection)
       - carry_horizon  > 0.0 → carry monthly+annual states across years
     """
     model.eval()
     carry_on = float(carry_horizon) > 0.0
+    delta_mode = bool(rollout_cfg.get("delta_labels", False))
+    std_out = rollout_cfg.get("std_out", {})  # name -> {"mean": μ, "std": σ}
 
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
-    annual_names = list(rollout_cfg.get("out_annual_names", []))
-    buf = {n: ([], []) for n in (monthly_names + annual_names)}  # (y, yhat)
+    annual_names  = list(rollout_cfg.get("out_annual_names", []))
+    names_all = monthly_names + annual_names
+
+    if not delta_mode:
+        buf: dict[str, tuple[list[np.ndarray], list[np.ndarray]]] = {n: ([], []) for n in names_all}
+    else:
+        # (z_delta_label, pred_abs, prev_abs)
+        buf: dict[str, tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]] = {
+            n: ([], [], []) for n in names_all
+        }
 
     for batch_inputs, batch_monthly, batch_annual in test_dl:
         pairs = _rollout_core(
@@ -967,21 +1062,58 @@ def gather_pred_label_pairs(
             return_pairs=True,
             logger=_LOG,
         )
-        for k, (y, p) in pairs.items():
-            buf[k][0].append(y)
-            buf[k][1].append(p)
 
-    # Concatenate + optional subsample (to avoid gigantic scatter grids)
+        if not delta_mode:
+            for k, (y_z, p_abs) in pairs.items():
+                stats = std_out.get(k, {})
+                mu = float(stats.get("mean", 0.0))
+                sd = float(stats.get("std",  1.0))
+                if not np.isfinite(sd) or sd == 0.0:
+                    sd = 1.0
+                p_z = (p_abs - mu) / sd
+                buf[k][0].append(y_z)   # labels are already z-normalized
+                buf[k][1].append(p_z)   # predictions now z-normalized to match
+                
+        else:
+            for k, (zlab, p_abs, prev_abs) in pairs.items():
+                # Convert pred_abs - prev_abs to z-delta using stats
+                stats = std_out.get(k, {})
+                mu = float(stats.get("mean", 0.0))
+                sd = float(stats.get("std", 1.0))
+                if not np.isfinite(sd) or sd == 0.0:
+                    sd = 1.0
+                z_pred = ((p_abs - prev_abs) - mu) / sd
+
+                buf[k][0].append(zlab)
+                buf[k][1].append(z_pred)
+                buf[k][2].append(prev_abs)
+
+    # Concatenate + optional subsample
     rng = np.random.default_rng(123)
-    out = {}
-    for k, (ys, ps) in buf.items():
-        y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
-        p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
-        n = y.size
-        if (max_points_per_var is not None) and (n > max_points_per_var):
-            idx = rng.choice(n, size=max_points_per_var, replace=False)
-            y = y[idx]
-            p = p[idx]
-        out[k] = (y, p)
+    out: dict[str, tuple[np.ndarray, ...]] = {}
+    for k, lists in buf.items():
+        if not delta_mode:
+            ys, ps = lists  # type: ignore[misc]
+            y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
+            p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
+            n = y.size
+            if (max_points_per_var is not None) and (n > max_points_per_var):
+                idx = rng.choice(n, size=max_points_per_var, replace=False)
+                y = y[idx]
+                p = p[idx]
+            out[k] = (y, p)
+        else:
+            zlabs, zpreds, prevs = lists  # type: ignore[misc]
+            zlab  = np.concatenate(zlabs,  axis=0) if zlabs  else np.empty((0,), dtype=float)
+            zpred = np.concatenate(zpreds, axis=0) if zpreds else np.empty((0,), dtype=float)
+            prev  = np.concatenate(prevs,  axis=0) if prevs  else np.empty((0,), dtype=float)
+            n = zlab.size
+            if (max_points_per_var is not None) and (n > max_points_per_var):
+                idx = rng.choice(n, size=max_points_per_var, replace=False)
+                zlab  = zlab[idx]
+                zpred = zpred[idx]
+                prev  = prev[idx]
+            # Triplet consumed by _to_physical_pairs(delta_labels=True)
+            out[k] = (zlab, zpred, prev)
 
     return out

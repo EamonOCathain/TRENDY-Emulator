@@ -53,7 +53,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --job_name delta_test \
-  --subset_frac 0.0001 \
+  --subset_frac 0.01 \
   --epochs 30 \
   --mb_size 2940 \
   --num_workers 8 \
@@ -64,6 +64,8 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --early_stop_patience 10 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --delta_labels
+  --delta_labels \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/2025-10-25/3638206_delta_test/checkpoints/best.pt \
+  --test_only
 
 
