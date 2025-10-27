@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+import matplotlib as mpl
 
 # Torch runtime flags (determinism / precision)
 # -----------------------------------------------------------------------------#
@@ -779,6 +780,7 @@ def main():
             if ddp and dist.is_initialized():
                 dist.barrier()
 
+            # --- run tests and metrics while DDP is still alive ---
             _ = run_and_save_test_suite(
                 model=model,
                 loss_func=loss_fn,
@@ -802,11 +804,30 @@ def main():
                     logger=log,
                 )
 
-                log.info("[plots] starting full plots (subsample=200k)")
+            # --- synchronize and fully tear down distributed before plotting ---
+            if ddp and dist.is_initialized():
+                dist.barrier()
+                dist.destroy_process_group()
+
+            # --- CPU-only plotting on rank 0 after DDP teardown ---
+            if is_main:
+                mpl.use("Agg")                              # headless CPU backend
+                os.environ["CUDA_VISIBLE_DEVICES"] = ""     # hide GPUs from plotting
+
+                try:
+                    torch.cuda.empty_cache()
+                except Exception:
+                    pass
+
+                # unwrap and move model to CPU for plotting
+                model_cpu = model.module if isinstance(model, DDP) else model
+                model_cpu = model_cpu.to("cpu")
+
+                log.info("[plots] starting full plots on CPU (subsample=200k)")
                 _safe(lambda: run_and_save_scatter_grids(
-                    model=model,
+                    model=model_cpu,
                     test_dl=test_dl,
-                    device=DEVICE,
+                    device="cpu",                          
                     rollout_cfg=rollout_cfg,
                     run_dir=run_dir,
                     logger=log,
