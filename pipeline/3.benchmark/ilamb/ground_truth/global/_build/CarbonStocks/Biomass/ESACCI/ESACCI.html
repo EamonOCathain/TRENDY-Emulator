@@ -1,0 +1,845 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
+    <script>
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                var pair = vars[i].split("=");
+                if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        }
+    </script>
+    <script type='text/javascript'>
+        function pageLoad() {
+           pageLoadMeanState();
+        }
+    </script>
+    <script type='text/javascript'>
+
+        function updateImagesAndHeadersMeanState(){
+            var rsel  = document.getElementById("MeanStateRegion");
+            var msel  = document.getElementById("MeanStateModel");
+            var rid   = rsel.selectedIndex;
+            var mid   = msel.selectedIndex;
+            var RNAME = rsel.options[rid].value;
+            var MNAME = msel.options[mid].value;
+            var CNAME = "Biomass / ESACCI / 2010-2011";
+            var head  = "CNAME / RNAME / MNAME";
+            head      = head.replace("CNAME",CNAME).replace("RNAME",RNAME).replace("MNAME",MNAME);
+            $("#MeanStateHead").text(head);
+            
+          document.getElementById('timeint').src =  MNAME + '_' + RNAME + '_timeint.png'
+          document.getElementById('benchmark_timeint').src =  'Benchmark_' + RNAME + '_timeint.png'
+          document.getElementById('bias').src =  MNAME + '_' + RNAME + '_bias.png'
+          document.getElementById('biasscore').src =  MNAME + '_' + RNAME + '_biasscore.png'
+          document.getElementById('spatial_variance').src =  RNAME + '_spatial_variance.png'
+          document.getElementById('legend_spatial_variance').src =  'legend_spatial_variance.png'
+          document.getElementById('legend_compcycle').src =  'legend_compcycle.png'
+        }
+
+        function highlightRowMeanState(cell) {
+            var select = document.getElementById("MeanStateRegion");
+            for (var i = 0; i < select.length; i++){
+                var table = document.getElementById("MeanState_table_" + select.options[i].value);
+                var rows  = table.getElementsByTagName("tr");
+                for (var r = 2; r < rows.length; r++) {
+                    for (var c = 0; c < rows[r].cells.length-4; c++) {
+                        rows[r].cells[c].style.backgroundColor = "#ffffff";
+                    }
+                }
+                var r = cell.closest("tr").rowIndex;
+                document.getElementById("MeanStateModel").selectedIndex = r-1;
+                for (var c = 0; c < rows[r].cells.length-4; c++) {
+                    rows[r].cells[c].style.backgroundColor = "#c1c1c1";
+                }
+            }
+            updateImagesAndHeadersMeanState();
+        }
+
+        function paintScoreCellsMeanState(RNAME) {
+
+	    var PuOr = ['#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788'];
+	    var GnRd = ['#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d9f0d3','#a6dba0','#5aae61','#1b7837'];
+	    var colors = GnRd;
+            var nc = colors.length;
+            var table  = document.getElementById("MeanState_table_" + RNAME);
+            var rows   = table.getElementsByTagName("tr");
+            for (var c = rows[0].cells.length-3; c < rows[0].cells.length; c++) {
+                var scores = [];
+                for (var r = 2; r < rows.length; r++) {
+                    val = rows[r].cells[c].innerHTML;
+                    if (val=="") {
+                      scores[r-2] = 0;
+                    }else{
+                      scores[r-2] = parseFloat(val);
+                    }
+                }
+                var mean = math.mean(scores);
+                var std  = math.max(0.02,math.std(scores));
+                for (var r = 2; r < rows.length; r++) {
+                    scores[r-2] = Math.min(+2,Math.max(-2,(scores[r-2]-mean)/std));
+                }
+                for (var r = 2; r < rows.length; r++) {
+		    var e  = scores[r-2];
+                    var ae = Math.abs(e);
+                    var clr;
+                    if(ae >= 0.25){
+                      clr = math.round(2*e+4);
+                    }else{
+		      clr = math.round(4*e+4);
+                    }
+                    clr = math.min(math.max(0,clr),8);
+                    rows[r].cells[c].style.backgroundColor = colors[clr];
+                }
+            }
+        }
+
+        function pageLoadMeanState() {
+            var select = document.getElementById("MeanStateRegion");
+            var region = getQueryVariable("region");
+            var model  = getQueryVariable("model");
+            if (region) {
+                for (var i = 0; i < select.length; i++){
+                    if (select.options[i].value == region) select.selectedIndex = i;
+                }
+            }
+            var table = document.getElementById("MeanState_table_" + select.options[select.selectedIndex].value);
+            var rows  = table.getElementsByTagName("tr");
+            if (model) {
+                for (var r = 0; r < rows.length; r++) {
+                    if(rows[r].cells[0].innerHTML==model) highlightRowMeanState(rows[r].cells[0]);
+                }
+            }else{
+                highlightRowMeanState(rows[2]);
+            }
+            for (var i = 0; i < select.length; i++){
+                paintScoreCellsMeanState(select.options[i].value);
+            }
+            changeRegionMeanState();
+        }
+
+        function changeRegionMeanState() {
+            var select = document.getElementById("MeanStateRegion");
+            for (var i = 0; i < select.length; i++){
+                RNAME = select.options[i].value;
+                if (i == select.selectedIndex) {
+                    document.getElementById("MeanState_table_" + RNAME).style.display = "table";
+                }else{
+                    document.getElementById("MeanState_table_" + RNAME).style.display = "none";
+                }
+            }
+            updateImagesAndHeadersMeanState();
+        }
+      function AllSelect() {
+        var header = "CNAME / RNAME / MNAME";
+        var CNAME  = "Biomass / ESACCI / 2010-2011";
+        header     = header.replace("CNAME",CNAME);
+        var rid    = document.getElementById("AllModelsRegion").selectedIndex;
+        var RNAME  = document.getElementById("AllModelsRegion").options[rid].value;
+        var pid    = document.getElementById("AllModelsPlot").selectedIndex;
+        var PNAME  = document.getElementById("AllModelsPlot").options[pid].value;
+        header     = header.replace("RNAME",RNAME);
+        $("#AllModelsHead").text(header);
+        if(PNAME == "bias" || PNAME == "biasscore"){
+          document.getElementById("Benchmark_div").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_div").style.display = 'inline';
+        }
+        if(0){
+          document.getElementById("Benchmark_legend").style.display = 'none';
+          document.getElementById("BASE_CARRY_ANNUAL_legend").style.display = 'none';
+          document.getElementById("BASE_CARRY_MONTHS_legend").style.display = 'none';
+          document.getElementById("BASE_NO_CARRY_legend").style.display = 'none';
+          document.getElementById("ENSMEAN_legend").style.display = 'none';
+          document.getElementById("TL_AVH15C1_legend").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_legend").style.display = 'inline';
+          document.getElementById("BASE_CARRY_ANNUAL_legend").style.display = 'inline';
+          document.getElementById("BASE_CARRY_MONTHS_legend").style.display = 'inline';
+          document.getElementById("BASE_NO_CARRY_legend").style.display = 'inline';
+          document.getElementById("ENSMEAN_legend").style.display = 'inline';
+          document.getElementById("TL_AVH15C1_legend").style.display = 'inline';
+        }
+        document.getElementById('Benchmark').src = 'Benchmark_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('Benchmark_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('BASE_CARRY_ANNUAL').src = 'BASE_CARRY_ANNUAL_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('BASE_CARRY_ANNUAL_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('BASE_CARRY_MONTHS').src = 'BASE_CARRY_MONTHS_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('BASE_CARRY_MONTHS_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('BASE_NO_CARRY').src = 'BASE_NO_CARRY_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('BASE_NO_CARRY_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('ENSMEAN').src = 'ENSMEAN_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('ENSMEAN_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('TL_AVH15C1').src = 'TL_AVH15C1_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('TL_AVH15C1_legend').src = 'legend_' + PNAME + '.png';
+      }
+
+      $(document).on('pageshow', '[data-role="page"]', function(){
+        AllSelect()
+      });
+    </script>
+    <style type="text/css">
+      .container{
+        display:inline;
+      }
+      .break{
+        clear:left;
+      }
+      .child{
+        margin-bottom:10px;
+        display:inline-block;
+        padding:5px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      table.table-header-rotated {
+          border-collapse: collapse;
+      }
+      td {
+          text-align: center;
+          padding: 10px 5px;
+          border: 1px solid #ccc;
+      }
+      th {
+          padding: 5px 10px;
+      }
+      th.rotate {
+          height: 280px;
+          white-space: nowrap;
+      }
+      th.rotate > div {
+          transform: translate(10px, 135px) rotate(-45deg);
+          width: 0px;
+      }
+      th.rotate > div > span {
+      }
+      th.row-header {
+          padding: 0px 10px;
+          text-align: right;
+      }
+      td.divider {
+          width: 0px;
+          border: 0px solid #ccc;
+          padding: 0px 0px
+      }
+    </style>
+  </head>
+  <body onload="pageLoad()">
+    <div data-role="page" id="MeanState">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="MeanStateHead">Mean State</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState' class=ui-btn-active ui-state-persist>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="MeanStateRegion" onchange="changeRegionMeanState()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+      <div style="display:none">
+      <select id="MeanStateModel">
+        <option value='Benchmark'>Benchmark</option>
+        <option value='BASE_CARRY_ANNUAL' selected="selected">BASE_CARRY_ANNUAL</option>
+        <option value='BASE_CARRY_MONTHS'>BASE_CARRY_MONTHS</option>
+        <option value='BASE_NO_CARRY'>BASE_NO_CARRY</option>
+        <option value='ENSMEAN'>ENSMEAN</option>
+        <option value='TL_AVH15C1'>TL_AVH15C1</option>
+      </select>
+      </div>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_global">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ESACCI_Benchmark.nc" download>[-]</a></td>
+               <td>24.0</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_ANNUAL</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_ANNUAL.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">36.4</td>
+               <td onclick="highlightRowMeanState(this)">36.4</td>
+               <td onclick="highlightRowMeanState(this)">47.0</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">8.73</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-10.7</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.417</td>
+               <td onclick="highlightRowMeanState(this)">0.840</td>
+               <td onclick="highlightRowMeanState(this)">0.629</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_MONTHS</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_MONTHS.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">33.5</td>
+               <td onclick="highlightRowMeanState(this)">33.5</td>
+               <td onclick="highlightRowMeanState(this)">47.0</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">8.73</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-13.6</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.415</td>
+               <td onclick="highlightRowMeanState(this)">0.828</td>
+               <td onclick="highlightRowMeanState(this)">0.622</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_NO_CARRY</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_NO_CARRY.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">39.1</td>
+               <td onclick="highlightRowMeanState(this)">39.1</td>
+               <td onclick="highlightRowMeanState(this)">47.1</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">8.72</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-8.05</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.484</td>
+               <td onclick="highlightRowMeanState(this)">0.851</td>
+               <td onclick="highlightRowMeanState(this)">0.668</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ENSMEAN</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_ENSMEAN.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">14.5</td>
+               <td onclick="highlightRowMeanState(this)">26.2</td>
+               <td onclick="highlightRowMeanState(this)">24.0</td>
+               <td onclick="highlightRowMeanState(this)">0.0105</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">2.23</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.656</td>
+               <td onclick="highlightRowMeanState(this)">0.867</td>
+               <td onclick="highlightRowMeanState(this)">0.761</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">TL_AVH15C1</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_TL_AVH15C1.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">38.7</td>
+               <td onclick="highlightRowMeanState(this)">38.6</td>
+               <td onclick="highlightRowMeanState(this)">47.1</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">8.72</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-8.52</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.477</td>
+               <td onclick="highlightRowMeanState(this)">0.854</td>
+               <td onclick="highlightRowMeanState(this)">0.666</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_test">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ESACCI_Benchmark.nc" download>[-]</a></td>
+               <td>49.7</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_ANNUAL</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_ANNUAL.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">34.1</td>
+               <td onclick="highlightRowMeanState(this)">34.1</td>
+               <td onclick="highlightRowMeanState(this)">50.0</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">16.7</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-16.3</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.439</td>
+               <td onclick="highlightRowMeanState(this)">0.815</td>
+               <td onclick="highlightRowMeanState(this)">0.627</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_MONTHS</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_MONTHS.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">30.3</td>
+               <td onclick="highlightRowMeanState(this)">30.3</td>
+               <td onclick="highlightRowMeanState(this)">50.0</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">16.7</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-20.2</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.433</td>
+               <td onclick="highlightRowMeanState(this)">0.802</td>
+               <td onclick="highlightRowMeanState(this)">0.618</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_NO_CARRY</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_NO_CARRY.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ENSMEAN</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_ENSMEAN.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">TL_AVH15C1</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_TL_AVH15C1.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">38.7</td>
+               <td onclick="highlightRowMeanState(this)">38.7</td>
+               <td onclick="highlightRowMeanState(this)">50.0</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">16.7</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-11.7</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.492</td>
+               <td onclick="highlightRowMeanState(this)">0.845</td>
+               <td onclick="highlightRowMeanState(this)">0.668</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_train">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ESACCI_Benchmark.nc" download>[-]</a></td>
+               <td>46.3</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_ANNUAL</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_ANNUAL.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">36.7</td>
+               <td onclick="highlightRowMeanState(this)">36.7</td>
+               <td onclick="highlightRowMeanState(this)">46.2</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-9.53</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.412</td>
+               <td onclick="highlightRowMeanState(this)">0.849</td>
+               <td onclick="highlightRowMeanState(this)">0.630</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_MONTHS</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_MONTHS.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">34.2</td>
+               <td onclick="highlightRowMeanState(this)">34.2</td>
+               <td onclick="highlightRowMeanState(this)">46.2</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-12.0</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.411</td>
+               <td onclick="highlightRowMeanState(this)">0.835</td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_NO_CARRY</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_NO_CARRY.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ENSMEAN</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_ENSMEAN.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">TL_AVH15C1</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_TL_AVH15C1.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">38.6</td>
+               <td onclick="highlightRowMeanState(this)">38.6</td>
+               <td onclick="highlightRowMeanState(this)">46.2</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-7.58</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.473</td>
+               <td onclick="highlightRowMeanState(this)">0.859</td>
+               <td onclick="highlightRowMeanState(this)">0.666</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_val">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [Mg/ha]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [Mg/ha]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ESACCI_Benchmark.nc" download>[-]</a></td>
+               <td>50.2</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_ANNUAL</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_ANNUAL.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">38.6</td>
+               <td onclick="highlightRowMeanState(this)">38.6</td>
+               <td onclick="highlightRowMeanState(this)">50.3</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-11.6</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.431</td>
+               <td onclick="highlightRowMeanState(this)">0.836</td>
+               <td onclick="highlightRowMeanState(this)">0.634</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_CARRY_MONTHS</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_CARRY_MONTHS.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">33.9</td>
+               <td onclick="highlightRowMeanState(this)">33.9</td>
+               <td onclick="highlightRowMeanState(this)">50.3</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-16.3</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.423</td>
+               <td onclick="highlightRowMeanState(this)">0.841</td>
+               <td onclick="highlightRowMeanState(this)">0.632</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">BASE_NO_CARRY</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_BASE_NO_CARRY.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ENSMEAN</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_ENSMEAN.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">TL_AVH15C1</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ESACCI_TL_AVH15C1.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">39.1</td>
+               <td onclick="highlightRowMeanState(this)">39.1</td>
+               <td onclick="highlightRowMeanState(this)">50.3</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-11.2</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.487</td>
+               <td onclick="highlightRowMeanState(this)">0.847</td>
+               <td onclick="highlightRowMeanState(this)">0.667</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <div data-role="collapsible" data-collapsed="false"><h1>Temporally integrated period mean</h1>
+        <div class="container" id="benchmark_timeint_div">
+          <div class="child">
+          <center>BENCHMARK&nbsp;MEAN</center>
+          <img src="" id="benchmark_timeint" alt="Data not available" ></img>
+          <center><img src="legend_timeint.png" id="leg"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="timeint_div">
+          <div class="child">
+          <center>MODEL&nbsp;MEAN</center>
+          <img src="" id="timeint" alt="Data not available" ></img>
+          <center><img src="legend_timeint.png" id="leg"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="bias_div">
+          <div class="child">
+          <center>BIAS</center>
+          <img src="" id="bias" alt="Data not available" ></img>
+          <center><img src="legend_bias.png" id="leg"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="biasscore_div">
+          <div class="child">
+          <center>BIAS&nbsp;SCORE</center>
+          <img src="" id="biasscore" alt="Data not available" ></img>
+          <center><img src="legend_biasscore.png" id="leg"  alt="Data not available" ></img></center>
+          </div>
+        </div><br>
+        <div class="container" id="spatial_variance_div">
+          <div class="child">
+          <center>SPATIAL&nbsp;TAYLOR&nbsp;DIAGRAM</center>
+          <img src="" id="spatial_variance" alt="Data not available" ></img>
+          </div>
+        </div>
+        <div class="container" id="legend_spatial_variance_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_spatial_variance" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+        <div data-role="collapsible" data-collapsed="false"><h1>Spatially integrated regional mean</h1>
+        <div class="container" id="legend_compcycle_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_compcycle" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+    </div>
+    <div data-role="page" id="AllModels">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="AllModelsHead">All Models</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels' class=ui-btn-active ui-state-persist>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+      <select id="AllModelsPlot" onchange="AllSelect()">
+        <option value='timeint' selected="selected">Temporally integrated period mean</option>
+        <option value='bias'>Temporally integrated period mean bias</option>
+        <option value='biasscore'>Temporally integrated period mean bias score</option>
+      </select>
+        <div class="container" id="Benchmark_div">
+          <div class="child">
+          <center>Benchmark</center>
+          <img src="" id="Benchmark" alt="Data not available" ></img>
+          <center><img src="legend_Benchmark.png" id="Benchmark_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="BASE_CARRY_ANNUAL_div">
+          <div class="child">
+          <center>BASE_CARRY_ANNUAL</center>
+          <img src="" id="BASE_CARRY_ANNUAL" alt="Data not available" ></img>
+          <center><img src="legend_BASE_CARRY_ANNUAL.png" id="BASE_CARRY_ANNUAL_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="BASE_CARRY_MONTHS_div">
+          <div class="child">
+          <center>BASE_CARRY_MONTHS</center>
+          <img src="" id="BASE_CARRY_MONTHS" alt="Data not available" ></img>
+          <center><img src="legend_BASE_CARRY_MONTHS.png" id="BASE_CARRY_MONTHS_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="BASE_NO_CARRY_div">
+          <div class="child">
+          <center>BASE_NO_CARRY</center>
+          <img src="" id="BASE_NO_CARRY" alt="Data not available" ></img>
+          <center><img src="legend_BASE_NO_CARRY.png" id="BASE_NO_CARRY_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="ENSMEAN_div">
+          <div class="child">
+          <center>ENSMEAN</center>
+          <img src="" id="ENSMEAN" alt="Data not available" ></img>
+          <center><img src="legend_ENSMEAN.png" id="ENSMEAN_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="TL_AVH15C1_div">
+          <div class="child">
+          <center>TL_AVH15C1</center>
+          <img src="" id="TL_AVH15C1" alt="Data not available" ></img>
+          <center><img src="legend_TL_AVH15C1.png" id="TL_AVH15C1_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+    </div>
+    <div data-role="page" id="DataInformation">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="DataInformationHead">Data Information</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation' class=ui-btn-active ui-state-persist>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      
+<p><dl><dt><b>&nbsp;&nbsp;Title:</dt></b><dd>ESA CCI above-ground biomass product level</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Version:</dt></b><dd>3</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Institution:</dt></b><dd>GAMMA Remote Sensing</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Source:</dt></b><dd>ALOS-2 PALSAR-2 FB and WB mosaics, Sentinel-1 GRD</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;History:</dt></b><dd>2022-05-17: downloaded source from <a href='https://dap.ceda.ac.uk/neodc/esacci/biomass/data/agb/maps/v3.0/netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2010-fv3.0.nc'>https://dap.ceda.ac.uk/neodc/esacci/biomass/data/agb/maps/v3.0/netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2010-fv3.0.nc</a></dd><dd>2022-05-26: coarsened to 0.5 degree resolution using <a href='https://github.com/rubisco-sfa/ILAMB-Data/blob/master/ESACCI/convert.py'>https://github.com/rubisco-sfa/ILAMB-Data/blob/master/ESACCI/convert.py</a></dd><dd></dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;References:</dt></b><dd>M. Santoro and O. Cartus (2021), ESA Biomass Climate Change Initiative (Biomass_cci): Global datasets of forest above-ground biomass for the years 2010, 2017 and 2018, v3, <i>NERC EDS Centre for Environmental Data Analysis</i>, <a href='http://dx.doi.org/10.5285/5f331c418e9f4935b8eb1b836f8a91b8'>http://dx.doi.org/10.5285/5f331c418e9f4935b8eb1b836f8a91b8</a></dd></dl></p>
+    </div>
+  </body>
+</html>

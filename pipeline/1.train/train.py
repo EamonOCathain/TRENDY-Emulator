@@ -154,6 +154,7 @@ def parse_args():
     # --- Other ---
     parser.add_argument("--scan_finite", action="store_true",
                         help="Scan datasets for non-finite values before training (warns if any found)")
+    parser.add_argument("--var_weights", type=str, default=None, help='Comma list of "<var>=<weight>" to override per-variable loss weights, e.g. "lai=2,gpp=0.5". Names must match OUTPUT vars.',)
 
     return parser.parse_args()
 
@@ -179,6 +180,22 @@ def _check_frac(name, val):
 
 _check_frac("subset_frac", args.subset_frac)
 _check_frac("test_frac", args.test_frac)
+
+def _parse_var_weights(s: str | None) -> dict[str, float]:
+    if not s:
+        return {}
+    out = {}
+    for chunk in s.split(","):
+        if not chunk.strip():
+            continue
+        if "=" not in chunk:
+            raise SystemExit(f'Bad --var_weights entry "{chunk}". Use "<var>=<float>".')
+        k, v = chunk.split("=", 1)
+        try:
+            out[k.strip()] = float(v)
+        except ValueError:
+            raise SystemExit(f'Weight for "{k}" must be a float, got "{v}".')
+    return out
 
 # =============================================================================
 # Utility: non-finite scan (optional)
@@ -422,6 +439,29 @@ def main():
     monthly_names = schema.out_monthly_names()
     annual_names = schema.out_annual_names()
     output_names = monthly_names + annual_names
+    
+    # Default all-supervised weights to 1.0
+    monthly_weights = [1.0 for _ in monthly_names]
+    annual_weights  = [1.0 for _ in annual_names]
+
+    # Apply per-variable overrides from --var_weights
+    vw = _parse_var_weights(getattr(args, "var_weights", None))
+    if vw:
+        # name -> index maps (head-local)
+        m_idx = {n: i for i, n in enumerate(monthly_names)}
+        a_idx = {n: i for i, n in enumerate(annual_names)}
+        for name, w in vw.items():
+            if name in m_idx:
+                monthly_weights[m_idx[name]] = float(w)
+                if is_main:
+                    print(f"[loss] monthly weight override: {name}={w}")
+            elif name in a_idx:
+                annual_weights[a_idx[name]] = float(w)
+                if is_main:
+                    print(f"[loss] annual weight override:  {name}={w}")
+            else:
+                if is_main:
+                    print(f"[loss][WARN] --var_weights entry '{name}' not in outputs; ignoring.")
 
     idx_monthly = list(range(len(monthly_names)))
     idx_annual = list(range(len(monthly_names), len(output_names)))

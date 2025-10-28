@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=Train-TL
+#SBATCH --job-name=lai_3
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A100:4
+#SBATCH --gres=gpu:A100:8
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=200G
 #SBATCH --time=3-00:00:00
@@ -52,7 +52,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name mass_balance_train \
+  --job_name tl_lai_3 \
   --epochs 30 \
   --mb_size 2940 \
   --num_workers 8 \
@@ -60,14 +60,14 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --test_frac 0.5 \
   --shuffle_windows \
   --early_stop \
-  --early_stop_patience 10 \
+  --early_stop_patience 8 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/base_model/base_model_new_loss/checkpoints/best.pt \
-  --use_mass_balances \
-  --npp_balance 1000 \
-  --nbp_balance 1000 \
-  --nbp_d_ctotal_balance 2 \
-  --carbon_partition_balance 1
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/transfer_learning/avh15c1_lai/second_train_to_epoch_22/checkpoints/best.pt \
+  --transfer_learn \
+  --transfer_learn_years 1982-2018 \
+  --transfer_learn_vars lai_avh15c1 \
+  --var_weights "lai=3"
+
 
 

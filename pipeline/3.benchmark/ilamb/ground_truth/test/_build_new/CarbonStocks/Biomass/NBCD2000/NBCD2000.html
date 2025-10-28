@@ -1,0 +1,148 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
+    <script>
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                var pair = vars[i].split("=");
+                if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        }
+    </script>
+    <script type='text/javascript'>
+        function pageLoad() {
+        }
+    </script>
+    <script type='text/javascript'>
+      function AllSelect() {
+        var header = "CNAME / RNAME / MNAME";
+        var CNAME  = "Biomass / NBCD2000 / 1996-2006";
+        header     = header.replace("CNAME",CNAME);
+        var rid    = document.getElementById("AllModelsRegion").selectedIndex;
+        var RNAME  = document.getElementById("AllModelsRegion").options[rid].value;
+        var pid    = document.getElementById("AllModelsPlot").selectedIndex;
+        var PNAME  = document.getElementById("AllModelsPlot").options[pid].value;
+        header     = header.replace("RNAME",RNAME);
+        $("#AllModelsHead").text(header);
+        if(0){
+          document.getElementById("Benchmark_div").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_div").style.display = 'inline';
+        }
+        if(0){
+        }else{
+        }
+      }
+
+      $(document).on('pageshow', '[data-role="page"]', function(){
+        AllSelect()
+      });
+    </script>
+    <style type="text/css">
+      .container{
+        display:inline;
+      }
+      .break{
+        clear:left;
+      }
+      .child{
+        margin-bottom:10px;
+        display:inline-block;
+        padding:5px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      table.table-header-rotated {
+          border-collapse: collapse;
+      }
+      td {
+          text-align: center;
+          padding: 10px 5px;
+          border: 1px solid #ccc;
+      }
+      th {
+          padding: 5px 10px;
+      }
+      th.rotate {
+          height: 280px;
+          white-space: nowrap;
+      }
+      th.rotate > div {
+          transform: translate(10px, 135px) rotate(-45deg);
+          width: 0px;
+      }
+      th.rotate > div > span {
+      }
+      th.row-header {
+          padding: 0px 10px;
+          text-align: right;
+      }
+      td.divider {
+          width: 0px;
+          border: 0px solid #ccc;
+          padding: 0px 0px
+      }
+    </style>
+  </head>
+  <body onload="pageLoad()">
+    <div data-role="page" id="MeanState">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="MeanStateHead">Mean State</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState' class=ui-btn-active ui-state-persist>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+        <div data-role="collapsible" data-collapsed="false"><h1>Spatially integrated regional mean</h1>
+        <div class="container" id="legend_compcycle_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_compcycle" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+    </div>
+    <div data-role="page" id="AllModels">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="AllModelsHead">All Models</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels' class=ui-btn-active ui-state-persist>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+    </div>
+    <div data-role="page" id="DataInformation">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="DataInformationHead">Data Information</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation' class=ui-btn-active ui-state-persist>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      
+<p><dl><dt><b>&nbsp;&nbsp;Approach:</dt></b><dd>To convert the original data at 250m to the final one at 0.5x0.5 degree resolution, Please see conversion steps listed in <a href='http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/readme_biomass. 3 codes below will be used in these steps. Code 1: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/read-NBCD2000.pro Code 2: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-NBCD2000.ncl Code 3: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/write-NBCD2000.ncl First, I used Code 1 to read data at 250m from the original geotiff file'>http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/readme_biomass. 3 codes below will be used in these steps. Code 1: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/read-NBCD2000.pro Code 2: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-NBCD2000.ncl Code 3: http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/write-NBCD2000.ncl First, I used Code 1 to read data at 250m from the original geotiff file</a></dd><dd>then I used Code 2 to convert unit from the orignal unit of  ton C per hectare to the final one of Kg C per m2, meanwhile I summed all available data points at 250m in each 0.5x0.5 grid cell to obtain the data at 0.5x0.5 degree resolution</dd><dd>finally I used Code 3 to create the final file in netCDF format.</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Temporal resolution:</dt></b><dd>yearly</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;General information:</dt></b><dd>This product was derived from National Biomass and Carbon Dataset for the year 2000 originally in a raster format at 250m.</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Spatial resolution:</dt></b><dd>0.5x0.5 degree</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Derived data code:</dt></b><dd><a href='http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/read-NBCD2000.pro http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-NBCD2000.ncl http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/write-NBCD2000.ncl'>http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/read-NBCD2000.pro http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-NBCD2000.ncl http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/write-NBCD2000.ncl</a></dd></dl></p>
+    </div>
+  </body>
+</html>

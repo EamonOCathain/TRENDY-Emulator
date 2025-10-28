@@ -1,0 +1,1782 @@
+[INFO][0][<module>] Linux node-r5-he17.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-10-27 15:22:10.419988
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/FLUXCOM][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/WECANN][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][NetBiomeProductivity/HOFFMAN][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/HOFFMAN][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/HOFFMAN][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/HOFFMAN][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/HOFFMAN][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/GCP][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/GCP][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/GCP][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/GCP][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/GCP][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 352, in stageData
+    self.pruneRegions(obs)
+    ~~~~~~~~~~~~~~~~~^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 415, in pruneRegions
+    self.regions = [region for region in self.regions if r.hasData(region, var)]
+                                                         ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 345, in hasData
+    keep = self.getMask(label, var) == False
+           ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Regions.py", line 212, in getMask
+    (var.lat[:, np.newaxis] >= lat[:-1])
+     ~~~~~~~^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+[INFO][0][AnalysisMeanStateSpace][nee] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nee] RMSE scored using Collier2018
+[INFO][0][confront][NetEcosystemExchange/FLUXCOM][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][reco] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][reco] RMSE scored using Collier2018
+[INFO][0][confront][EcosystemRespiration/FLUXCOM][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/CLASS][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][TotalRunoff/Dai][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [mrro] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/mrro/Dai/runoff.nc
+
+[DEBUG][0][WorkConfront][TotalRunoff/Dai][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [mrro,mrro] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/mrro/Dai/runoff.nc
+
+[DEBUG][0][WorkConfront][TotalRunoff/Dai][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [mrro,mrro,mrro] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/mrro/Dai/runoff.nc
+
+[DEBUG][0][WorkConfront][TotalRunoff/Dai][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [mrro,mrro,mrro,mrro] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/mrro/Dai/runoff.nc
+
+[DEBUG][0][WorkConfront][TotalRunoff/Dai][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [mrro,mrro,mrro,mrro,mrro] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/mrro/Dai/runoff.nc
+
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/LORA][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][Evapotranspiration/DOLCE][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/DOLCE/DOLCE.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/DOLCE][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/DOLCE/DOLCE.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/DOLCE][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/DOLCE/DOLCE.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/DOLCE][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/DOLCE/DOLCE.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/DOLCE][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/DOLCE/DOLCE.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/GLEAMv3.3a][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/GLEAMv3.3a/et.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/GLEAMv3.3a][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/GLEAMv3.3a/et.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/GLEAMv3.3a][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/GLEAMv3.3a/et.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/GLEAMv3.3a][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/GLEAMv3.3a/et.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/GLEAMv3.3a][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/GLEAMv3.3a/et.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/MODIS][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/MODIS/et_0.5x0.5.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/MODIS][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/MODIS/et_0.5x0.5.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/MODIS][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/MODIS/et_0.5x0.5.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/MODIS][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/MODIS/et_0.5x0.5.nc
+
+[DEBUG][0][WorkConfront][Evapotranspiration/MODIS][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl,evspsbl] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/evspsbl/MODIS/et_0.5x0.5.nc
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_CARRY_ANNUAL/S3_mrso.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_CARRY_MONTHS/S3_mrso.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_NO_CARRY/S3_mrso.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/ENSMEAN/ENSMEAN_S3_mrso.nc'
+
+[DEBUG][0][MakeComparable][TotalSoilMoistureContent/WangMao][TL_AVH15C1] Datasets are not uniformly layered: reference = True, comparison = False
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2359, in MakeComparable
+    raise NotLayeredVariable()
+ILAMB.ilamblib.NotLayeredVariable: NotLayeredVariable
+
+[INFO][0][MakeComparable][Biomass/ESACCI][TL_AVH15C1] Spatial data was clipped from the comparison:  before: [ 12 360 720] after: [ 12 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/ESACCI][TL_AVH15C1] Success
+[INFO][0][MakeComparable][Biomass/GEOCARBON][TL_AVH15C1] Spatial data was clipped from the comparison:  before: [120 360 720] after: [120 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/GEOCARBON][TL_AVH15C1] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/NBCD2000][TL_AVH15C1] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Saatchi2011][TL_AVH15C1] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Thurner][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][Biomass/XuSaatchi2021][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_CARRY_ANNUAL/S3_cVeg.nc'
+
+[DEBUG][0][WorkConfront][Biomass/XuSaatchi2021][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_CARRY_MONTHS/S3_cVeg.nc'
+
+[DEBUG][0][WorkConfront][Biomass/XuSaatchi2021][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/BASE_NO_CARRY/S3_cVeg.nc'
+
+[DEBUG][0][WorkConfront][Biomass/XuSaatchi2021][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 409, in extractTimeSeries
+    v = self.derivedVariable(
+        variable,
+    ...<4 lines>...
+        final_time=final_time,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 495, in derivedVariable
+    Vs[arg] = self.extractTimeSeries(
+              ~~~~~~~~~~~~~~~~~~~~~~^
+        arg.name,
+        ^^^^^^^^^
+    ...<4 lines>...
+        final_time=final_time,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 359, in extractTimeSeries
+    var = Variable(
+        filename=pathName,
+    ...<5 lines>...
+        tf=final_time - self.shift,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 723, in FromNetCDF4
+    dset = Dataset(filename, mode="r")
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+FileNotFoundError: [Errno 2] No such file or directory: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/ground_truth/MODELS/ENSMEAN/ENSMEAN_S3_cVeg.nc'
+
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[DEBUG][0][WorkConfront][Biomass/XuSaatchi2021][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 464, in confront
+    il.AnalysisMeanStateSpace(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<12 lines>...
+        df_errs=self.df_errs,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2186, in AnalysisMeanStateSpace
+    ref_cycle = REF.annualCycle()
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 804, in annualCycle
+    assert self.monthly
+           ^^^^^^^^^^^^
+AssertionError
+
+[INFO][0][MakeComparable][CarboninSoilPool/Wang2024][TL_AVH15C1] Spatial data was clipped from the comparison:  before: [756 360 720] after: [756 131 250]
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/Wang2024][TL_AVH15C1] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/MODIS][TL_AVH15C1] Success
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][BASE_CARRY_ANNUAL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][BASE_CARRY_MONTHS]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][BASE_NO_CARRY]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][ENSMEAN]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][TL_AVH15C1]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ground_truth/global/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVHRR][TL_AVH15C1] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVH15C1][TL_AVH15C1] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][ENSMEAN] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][TL_AVH15C1] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][ENSMEAN] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][TL_AVH15C1] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][ENSMEAN] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][TL_AVH15C1] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][ENSMEAN] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][TL_AVH15C1] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][ENSMEAN] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][TL_AVH15C1] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][ENSMEAN] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][TL_AVH15C1] Success
+[INFO][0][modelPlots][Biomass/ESACCI][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][Biomass/ESACCI][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][Biomass/ESACCI][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][Biomass/ESACCI][ENSMEAN] Success
+[INFO][0][modelPlots][Biomass/ESACCI][TL_AVH15C1] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][ENSMEAN] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][TL_AVH15C1] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][ENSMEAN] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][TL_AVH15C1] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][ENSMEAN] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][TL_AVH15C1] Success
+[INFO][0][modelPlots][Biomass/Thurner][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][Biomass/Thurner][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][Biomass/Thurner][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][Biomass/Thurner][ENSMEAN] Success
+[INFO][0][modelPlots][Biomass/Thurner][TL_AVH15C1] Success
+[INFO][0][modelPlots][CarboninSoilPool/Wang2024][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][CarboninSoilPool/Wang2024][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][CarboninSoilPool/Wang2024][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][CarboninSoilPool/Wang2024][ENSMEAN] Success
+[INFO][0][modelPlots][CarboninSoilPool/Wang2024][TL_AVH15C1] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][ENSMEAN] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][TL_AVH15C1] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][ENSMEAN] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][TL_AVH15C1] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][BASE_CARRY_ANNUAL] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][BASE_CARRY_MONTHS] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][BASE_NO_CARRY] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][ENSMEAN] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][TL_AVH15C1] Success
+[INFO][0][<module>][total time] 2714.3 s

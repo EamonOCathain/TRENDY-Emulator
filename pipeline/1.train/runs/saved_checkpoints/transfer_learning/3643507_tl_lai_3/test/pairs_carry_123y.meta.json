@@ -1,0 +1,62 @@
+{
+  "evapotrans": {
+    "units": "kg m-2 s-1",
+    "long_name": "Evapotranspiration"
+  },
+  "fFire": {
+    "units": "kg m-2 s-1",
+    "long_name": "Fire Emissions"
+  },
+  "fLuc": {
+    "units": "kg m-2 s-1",
+    "long_name": "Land-Use Change Emissions"
+  },
+  "gpp": {
+    "units": "kg m-2 s-1",
+    "long_name": "Gross Primary Production"
+  },
+  "mrro": {
+    "units": "kg m-2 s-1",
+    "long_name": "Total Runoff"
+  },
+  "nbp": {
+    "units": "kg m-2 s-1",
+    "long_name": "Net Biome Productivity"
+  },
+  "npp": {
+    "units": "kg m-2 s-1",
+    "long_name": "Net Primary Production"
+  },
+  "ra": {
+    "units": "kg m-2 s-1",
+    "long_name": "Autotrophic Respiration"
+  },
+  "rh": {
+    "units": "kg m-2 s-1",
+    "long_name": "Heterotrophic Respiration"
+  },
+  "cTotal_monthly": {
+    "units": "kg m-2",
+    "long_name": "Total Carbon in Ecosystem"
+  },
+  "lai_avh15c1": {
+    "units": "m2 m-2",
+    "long_name": "Leaf Area Index"
+  },
+  "mrso": {
+    "units": "kg m-2",
+    "long_name": "Total Soil Moisture Content"
+  },
+  "cLitter": {
+    "units": "kg m-2",
+    "long_name": "Carbon in Litter Pool"
+  },
+  "cSoil": {
+    "units": "kg m-2",
+    "long_name": "Carbon in Soil Pool"
+  },
+  "cVeg": {
+    "units": "kg m-2",
+    "long_name": "Carbon in Vegetation"
+  }
+}

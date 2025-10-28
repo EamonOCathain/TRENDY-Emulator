@@ -1,0 +1,148 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
+    <script>
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                var pair = vars[i].split("=");
+                if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        }
+    </script>
+    <script type='text/javascript'>
+        function pageLoad() {
+        }
+    </script>
+    <script type='text/javascript'>
+      function AllSelect() {
+        var header = "CNAME / RNAME / MNAME";
+        var CNAME  = "TotalRunoff / Dai / 1980-2011";
+        header     = header.replace("CNAME",CNAME);
+        var rid    = document.getElementById("AllModelsRegion").selectedIndex;
+        var RNAME  = document.getElementById("AllModelsRegion").options[rid].value;
+        var pid    = document.getElementById("AllModelsPlot").selectedIndex;
+        var PNAME  = document.getElementById("AllModelsPlot").options[pid].value;
+        header     = header.replace("RNAME",RNAME);
+        $("#AllModelsHead").text(header);
+        if(0){
+          document.getElementById("Benchmark_div").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_div").style.display = 'inline';
+        }
+        if(0){
+        }else{
+        }
+      }
+
+      $(document).on('pageshow', '[data-role="page"]', function(){
+        AllSelect()
+      });
+    </script>
+    <style type="text/css">
+      .container{
+        display:inline;
+      }
+      .break{
+        clear:left;
+      }
+      .child{
+        margin-bottom:10px;
+        display:inline-block;
+        padding:5px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      table.table-header-rotated {
+          border-collapse: collapse;
+      }
+      td {
+          text-align: center;
+          padding: 10px 5px;
+          border: 1px solid #ccc;
+      }
+      th {
+          padding: 5px 10px;
+      }
+      th.rotate {
+          height: 280px;
+          white-space: nowrap;
+      }
+      th.rotate > div {
+          transform: translate(10px, 135px) rotate(-45deg);
+          width: 0px;
+      }
+      th.rotate > div > span {
+      }
+      th.row-header {
+          padding: 0px 10px;
+          text-align: right;
+      }
+      td.divider {
+          width: 0px;
+          border: 0px solid #ccc;
+          padding: 0px 0px
+      }
+    </style>
+  </head>
+  <body onload="pageLoad()">
+    <div data-role="page" id="MeanState">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="MeanStateHead">Mean State</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState' class=ui-btn-active ui-state-persist>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+        <div data-role="collapsible" data-collapsed="false"><h1>Spatially integrated regional mean</h1>
+        <div class="container" id="legend_compcycle_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_compcycle" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+    </div>
+    <div data-role="page" id="AllModels">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="AllModelsHead">All Models</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels' class=ui-btn-active ui-state-persist>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+    </div>
+    <div data-role="page" id="DataInformation">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="DataInformationHead">Data Information</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation' class=ui-btn-active ui-state-persist>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      
+<p><dl><dt><b>&nbsp;&nbsp;Title:</dt></b><dd>derived GRDC Aiguo Runoff Dataset</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Source_file:</dt></b><dd>This product is generated from yearly GRDC_Aiguo observations</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Conventions:</dt></b><dd>Please contact Prof. James Randerson (Email: jranders@uci.edu) or Dr. Mingquan Mu (mmu@uci.edu) for any question</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Altitude:</dt></b><dd></dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Site_name:</dt></b><dd>Amazon,Ob,Lena,Yenisey,Mississippi,Congo,Mackenzie,Parana,Nile,Amur,Niger (Issa Ber,Changjiang,Yukon,Nelson,St Lawrence,Kolyma,Murray,Danube,Indus,Orange (Senqu),Ganges (Ganga),Columbia,Huanghe,Indigirka,Orinoco,Tocantins,Mekong,Severnaya Dvina,Dnepr,Colorado-AR,Pechora,Brahmaputra,Rio Grande (Bra,Coruripe,Don,Olenek,Yana,Churchill,Xijiang,Senegal,Irrawaddy (Ayey,Volta,Fraser,Taz,Rhine,Vistula (Wisla),Parnaiba,Huai,Liao,Kuskokwim</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Creation_date:</dt></b><dd>Thu Apr 14 00:21:01 PDT 2016</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Approach:</dt></b><dd>I read the variable (FLOW) from the original data file, then pick up top 50 global largest rivers based on TRIP riverbasins. I also converted river flow from river gauge stations to river mouthes by using ratio of volume between river mouth and station (ratio_m2s), then I converted the unit from m3/s to Kg/m2/s by using drainage area at river mouth (area_mou), finally I saveed the data in NetCDF format by each month and each year.</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Temporal resolution:</dt></b><dd>monthly</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;General information:</dt></b><dd>This product was derived from global 925 rivers gauge observations from Dai and Trenberth (2002).</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Spatial resolution:</dt></b><dd>river gauge observation</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Derived data code:</dt></b><dd><a href='http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-riverbasin-TRIP+runoff.ncl'>http://redwood.ess.uci.edu/mingquan/www/ILAMB/Download/CODES/CODES/subroutines/convert/convert-riverbasin-TRIP+runoff.ncl</a></dd></dl></p>
+    </div>
+  </body>
+</html>
