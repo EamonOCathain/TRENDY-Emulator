@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=TL_3_carry
+#SBATCH --job-name=tmp_5
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=work
 #SBATCH --mem=24G
-#SBATCH --array=0-21
+#SBATCH --array=0-50
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
@@ -11,19 +11,14 @@
 # #SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=transfer_learn/avh15c1/carry/avh15c1_lai_3}"
-: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/transfer_learning/3643507_tl_lai_3/checkpoints/best.pt}"
-
-: "${CARRY_FORWARD_STATES=True}"
-#: "${FORCING_OFFSET:}"
-
-# Scenario
-: "${SCENARIO:=S3}"
+: "${JOB_NAME:=counter_factuals/second_try/tmp_5/no_carry}"
+: "${CARRY_FORWARD_STATES=False}"
 
 # Device
 : "${DEVICE:=cpu}"
 
-
+# Weights
+: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt}"
 
 # Carrying and Nudging
 : "${SEQUENTIAL_MONTHS=False}"
@@ -37,6 +32,9 @@
 : "${STORE_PERIOD:=1901-01-01:2023-12-31}"
 : "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
 
+# Scenario
+: "${SCENARIO:=S3}"
+
 # ---- Env ----
 module purge
 source /User/homes/ecathain/miniconda3/etc/profile.d/conda.sh
@@ -48,7 +46,7 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 
-python -u predict.py \
+python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/2.predict/predict.py \
   --job_name "${JOB_NAME}" \
   --out_dir "${OUT_DIR}" \
   --scenario "${SCENARIO}" \
@@ -62,9 +60,8 @@ python -u predict.py \
   --nudge_mode "${NUDGE_MODE}" \
   --carry_forward_states "${CARRY_FORWARD_STATES}" \
   --sequential_months "${SEQUENTIAL_MONTHS}" \
+  --export_nc \
+  --exclude_vars "${EXCLUDE_VARS}" \
   --device "${DEVICE}" \
-  --export_nc 
-#  --forcing_offsets "${FORCING_OFFSET}"
-
-
-  
+  --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
+#   --overwrite_data
