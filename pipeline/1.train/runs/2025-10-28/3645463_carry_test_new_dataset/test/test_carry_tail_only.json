@@ -1,0 +1,8 @@
+{
+  "sum_loss": 6.262566566467285,
+  "count": 700,
+  "num_batches": 1,
+  "global_sum_loss": 6.262566566467285,
+  "global_count": 700.0,
+  "global_avg_loss": 0.008946523666381836
+}

@@ -1,0 +1,701 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js"></script>
+    <script>
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                var pair = vars[i].split("=");
+                if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        }
+    </script>
+    <script type='text/javascript'>
+        function pageLoad() {
+           pageLoadMeanState();
+        }
+    </script>
+    <script type='text/javascript'>
+
+        function updateImagesAndHeadersMeanState(){
+            var rsel  = document.getElementById("MeanStateRegion");
+            var msel  = document.getElementById("MeanStateModel");
+            var rid   = rsel.selectedIndex;
+            var mid   = msel.selectedIndex;
+            var RNAME = rsel.options[rid].value;
+            var MNAME = msel.options[mid].value;
+            var CNAME = "NetEcosystemExchange / FLUXCOM / 1980-2014";
+            var head  = "CNAME / RNAME / MNAME";
+            head      = head.replace("CNAME",CNAME).replace("RNAME",RNAME).replace("MNAME",MNAME);
+            $("#MeanStateHead").text(head);
+            
+          document.getElementById('spatial_variance').src =  RNAME + '_spatial_variance.png'
+          document.getElementById('legend_spatial_variance').src =  'legend_spatial_variance.png'
+          document.getElementById('legend_compcycle').src =  'legend_compcycle.png'
+        }
+
+        function highlightRowMeanState(cell) {
+            var select = document.getElementById("MeanStateRegion");
+            for (var i = 0; i < select.length; i++){
+                var table = document.getElementById("MeanState_table_" + select.options[i].value);
+                var rows  = table.getElementsByTagName("tr");
+                for (var r = 2; r < rows.length; r++) {
+                    for (var c = 0; c < rows[r].cells.length-4; c++) {
+                        rows[r].cells[c].style.backgroundColor = "#ffffff";
+                    }
+                }
+                var r = cell.closest("tr").rowIndex;
+                document.getElementById("MeanStateModel").selectedIndex = r-1;
+                for (var c = 0; c < rows[r].cells.length-4; c++) {
+                    rows[r].cells[c].style.backgroundColor = "#c1c1c1";
+                }
+            }
+            updateImagesAndHeadersMeanState();
+        }
+
+        function paintScoreCellsMeanState(RNAME) {
+
+	    var PuOr = ['#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788'];
+	    var GnRd = ['#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d9f0d3','#a6dba0','#5aae61','#1b7837'];
+	    var colors = GnRd;
+            var nc = colors.length;
+            var table  = document.getElementById("MeanState_table_" + RNAME);
+            var rows   = table.getElementsByTagName("tr");
+            for (var c = rows[0].cells.length-3; c < rows[0].cells.length; c++) {
+                var scores = [];
+                for (var r = 2; r < rows.length; r++) {
+                    val = rows[r].cells[c].innerHTML;
+                    if (val=="") {
+                      scores[r-2] = 0;
+                    }else{
+                      scores[r-2] = parseFloat(val);
+                    }
+                }
+                var mean = math.mean(scores);
+                var std  = math.max(0.02,math.std(scores));
+                for (var r = 2; r < rows.length; r++) {
+                    scores[r-2] = Math.min(+2,Math.max(-2,(scores[r-2]-mean)/std));
+                }
+                for (var r = 2; r < rows.length; r++) {
+		    var e  = scores[r-2];
+                    var ae = Math.abs(e);
+                    var clr;
+                    if(ae >= 0.25){
+                      clr = math.round(2*e+4);
+                    }else{
+		      clr = math.round(4*e+4);
+                    }
+                    clr = math.min(math.max(0,clr),8);
+                    rows[r].cells[c].style.backgroundColor = colors[clr];
+                }
+            }
+        }
+
+        function pageLoadMeanState() {
+            var select = document.getElementById("MeanStateRegion");
+            var region = getQueryVariable("region");
+            var model  = getQueryVariable("model");
+            if (region) {
+                for (var i = 0; i < select.length; i++){
+                    if (select.options[i].value == region) select.selectedIndex = i;
+                }
+            }
+            var table = document.getElementById("MeanState_table_" + select.options[select.selectedIndex].value);
+            var rows  = table.getElementsByTagName("tr");
+            if (model) {
+                for (var r = 0; r < rows.length; r++) {
+                    if(rows[r].cells[0].innerHTML==model) highlightRowMeanState(rows[r].cells[0]);
+                }
+            }else{
+                highlightRowMeanState(rows[2]);
+            }
+            for (var i = 0; i < select.length; i++){
+                paintScoreCellsMeanState(select.options[i].value);
+            }
+            changeRegionMeanState();
+        }
+
+        function changeRegionMeanState() {
+            var select = document.getElementById("MeanStateRegion");
+            for (var i = 0; i < select.length; i++){
+                RNAME = select.options[i].value;
+                if (i == select.selectedIndex) {
+                    document.getElementById("MeanState_table_" + RNAME).style.display = "table";
+                }else{
+                    document.getElementById("MeanState_table_" + RNAME).style.display = "none";
+                }
+            }
+            updateImagesAndHeadersMeanState();
+        }
+      function AllSelect() {
+        var header = "CNAME / RNAME / MNAME";
+        var CNAME  = "NetEcosystemExchange / FLUXCOM / 1980-2014";
+        header     = header.replace("CNAME",CNAME);
+        var rid    = document.getElementById("AllModelsRegion").selectedIndex;
+        var RNAME  = document.getElementById("AllModelsRegion").options[rid].value;
+        var pid    = document.getElementById("AllModelsPlot").selectedIndex;
+        var PNAME  = document.getElementById("AllModelsPlot").options[pid].value;
+        header     = header.replace("RNAME",RNAME);
+        $("#AllModelsHead").text(header);
+        if(0){
+          document.getElementById("Benchmark_div").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_div").style.display = 'inline';
+        }
+        if(0){
+          document.getElementById("Benchmark_legend").style.display = 'none';
+          document.getElementById("base_carry_annual_test_legend").style.display = 'none';
+          document.getElementById("base_carry_months_test_legend").style.display = 'none';
+          document.getElementById("base_no_carry_test_legend").style.display = 'none';
+          document.getElementById("ensmean_test_legend").style.display = 'none';
+        }else{
+          document.getElementById("Benchmark_legend").style.display = 'inline';
+          document.getElementById("base_carry_annual_test_legend").style.display = 'inline';
+          document.getElementById("base_carry_months_test_legend").style.display = 'inline';
+          document.getElementById("base_no_carry_test_legend").style.display = 'inline';
+          document.getElementById("ensmean_test_legend").style.display = 'inline';
+        }
+        document.getElementById('Benchmark').src = 'Benchmark_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('Benchmark_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('base_carry_annual_test').src = 'base_carry_annual_test_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('base_carry_annual_test_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('base_carry_months_test').src = 'base_carry_months_test_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('base_carry_months_test_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('base_no_carry_test').src = 'base_no_carry_test_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('base_no_carry_test_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('ensmean_test').src = 'ensmean_test_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('ensmean_test_legend').src = 'legend_' + PNAME + '.png';
+      }
+
+      $(document).on('pageshow', '[data-role="page"]', function(){
+        AllSelect()
+      });
+    </script>
+    <style type="text/css">
+      .container{
+        display:inline;
+      }
+      .break{
+        clear:left;
+      }
+      .child{
+        margin-bottom:10px;
+        display:inline-block;
+        padding:5px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      table.table-header-rotated {
+          border-collapse: collapse;
+      }
+      td {
+          text-align: center;
+          padding: 10px 5px;
+          border: 1px solid #ccc;
+      }
+      th {
+          padding: 5px 10px;
+      }
+      th.rotate {
+          height: 280px;
+          white-space: nowrap;
+      }
+      th.rotate > div {
+          transform: translate(10px, 135px) rotate(-45deg);
+          width: 0px;
+      }
+      th.rotate > div > span {
+      }
+      th.row-header {
+          padding: 0px 10px;
+          text-align: right;
+      }
+      td.divider {
+          width: 0px;
+          border: 0px solid #ccc;
+          padding: 0px 0px
+      }
+    </style>
+  </head>
+  <body onload="pageLoad()">
+    <div data-role="page" id="MeanState">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="MeanStateHead">Mean State</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState' class=ui-btn-active ui-state-persist>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="MeanStateRegion" onchange="changeRegionMeanState()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+      <div style="display:none">
+      <select id="MeanStateModel">
+        <option value='Benchmark'>Benchmark</option>
+        <option value='base_carry_annual_test' selected="selected">base_carry_annual_test</option>
+        <option value='base_carry_months_test'>base_carry_months_test</option>
+        <option value='base_no_carry_test'>base_no_carry_test</option>
+        <option value='ensmean_test'>ensmean_test</option>
+      </select>
+      </div>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_global">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="FLUXCOM_Benchmark.nc" download>[-]</a></td>
+               <td>-0.554</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_annual_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_annual_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.586</td>
+               <td onclick="highlightRowMeanState(this)">-0.663</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0132</td>
+               <td onclick="highlightRowMeanState(this)">-0.732</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.159</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.328</td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.476</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_months_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_months_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.576</td>
+               <td onclick="highlightRowMeanState(this)">-0.652</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0157</td>
+               <td onclick="highlightRowMeanState(this)">-0.732</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.148</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.325</td>
+               <td onclick="highlightRowMeanState(this)">0.601</td>
+               <td onclick="highlightRowMeanState(this)">0.463</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_no_carry_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_no_carry_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.691</td>
+               <td onclick="highlightRowMeanState(this)">-0.780</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.00379</td>
+               <td onclick="highlightRowMeanState(this)">-0.732</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.277</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.316</td>
+               <td onclick="highlightRowMeanState(this)">0.618</td>
+               <td onclick="highlightRowMeanState(this)">0.467</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ensmean_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_ensmean_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.670</td>
+               <td onclick="highlightRowMeanState(this)">-0.754</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">-0.00889</td>
+               <td onclick="highlightRowMeanState(this)">-0.737</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.252</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.332</td>
+               <td onclick="highlightRowMeanState(this)">0.633</td>
+               <td onclick="highlightRowMeanState(this)">0.483</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_test">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="FLUXCOM_Benchmark.nc" download>[-]</a></td>
+               <td>-0.510</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_annual_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_annual_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.610</td>
+               <td onclick="highlightRowMeanState(this)">-0.701</td>
+               <td onclick="highlightRowMeanState(this)">-0.513</td>
+               <td onclick="highlightRowMeanState(this)">0.0161</td>
+               <td onclick="highlightRowMeanState(this)">-0.240</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.188</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.328</td>
+               <td onclick="highlightRowMeanState(this)">0.562</td>
+               <td onclick="highlightRowMeanState(this)">0.445</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_months_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_months_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.607</td>
+               <td onclick="highlightRowMeanState(this)">-0.699</td>
+               <td onclick="highlightRowMeanState(this)">-0.513</td>
+               <td onclick="highlightRowMeanState(this)">0.0210</td>
+               <td onclick="highlightRowMeanState(this)">-0.240</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.186</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.321</td>
+               <td onclick="highlightRowMeanState(this)">0.543</td>
+               <td onclick="highlightRowMeanState(this)">0.432</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_no_carry_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_no_carry_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.730</td>
+               <td onclick="highlightRowMeanState(this)">-0.838</td>
+               <td onclick="highlightRowMeanState(this)">-0.513</td>
+               <td onclick="highlightRowMeanState(this)">0.00630</td>
+               <td onclick="highlightRowMeanState(this)">-0.240</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.324</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.313</td>
+               <td onclick="highlightRowMeanState(this)">0.573</td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ensmean_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_ensmean_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.696</td>
+               <td onclick="highlightRowMeanState(this)">-0.797</td>
+               <td onclick="highlightRowMeanState(this)">-0.513</td>
+               <td onclick="highlightRowMeanState(this)">-0.00259</td>
+               <td onclick="highlightRowMeanState(this)">-0.240</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.284</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.333</td>
+               <td onclick="highlightRowMeanState(this)">0.561</td>
+               <td onclick="highlightRowMeanState(this)">0.447</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_train">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="FLUXCOM_Benchmark.nc" download>[-]</a></td>
+               <td>-0.504</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_annual_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_annual_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.583</td>
+               <td onclick="highlightRowMeanState(this)">-0.655</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0113</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.152</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.329</td>
+               <td onclick="highlightRowMeanState(this)">0.640</td>
+               <td onclick="highlightRowMeanState(this)">0.485</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_months_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_months_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.571</td>
+               <td onclick="highlightRowMeanState(this)">-0.642</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0132</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.139</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.326</td>
+               <td onclick="highlightRowMeanState(this)">0.616</td>
+               <td onclick="highlightRowMeanState(this)">0.471</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_no_carry_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_no_carry_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.686</td>
+               <td onclick="highlightRowMeanState(this)">-0.769</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.00184</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.266</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.316</td>
+               <td onclick="highlightRowMeanState(this)">0.631</td>
+               <td onclick="highlightRowMeanState(this)">0.474</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ensmean_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_ensmean_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.669</td>
+               <td onclick="highlightRowMeanState(this)">-0.748</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">-0.0113</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.246</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.333</td>
+               <td onclick="highlightRowMeanState(this)">0.655</td>
+               <td onclick="highlightRowMeanState(this)">0.494</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_val">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 day-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="FLUXCOM_Benchmark.nc" download>[-]</a></td>
+               <td>-0.506</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_annual_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_annual_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.602</td>
+               <td onclick="highlightRowMeanState(this)">-0.688</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0197</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.185</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.326</td>
+               <td onclick="highlightRowMeanState(this)">0.588</td>
+               <td onclick="highlightRowMeanState(this)">0.457</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_carry_months_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_carry_months_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.591</td>
+               <td onclick="highlightRowMeanState(this)">-0.676</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0229</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.173</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.326</td>
+               <td onclick="highlightRowMeanState(this)">0.573</td>
+               <td onclick="highlightRowMeanState(this)">0.449</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">base_no_carry_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_base_no_carry_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.702</td>
+               <td onclick="highlightRowMeanState(this)">-0.800</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">0.0106</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.297</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.318</td>
+               <td onclick="highlightRowMeanState(this)">0.596</td>
+               <td onclick="highlightRowMeanState(this)">0.457</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">ensmean_test</td>
+               <td onclick="highlightRowMeanState(this)"><a href="FLUXCOM_ensmean_test.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">-0.676</td>
+               <td onclick="highlightRowMeanState(this)">-0.769</td>
+               <td onclick="highlightRowMeanState(this)">-0.503</td>
+               <td onclick="highlightRowMeanState(this)">-0.00239</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.266</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.328</td>
+               <td onclick="highlightRowMeanState(this)">0.598</td>
+               <td onclick="highlightRowMeanState(this)">0.463</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <div data-role="collapsible" data-collapsed="false"><h1>Temporally integrated period mean</h1><br>
+        <div class="container" id="spatial_variance_div">
+          <div class="child">
+          <center>SPATIAL&nbsp;TAYLOR&nbsp;DIAGRAM</center>
+          <img src="" id="spatial_variance" alt="Data not available" ></img>
+          </div>
+        </div>
+        <div class="container" id="legend_spatial_variance_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_spatial_variance" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+        <div data-role="collapsible" data-collapsed="false"><h1>Spatially integrated regional mean</h1>
+        <div class="container" id="legend_compcycle_div">
+          <div class="child">
+          <center>MODEL&nbsp;COLORS</center>
+          <img src="" id="legend_compcycle" alt="Data not available" ></img>
+          </div>
+        </div>
+        </div>
+    </div>
+    <div data-role="page" id="AllModels">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="AllModelsHead">All Models</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels' class=ui-btn-active ui-state-persist>All Models</a></li>
+            <li><a href='#DataInformation'>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='global' selected="selected">Globe</option>
+        <option value='test'>test</option>
+        <option value='train'>train</option>
+        <option value='val'>val</option>
+      </select>
+    </div>
+    <div data-role="page" id="DataInformation">
+      <div data-role="header" data-position="fixed" data-tap-toggle="false">
+        <h1 id="DataInformationHead">Data Information</h1>
+        <div data-role="navbar">
+          <ul>
+            <li><a href='#MeanState'>Mean State</a></li>
+            <li><a href='#AllModels'>All Models</a></li>
+            <li><a href='#DataInformation' class=ui-btn-active ui-state-persist>Data Information</a></li>
+          </ul>
+        </div>
+      </div>
+      
+<p><dl><dt><b>&nbsp;&nbsp;Title:</dt></b><dd>FLUXCOM (RS+METEO) Global Land Carbon Fluxes using CRUNCEP climate data</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Version:</dt></b><dd>1</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Institutions:</dt></b><dd>Department Biogeochemical Integration, Max Planck Institute for Biogeochemistry, Germany</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Source:</dt></b><dd>Data generated by Artificial Neural Networks and forced with CRUNCEPv6 meteorological data and MODIS (RS+METEO)</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;History:</dt></b><dd>2020-08-25: downloaded source from ftp://ftp.bgc-jena.mpg.de/pub/outgoing/FluxCom/CarbonFluxes_v1_2017/RS+METEO/CRUNCEPv6/raw/monthly/</dd><dd>2020-08-25: converted to netCDF, additionally we apply a mask where |var|<1e-15 for all time.</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;References:</dt></b><dd>Jung, M., M. Reichstein, C.R. Schwalm, C. Huntingford, S. Sitch, A. Ahlstrom, A. Arneth, G. Camps-Valls, P. Ciais, P. Friedlingstein, F. Gans, K. Ichii, A.K. Jain, E. Kato, D. Papale, B. Poulter, B. Raduly, C. Rodenbeck, G. Tramontana, N. Viovy, Y.P. Wang, U. Weber, S. Zaehle and N. Zeng (2017), Compensatory water effects link yearly global land CO2 sink changes to temperature, <i>Nature</i>, <i>541</i>, 516-520, <a href='https://doi.org/10.1038/nature20780'>doi:10.1038/nature20780</a></dd><br><dd>Tramontana, G., M. Jung, C.R. Schwalm, K. Ichii, G. Camps-Valls, B. Raduly, M. Reichstein, M.A. Arain, A. Cescatti, G. Kiely, L. Merbold, P. Serrano-Ortiz, S. Sickert, S. Wolf, and D. Papale (2016), Predicting carbon dioxide and energy fluxes across global FLUXNET sites with regression algorithms, <i>Biogeosciences</i>, <i>13</i>, 4291-4313, <a href='https://doi.org/10.5194/bg-13-4291-2016'>doi:10.5194/bg-13-4291-2016</a></dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Comments:</dt></b><dd>time_period: 1980-01 through 2013-12</dd><dd>temporal_resolution: monthly</dd><dd>spatial_resolution: 0.5 degree</dd><dd>units: g m-2 day-1</dd></dl></p><p><dl><dt><b>&nbsp;&nbsp;Convention:</dt></b><dd>CF-1.8</dd></dl></p>
+    </div>
+  </body>
+</html>

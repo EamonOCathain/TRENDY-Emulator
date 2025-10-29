@@ -1,0 +1,17 @@
+variable,n,R2,NSE,nRMSE,ACC
+GLOBAL(equal_weight),0,nan,nan,nan,nan
+cLitter,0,nan,nan,nan,nan
+cSoil,0,nan,nan,nan,nan
+cTotal_monthly,0,nan,nan,nan,nan
+cVeg,0,nan,nan,nan,nan
+evapotrans,0,nan,nan,nan,nan
+fFire,0,nan,nan,nan,nan
+fLuc,0,nan,nan,nan,nan
+gpp,0,nan,nan,nan,nan
+lai,0,nan,nan,nan,nan
+mrro,0,nan,nan,nan,nan
+mrso,0,nan,nan,nan,nan
+nbp,0,nan,nan,nan,nan
+npp,0,nan,nan,nan,nan
+ra,0,nan,nan,nan,nan
+rh,0,nan,nan,nan,nan

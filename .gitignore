@@ -30,15 +30,6 @@ checkpoints/
 .idea/
 .DS_Store
 
-/pipeline/
-
-# === Generated training artifacts ===
-/pipeline/1.train/runs/*
-!/pipeline/1.train/runs/.gitkeep
-
-# Ignore all ILAMB-related outputs
-/pipeline/3.benchmark/ilamb/*
-!/pipeline/3.benchmark/ilamb/.gitkeep
 
 # rubbish bin
 /rubbish/
