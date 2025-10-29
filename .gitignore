@@ -30,6 +30,8 @@ checkpoints/
 .idea/
 .DS_Store
 
+/pipeline/
+
 # === Generated training artifacts ===
 /pipeline/1.train/runs/*
 !/pipeline/1.train/runs/.gitkeep
