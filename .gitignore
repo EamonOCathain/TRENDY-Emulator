@@ -33,3 +33,5 @@ checkpoints/
 
 # rubbish bin
 /rubbish/
+
+pipeline/1.train/runs/
