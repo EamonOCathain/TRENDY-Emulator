@@ -18,5 +18,5 @@ conda activate base
 
 # Run the Python script with SLURM task ID as argument
 python -u annual_to_monthly.py \
-    --in_nc /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/counter_factuals/global/DATA/cLitter/ENSMEAN/ENSMEAN_S3_cLitter.nc \
-    --out_nc /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/counter_factuals/global/DATA/cLitter/ENSMEAN/ENSMEAN_S3_cLitter_monthly.nc
+    --in_nc /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/preprocessed/30x30/model_outputs/ENSMEAN_S2_cVeg.nc \
+    --out_nc /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/emulators_vs_ensmean/ensmean_files/S2/ENSMEAN_S2_cVeg_monthly.nc
