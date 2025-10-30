@@ -1,9 +1,5 @@
 # src/training/carry.py
 
-# ---------------------------------------------------------------------------
-# Imports
-# ---------------------------------------------------------------------------
-
 from __future__ import annotations
 
 import logging
@@ -77,6 +73,7 @@ def _inject_monthly_carry(
     in_m_idx: list[int],
     first_month_len: int,
     granularity: str,
+    logger: Optional[logging.Logger] = None,
 ):
     """
     Inject the carry vector into a year's inputs.
@@ -87,20 +84,30 @@ def _inject_monthly_carry(
       monthly  → write only into the first month's days
       annual   → broadcast into all 365 days
     """
+    logger = logger or _LOG
+
     if (carry_vec is None) or (not in_m_idx):
         return
+    if not torch.isfinite(carry_vec).all():
+        logger.warning(
+            "[carry] non-finite CARRY(monthly) vector before injection (granularity=%s, shape=%s)",
+            granularity, tuple(carry_vec.shape)
+        )
+        # Skip injection to avoid contaminating inputs
+        return
+
     B = x_year.size(0)
     if granularity == "annual":
         _safe_index_copy(
             x_year, 2, in_m_idx,
             carry_vec.unsqueeze(1).expand(B, 365, len(in_m_idx)),
-            where_len=365, name="monthly carry→inputs(annual)",
+            where_len=365, logger=logger, name="monthly carry→inputs(annual)",
         )
     else:
         _safe_index_copy(
             x_year[:, :first_month_len, :], 2, in_m_idx,
             carry_vec.unsqueeze(1).expand(B, first_month_len, len(in_m_idx)),
-            where_len=first_month_len, name="monthly carry→inputs(monthly)",
+            where_len=first_month_len, logger=logger, name="monthly carry→inputs(monthly)",
         )
 
 
@@ -172,7 +179,6 @@ def _model_mode(model: torch.nn.Module, granularity: str, enabled: bool = True):
     - "annual"  → batch_months
     """
     if not enabled or not hasattr(model, "set_mode"):
-        # No-op if the model doesn’t support mode switching
         yield
         return
 
@@ -418,17 +424,22 @@ def _rollout_core(
 
             # Warm-up year 0 (only if carrying)
             if carry_on:
-                x_prev = xb_full[:, 0:365, :].clone()
+                x_prev = xb_full[:, 0:365, :]
                 if not torch.isfinite(x_prev).all():
                     if logger:
                         logger.warning("[eval-core] non-finite warm-up INPUT (loc=%d, shape=%s)",
-                                    loc, tuple(x_prev.shape))
+                                       loc, tuple(x_prev.shape))
                     del x_prev
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
                     continue
 
                 preds_abs_daily_prev = model(x_prev)  # [1,365,nm+na]
+                if not torch.isfinite(preds_abs_daily_prev).all():
+                    if logger:
+                        logger.warning("[eval-core] non-finite warm-up PRED (loc=%d, shape=%s)",
+                                       loc, tuple(preds_abs_daily_prev.shape))
+                    del preds_abs_daily_prev
+                    continue
+
                 preds_m_prev, preds_a_prev = pool_from_daily_abs(preds_abs_daily_prev, nm, na, bounds)
 
                 out_m_idx_warm = _sanitize_idx(out_m_idx, nm, "out_monthly_state_idx", logger)
@@ -436,10 +447,23 @@ def _rollout_core(
 
                 prev_monthly_state = _prev_monthly_from_preds(preds_m_prev, out_m_idx_warm, granularity)
                 if prev_monthly_state is not None:
-                    prev_monthly_state = prev_monthly_state.detach()
+                    if not torch.isfinite(prev_monthly_state).all():
+                        if logger:
+                            logger.warning("[eval-core] non-finite warm-up CARRY(monthly) (loc=%d, shape=%s)",
+                                           loc, tuple(prev_monthly_state.shape))
+                        prev_monthly_state = None
+                    else:
+                        prev_monthly_state = prev_monthly_state.detach()
 
-                prev_annual_state = (preds_a_prev[:, 0, out_a_idx_warm].detach()
-                                     if out_a_idx_warm else None)
+                prev_annual_state = (preds_a_prev[:, 0, out_a_idx_warm] if out_a_idx_warm else None)
+                if prev_annual_state is not None:
+                    if not torch.isfinite(prev_annual_state).all():
+                        if logger:
+                            logger.warning("[eval-core] non-finite warm-up CARRY(annual) (loc=%d, shape=%s)",
+                                           loc, tuple(prev_annual_state.shape))
+                        prev_annual_state = None
+                    else:
+                        prev_annual_state = prev_annual_state.detach()
 
                 del preds_abs_daily_prev, preds_m_prev, preds_a_prev
 
@@ -447,7 +471,7 @@ def _rollout_core(
             for y in range(1, Y):
                 s_days = y * 365
                 e_days = s_days + 365
-                x_year = xb_full[:, s_days:e_days, :].clone()  # [1,365,nin]
+                x_year = xb_full[:, s_days:e_days, :]  # [1,365,nin]
 
                 # Inject carries
                 if carry_on:
@@ -458,52 +482,52 @@ def _rollout_core(
                             in_m_idx=in_m_idx,
                             first_month_len=first_month_len,
                             granularity=granularity,
+                            logger=logger,
                         )
                     if prev_annual_state is not None and in_a_idx:
-                        _safe_index_copy(
-                            x_year, 2, in_a_idx,
-                            (prev_annual_state if training else prev_annual_state.detach())
-                            .unsqueeze(1).expand(B, 365, len(in_a_idx)),
-                            where_len=365, logger=logger, name="annual carry→inputs",
-                        )
+                        if not torch.isfinite(prev_annual_state).all():
+                            if logger:
+                                logger.warning("[carry] non-finite CARRY(annual) vector before injection (shape=%s)",
+                                               tuple(prev_annual_state.shape))
+                        else:
+                            _safe_index_copy(
+                                x_year, 2, in_a_idx,
+                                (prev_annual_state if training else prev_annual_state.detach())
+                                .unsqueeze(1).expand(B, 365, len(in_a_idx)),
+                                where_len=365, logger=logger, name="annual carry→inputs",
+                            )
 
                 # INPUT guard
                 if not torch.isfinite(x_year).all():
                     if logger:
                         logger.warning("[eval-core] non-finite INPUT (loc=%d, y=%d, shape=%s)",
-                                    loc, y, tuple(x_year.shape))
+                                       loc, y, tuple(x_year.shape))
                     del x_year
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
                     continue
 
                 # Forward (daily absolutes)
                 preds_abs_daily = model(x_year)  # [1,365,nm+na]
                 if not torch.isfinite(preds_abs_daily).all():
                     if logger:
-                        logger.warning("[eval-core] model produced non-finite (loc=%d, y=%d, x_shape=%s, pred_shape=%s)",
-                                    loc, y, tuple(x_year.shape), tuple(preds_abs_daily.shape))
+                        logger.warning("[eval-core] non-finite PRED (loc=%d, y=%d, x_shape=%s, pred_shape=%s)",
+                                       loc, y, tuple(x_year.shape), tuple(preds_abs_daily.shape))
                     del preds_abs_daily, x_year
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
                     continue
 
                 # Labels (target year y)
                 yb_m = ym_full[:, y * 12:(y + 1) * 12, :]
                 yb_a = ya_full[:, y:y + 1, :]
 
+                # LABELS guard
+                if (not torch.isfinite(yb_m).all()) or (not torch.isfinite(yb_a).all()):
+                    if logger:
+                        logger.warning("[eval-core] non-finite LABELS (loc=%d, y=%d)", loc, y)
+                    del preds_abs_daily, yb_m, yb_a
+                    continue
+
                 # Loss
                 if loss_func is not None:
                     loss = loss_func(preds_abs_daily, yb_m, yb_a)
-                    if (not torch.isfinite(preds_abs_daily).all()
-                            or not torch.isfinite(yb_m).all()
-                            or not torch.isfinite(yb_a).all()):
-                        if logger:
-                            logger.warning("[eval-core] non-finite detected (loc=%d, y=%d)", loc, y)
-                        del preds_abs_daily, yb_m, yb_a
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
                     if training:
                         loss.backward()
                     sum_loss += float(loss.detach().cpu())
@@ -524,15 +548,22 @@ def _rollout_core(
                     preds_m, preds_a = pool_from_daily_abs(preds_abs_daily, nm, na, bounds)
                     next_m = _prev_monthly_from_preds(preds_m, out_m_idx_sane, granularity)
                     prev_monthly_state = (next_m if training else (next_m.detach() if next_m is not None else None))
+                    if prev_monthly_state is not None and (not torch.isfinite(prev_monthly_state).all()):
+                        if logger:
+                            logger.warning("[eval-core] non-finite CARRY(monthly) after pooling (loc=%d, y=%d)", loc, y)
+                        prev_monthly_state = None
+
                     if out_a_idx_sane:
                         a_vec = preds_a[:, 0, out_a_idx_sane]
                         prev_annual_state = (a_vec if training else a_vec.detach())
+                        if prev_annual_state is not None and (not torch.isfinite(prev_annual_state).all()):
+                            if logger:
+                                logger.warning("[eval-core] non-finite CARRY(annual) after pooling (loc=%d, y=%d)", loc, y)
+                            prev_annual_state = None
                     else:
                         prev_annual_state = None
 
                 del preds_abs_daily, yb_m, yb_a
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
 
     # Returns
     if return_pairs:
@@ -694,21 +725,24 @@ def rollout_train_outer_batch(
                         _inject_monthly_carry(
                             xb, prev_m, in_m_idx=in_m_idx,
                             first_month_len=first_month_len, granularity=granularity,
+                            logger=_LOG,
                         )
                     if (prev_a is not None) and in_a_idx:
-                        _safe_index_copy(
-                            xb, 2, in_a_idx,
-                            prev_a.unsqueeze(1).expand(B, 365, len(in_a_idx)),
-                            where_len=365, name="annual carry→inputs",
-                        )
+                        if not torch.isfinite(prev_a).all():
+                            _LOG.warning("[carry-windowed/train] non-finite CARRY(annual) pre-inject (B=%d, y_off=%d, shape=%s)",
+                                         B, y_off, tuple(prev_a.shape))
+                        else:
+                            _safe_index_copy(
+                                xb, 2, in_a_idx,
+                                prev_a.unsqueeze(1).expand(B, 365, len(in_a_idx)),
+                                where_len=365, name="annual carry→inputs", logger=_LOG,
+                            )
 
                 # INPUT guard (before forward)
                 if not torch.isfinite(xb).all():
                     _LOG.warning("[carry-windowed/train] non-finite INPUT (B=%d, y_off=%d, shape=%s)",
-                                xb.shape[0], y_off, tuple(xb.shape))
+                                 xb.shape[0], y_off, tuple(xb.shape))
                     del xb
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
                     continue
 
                 # Forward one whole year (predictions are daily absolutes)
@@ -717,10 +751,8 @@ def rollout_train_outer_batch(
                 # PRED guard
                 if not torch.isfinite(preds_abs_daily).all():
                     _LOG.warning("[carry-windowed/train] non-finite PRED (B=%d, y_off=%d, x_shape=%s, pred_shape=%s)",
-                                preds_abs_daily.shape[0], y_off, tuple(xb.shape), tuple(preds_abs_daily.shape))
+                                 preds_abs_daily.shape[0], y_off, tuple(xb.shape), tuple(preds_abs_daily.shape))
                     del xb, preds_abs_daily
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
                     continue
 
                 # Pool to month/annual and prep next prev_* from pooled absolutes
@@ -739,11 +771,17 @@ def rollout_train_outer_batch(
                     ybm = torch.stack(ybm_list, dim=0).to(device, non_blocking=True)  # [B,12,nm]
                     yba = torch.stack(yba_list, dim=0).to(device, non_blocking=True)  # [B,1, na]
 
+                    # LABEL guards
+                    if (not torch.isfinite(ybm).all()) or (not torch.isfinite(yba).all()):
+                        _LOG.warning("[carry-windowed/train] non-finite LABELS (B=%d)", B)
+                        del xb, preds_abs_daily, preds_m, preds_a, ybm, yba
+                        continue
+
                     loss = loss_func(preds_abs_daily, ybm, yba)
                     (loss / eff_accum).backward()
                     microbatches_done += 1
                     windows_done += B
-                    running_loss_sum += float(loss.detach().cpu())
+                    running_loss_sum += float(loss.detach().cpu()) * B  # <-- weight by batch size
 
                     # Optimizer step (gradient accumulation aware)
                     if microbatches_done % eff_accum == 0:
@@ -759,8 +797,6 @@ def rollout_train_outer_batch(
 
                 # free
                 del xb, preds_abs_daily, preds_m, preds_a
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
 
         # Flush remainder if gradients are pending
         if microbatches_done % eff_accum != 0:
@@ -792,10 +828,11 @@ def rollout_eval_outer_batch(
     labels_a: torch.Tensor,      # [na,   1*Y, L]
     device: torch.device,
     rollout_cfg: dict,
+    mb_size: Optional[int] = None,
 ) -> tuple[float, int]:
     """
-    Windowed carry evaluation with tail-only loss; same semantics as training.
-    Supports carry_granularity in {"monthly","annual"} with the same broadcast rules.
+    Windowed carry evaluation with tail-only loss; now micro-batches over windows.
+    Supports carry_granularity in {"monthly","annual"}.
     """
     model.eval()
 
@@ -815,10 +852,10 @@ def rollout_eval_outer_batch(
     # Dims and indices (sanitize once)
     nm = int(labels_m.shape[0])
     na = int(labels_a.shape[0])
-    in_m_idx = _sanitize_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin, "in_monthly_state_idx", _LOG)
-    in_a_idx = _sanitize_idx(rollout_cfg.get("in_annual_state_idx", []) or [], nin, "in_annual_state_idx", _LOG)
-    out_m_idx = _sanitize_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm, "out_monthly_state_idx", _LOG)
-    out_a_idx = _sanitize_idx(rollout_cfg.get("out_annual_state_idx", []) or [], na, "out_annual_state_idx", _LOG)
+    in_m_idx  = _sanitize_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin, "in_monthly_state_idx", _LOG)
+    in_a_idx  = _sanitize_idx(rollout_cfg.get("in_annual_state_idx", [])  or [], nin, "in_annual_state_idx",  _LOG)
+    out_m_idx = _sanitize_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm,  "out_monthly_state_idx", _LOG)
+    out_a_idx = _sanitize_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na,  "out_annual_state_idx",  _LOG)
 
     # Month metadata
     month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
@@ -827,108 +864,142 @@ def rollout_eval_outer_batch(
         bounds.append(bounds[-1] + m)
     first_month_len = int(month_lengths[0])
 
-    _LOG.info("[carry-windowed][eval][%s] D=%d, W=%d, windows_per_loc=%d", granularity, D, W, (Y - D))
-
-    total_loss = 0.0
-    total_windows = 0
-
-    # Helper for pooling
+    # Helper for pooling monthly/annual from DAILY ABSOLUTES
     def _pool_from_daily_abs(y_daily_abs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         y_m_daily = y_daily_abs[..., :nm]
         y_a_daily = y_daily_abs[..., nm:nm+na]
         pieces = [y_m_daily[:, bounds[i]:bounds[i + 1], :].mean(dim=1, keepdim=True) for i in range(12)]
-        preds_m = torch.cat(pieces, dim=1)
-        preds_a = y_a_daily.mean(dim=1, keepdim=True)
+        preds_m = torch.cat(pieces, dim=1)            # [B,12,nm]
+        preds_a = y_a_daily.mean(dim=1, keepdim=True) # [B,1, na]
         return preds_m, preds_a
 
-    # === Evaluation over windows ===
+    # Build global list of evaluation windows (loc, target_year=t)
+    windows: list[tuple[int, int]] = []
+    for loc in range(L):
+        for t in range(D, Y):
+            windows.append((loc, t))
+
+    total_windows = len(windows)
+    if total_windows == 0:
+        return 0.0, 0
+
+    # Choose microbatch size in *windows* (scale by window length to keep memory reasonable)
+    base_mb = int(mb_size) if (mb_size is not None and mb_size > 0) else 2048
+    scale   = 1.0 / float(max(1, W))   # shorter micro when windows are longer
+    micro   = max(1, int(base_mb * scale))
+    micro   = min(micro, total_windows)
+
+    # DDP consistency (if active): broadcast chosen micro
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        t_mb = torch.tensor([micro], dtype=torch.int64, device=device)
+        torch.distributed.broadcast(t_mb, src=0)
+        micro = int(t_mb.item())
+
+    _LOG.info(
+        "[carry-windowed][eval][%s] D=%d, W=%d, windows_per_loc=%d, mb_size_windows=%d",
+        granularity, D, W, (Y - D), micro
+    )
+
+    total_loss = 0.0
+    windows_done = 0
+
+    # === Evaluation over windowed microbatches ===
     with _model_mode(model, granularity, enabled=True):
-        for loc in range(L):
-            for t in range(D, Y):
-                prev_m = None
-                prev_a = None
+        w_idx = 0
+        while w_idx < total_windows:
+            s = w_idx
+            e = min(w_idx + micro, total_windows)
+            w_idx = e
+            B = e - s  # windows in this microbatch
 
-                # Iterate over years inside the window [t-D .. t]
-                for y_abs in range(t - D, t + 1):
+            # Precompute locs/targets once per microbatch
+            locs    = [windows[k][0] for k in range(s, e)]
+            targets = [windows[k][1] for k in range(s, e)]
+
+            prev_m = None  # [B, len(out_m_idx)]   carry vector (monthly)
+            prev_a = None  # [B, len(out_a_idx)]   carry vector (annual)
+
+            # Iterate years within the window [t-D .. t]
+            for y_off in range(W):
+                y0s = [t - D + y_off for t in targets]  # absolute year index for this offset
+
+                # Build a [B,365,nin] tensor for this year across windows
+                xb_list = []
+                for loc, y_abs in zip(locs, y0s):
                     ds, de = _year_bounds(y_abs, y_abs + 1)
-                    xb = inputs[:, ds:de, loc].T.unsqueeze(0).to(device, non_blocking=True)  # [1,365,nin]
+                    xb_list.append(inputs[:, ds:de, loc].T)  # [365,nin]
+                xb = torch.stack(xb_list, dim=0).to(device, non_blocking=True)  # [B,365,nin]
 
-                    if prev_m is not None and in_m_idx:
+                # Inject carries from previous year within the window
+                if y_off > 0:
+                    if (prev_m is not None) and in_m_idx:
                         _inject_monthly_carry(
                             xb, prev_m, in_m_idx=in_m_idx,
                             first_month_len=first_month_len, granularity=granularity,
+                            logger=_LOG,
                         )
-                    if prev_a is not None and in_a_idx:
-                        _safe_index_copy(
-                            xb, 2, in_a_idx,
-                            prev_a.unsqueeze(1).expand(1, 365, len(in_a_idx)),
-                            where_len=365, name="annual carry→inputs",
-                        )
-
-                    # INPUT guard
-                    if not torch.isfinite(xb).all():
-                        _LOG.warning("[carry-windowed/eval] non-finite INPUT (loc=%d, y_abs=%d, shape=%s)",
-                                    loc, y_abs, tuple(xb.shape))
-                        del xb
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
-
-                    # Forward (daily absolutes)
-                    preds_abs_daily = model(xb)
-
-                    # PRED guard
-                    if not torch.isfinite(preds_abs_daily).all():
-                        _LOG.warning("[carry-windowed/eval] non-finite PRED (loc=%d, y_abs=%d, x_shape=%s, pred_shape=%s)",
-                                    loc, y_abs, tuple(xb.shape), tuple(preds_abs_daily.shape))     
-                        del xb, preds_abs_daily
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
-
-                    preds_m, preds_a = _pool_from_daily_abs(preds_abs_daily)
-                    next_m = _prev_monthly_from_preds(preds_m, out_m_idx, granularity)
-                    prev_m = (next_m.detach() if next_m is not None else None)
-                    prev_a = (preds_a[:, 0, out_a_idx].detach() if out_a_idx else None)
-
-                    # Tail-year loss (y_abs == t)
-                    if y_abs == t:
-                        ms, me = t * 12, (t + 1) * 12
-                        ybm = labels_m[:, ms:me, loc].T.unsqueeze(0).to(device, non_blocking=True)   # [1,12,nm]
-                        yba = labels_a[:, t:(t + 1), loc].T.unsqueeze(0).to(device, non_blocking=True)  # [1,1,na]
-
-                        if (not torch.isfinite(preds_abs_daily).all()
-                                or not torch.isfinite(ybm).all()
-                                or not torch.isfinite(yba).all()):
-                            _LOG.warning(
-                                "[carry-windowed/eval] non-finite detected (loc=%d, target_year=%d, y_abs=%d): "
-                                "preds_abs_daily=%s, ybm=%s, yba=%s",
-                                loc, t, y_abs,
-                                torch.isfinite(preds_abs_daily).all().item(),
-                                torch.isfinite(ybm).all().item(),
-                                torch.isfinite(yba).all().item(),
+                    if (prev_a is not None) and in_a_idx:
+                        if not torch.isfinite(prev_a).all():
+                            _LOG.warning("[carry-windowed/eval] non-finite CARRY(annual) pre-inject (B=%d, y_off=%d, shape=%s)",
+                                         B, y_off, tuple(prev_a.shape))
+                        else:
+                            _safe_index_copy(
+                                xb, 2, in_a_idx,
+                                prev_a.unsqueeze(1).expand(B, 365, len(in_a_idx)),
+                                where_len=365, name="annual carry→inputs", logger=_LOG,
                             )
-                            # Skip tail-loss for this window
-                            del xb, preds_abs_daily, preds_m, preds_a
-                            if torch.cuda.is_available():
-                                torch.cuda.empty_cache()
-                            continue
 
-                        loss = loss_func(preds_abs_daily, ybm, yba)
-                        total_loss += float(loss.detach().cpu())
-                        total_windows += 1
+                # INPUT guard
+                if not torch.isfinite(xb).all():
+                    _LOG.warning("[carry-windowed/eval] non-finite INPUT (B=%d, y_off=%d, shape=%s)",
+                                 xb.shape[0], y_off, tuple(xb.shape))
+                    del xb
+                    continue
 
-                    del xb, preds_abs_daily, preds_m, preds_a
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
+                # Forward one whole year (daily absolutes)
+                preds_abs_daily = model(xb)  # [B,365,nm+na]
 
-    return total_loss, total_windows
+                # PRED guard
+                if not torch.isfinite(preds_abs_daily).all():
+                    _LOG.warning("[carry-windowed/eval] non-finite PRED (B=%d, y_off=%d, x_shape=%s, pred_shape=%s)",
+                                 preds_abs_daily.shape[0], y_off, tuple(xb.shape), tuple(preds_abs_daily.shape))
+                    del xb, preds_abs_daily
+                    continue
 
+                # Pool to month/annual and prep next prev_* from pooled absolutes
+                preds_m, preds_a = _pool_from_daily_abs(preds_abs_daily)  # [B,12,nm], [B,1,na]
+                next_m = _prev_monthly_from_preds(preds_m, out_m_idx, granularity)
+                prev_m = (next_m if next_m is not None else None)  # already no-grad
+                prev_a = (preds_a[:, 0, out_a_idx] if out_a_idx else None)
+
+                # Tail-year loss when y_off == W-1 (i.e., target year)
+                if y_off == W - 1:
+                    # Build labels for each window in this microbatch
+                    ybm_list, yba_list = [], []
+                    for loc, t in zip(locs, targets):
+                        (ms, me), (ys, ye) = _slice_last_year_bounds(t)
+                        ybm_list.append(labels_m[:, ms:me, loc].T)  # [12,nm]
+                        yba_list.append(labels_a[:, ys:ye, loc].T)  # [1, na]
+                    ybm = torch.stack(ybm_list, dim=0).to(device, non_blocking=True)  # [B,12,nm]
+                    yba = torch.stack(yba_list, dim=0).to(device, non_blocking=True)  # [B,1, na]
+
+                    if (not torch.isfinite(ybm).all()) or (not torch.isfinite(yba).all()):
+                        _LOG.warning("[carry-windowed/eval] non-finite LABELS (B=%d)", B)
+                        del xb, preds_abs_daily, preds_m, preds_a, ybm, yba
+                        continue
+
+                    loss = loss_func(preds_abs_daily, ybm, yba)
+                    total_loss   += float(loss.detach().cpu()) * B  # <-- weight by batch size
+                    windows_done += B
+
+                # free
+                del xb, preds_abs_daily, preds_m, preds_a
+
+    return total_loss, windows_done
 
 # ---------------------------------------------------------------------------
-# Public: gather (y, ŷ) pairs for metrics/plots with the same carry behavior
+# gather (y, ŷ) pairs for metrics/plots with the same carry behavior
 # ---------------------------------------------------------------------------
-
 @torch.no_grad()
 def gather_pred_label_pairs(
     *,
@@ -936,52 +1007,324 @@ def gather_pred_label_pairs(
     test_dl,
     device: torch.device,
     rollout_cfg: dict,
-    carry_horizon: float = 0.0,
-    max_points_per_var: int | None = 2_000_000,
+    eval_mode: str = "teacher_forced",            # NEW: {"teacher_forced","full_sequence","windowed_tail_only"}
+    mb_size: Optional[int] = None,                # windows per microbatch (used only for windowed_tail_only)
+    max_points_per_var: int | None = 2_000_000,   # optional downsampling cap per variable
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
-    Collect {var_name: (y_norm, yhat_norm)} pairs from test loader using the
-    SAME carry semantics as eval/test.
+    Collect {var_name: (y_norm, yhat_norm)} pairs using one of three explicit modes:
 
-      - carry_horizon == 0.0 → teacher-forced (no cross-year injection)
-      - carry_horizon  > 0.0 → carry monthly+annual states across years
+      - teacher_forced:
+          No carry at all. Evaluate each year independently (including year 0).
+      - full_sequence:
+          Warm-up on year 0, then carry predictions forward and evaluate every target year 1..Y-1.
+      - windowed_tail_only:
+          Existing windowed semantics using carry_horizon (ceil→D), collect pairs only for tail year.
+
+    Returns:
+      dict[var_name] = (y_concat, yhat_concat) in NORMALIZED space.
     """
-    model.eval()
-    carry_on = float(carry_horizon) > 0.0
+    assert eval_mode in {"teacher_forced", "full_sequence", "windowed_tail_only"}, \
+        f"Unsupported eval_mode={eval_mode}"
 
+    model.eval()
+
+    # Names (head order)
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
-    annual_names = list(rollout_cfg.get("out_annual_names", []))
-    buf = {n: ([], []) for n in (monthly_names + annual_names)}  # (y, yhat)
+    annual_names  = list(rollout_cfg.get("out_annual_names", []))
+
+    # Buffers for concatenation
+    buf = {n: ([], []) for n in (monthly_names + annual_names)}  # var -> (list[y], list[yhat])
 
     for batch_inputs, batch_monthly, batch_annual in test_dl:
-        pairs = _rollout_core(
-            model=model,
-            inputs=batch_inputs.squeeze(0).float(),
-            labels_m=batch_monthly.squeeze(0).float(),
-            labels_a=batch_annual.squeeze(0).float(),
-            device=device,
-            rollout_cfg=rollout_cfg,
-            training=False,
-            loss_func=None,
-            carry_on=carry_on,
-            return_pairs=True,
-            logger=_LOG,
-        )
-        for k, (y, p) in pairs.items():
-            buf[k][0].append(y)
-            buf[k][1].append(p)
+        # [nin, 365*Y, L], [nm, 12*Y, L], [na, Y, L] in NORMALIZED units
+        inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
+        labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
+        labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
-    # Concatenate + optional subsample (to avoid gigantic scatter grids)
+        nin, Ttot, L = int(inputs.shape[0]), int(inputs.shape[1]), int(inputs.shape[2])
+        Y = int(labels_a.shape[1])
+        if L <= 0 or Y <= 0:
+            continue
+
+        nm = int(labels_m.shape[0])
+        na = int(labels_a.shape[0])
+
+        # Indices (sanitize per outer batch)
+        in_m_idx  = _sanitize_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin, "in_monthly_state_idx", _LOG)
+        in_a_idx  = _sanitize_idx(rollout_cfg.get("in_annual_state_idx", [])  or [], nin, "in_annual_state_idx",  _LOG)
+        out_m_idx = _sanitize_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm,  "out_monthly_state_idx", _LOG)
+        out_a_idx = _sanitize_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na,  "out_annual_state_idx",  _LOG)
+
+        # Month metadata
+        month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
+        bounds = [0]
+        for m in month_lengths:
+            bounds.append(bounds[-1] + m)
+        first_month_len = int(month_lengths[0])
+
+        # Helper: pool M/A from daily ABSOLUTES
+        def _pool_from_daily_abs(y_daily_abs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            y_m_daily = y_daily_abs[..., :nm]
+            y_a_daily = y_daily_abs[..., nm:nm+na]
+            pieces = [y_m_daily[:, bounds[i]:bounds[i + 1], :].mean(dim=1, keepdim=True) for i in range(12)]
+            preds_m = torch.cat(pieces, dim=1)            # [B,12,nm]
+            preds_a = y_a_daily.mean(dim=1, keepdim=True) # [B,1, na]
+            return preds_m, preds_a
+
+        # ---- MODE 1: teacher_forced (no carry, evaluate ALL years including year 0) ----
+        if eval_mode == "teacher_forced":
+            # We can microbatch per (loc,year) by stacking across locs for each year.
+            for y in range(Y):
+                # Build [L,365,nin] (one year slice across all locs)
+                xb_list = []
+                for loc in range(L):
+                    ds, de = _year_bounds(y, y + 1)
+                    xb_list.append(inputs[:, ds:de, loc].T)  # [365,nin]
+                xb = torch.stack(xb_list, dim=0)  # [L,365,nin]
+
+                if not torch.isfinite(xb).all():
+                    _LOG.warning("[gather/TF] non-finite INPUT at year=%d; skipping this year", y)
+                    del xb
+                    continue
+
+                preds_abs_daily = model(xb)  # [L,365,nm+na]
+                if not torch.isfinite(preds_abs_daily).all():
+                    _LOG.warning("[gather/TF] non-finite PRED at year=%d; skipping this year", y)
+                    del xb, preds_abs_daily
+                    continue
+
+                preds_m, preds_a = _pool_from_daily_abs(preds_abs_daily)  # [L,12,nm], [L,1,na]
+
+                # Year-specific labels
+                ybm_list, yba_list = [], []
+                (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+                for loc in range(L):
+                    ybm_list.append(labels_m[:, ms:me, loc].T)  # [12,nm]
+                    yba_list.append(labels_a[:, ys:ye, loc].T)  # [1, na]
+                ybm = torch.stack(ybm_list, dim=0)  # [L,12,nm]
+                yba = torch.stack(yba_list, dim=0)  # [L, 1, na]
+
+                if not (torch.isfinite(ybm).all() and torch.isfinite(yba).all()):
+                    _LOG.warning("[gather/TF] non-finite LABELS at year=%d; skipping this year", y)
+                    del xb, preds_abs_daily, preds_m, preds_a, ybm, yba
+                    continue
+
+                # Append per-variable (flatten [L,12] or [L,1])
+                for j, name in enumerate(monthly_names):
+                    y_true = ybm[..., j].reshape(-1).detach().cpu().numpy()
+                    y_pred = preds_m[..., j].reshape(-1).detach().cpu().numpy()
+                    buf[name][0].append(y_true); buf[name][1].append(y_pred)
+                for j, name in enumerate(annual_names):
+                    y_true = yba[..., j].reshape(-1).detach().cpu().numpy()
+                    y_pred = preds_a[..., j].reshape(-1).detach().cpu().numpy()
+                    buf[name][0].append(y_true); buf[name][1].append(y_pred)
+
+                del xb, preds_abs_daily, preds_m, preds_a, ybm, yba
+
+            continue  # next outer batch
+
+        # ---- MODE 2: full_sequence (warm-up year 0, then carry and evaluate all years 1..Y-1) ----
+        if eval_mode == "full_sequence":
+            # Process one location at a time (keeps the carry chain correct per loc)
+            with _model_mode(model, str(rollout_cfg.get("carry_granularity", "monthly")), enabled=True):
+                for loc in range(L):
+                    # Warm-up on year 0
+                    ds0, de0 = _year_bounds(0, 1)
+                    xb0 = inputs[:, ds0:de0, loc].T.unsqueeze(0)  # [1,365,nin]
+                    if not torch.isfinite(xb0).all():
+                        _LOG.warning("[gather/FS] non-finite warm-up INPUT (loc=%d)", loc)
+                        del xb0
+                        continue
+                    preds0 = model(xb0)                              # [1,365,nm+na]
+                    if not torch.isfinite(preds0).all():
+                        _LOG.warning("[gather/FS] non-finite warm-up PRED (loc=%d)", loc)
+                        del xb0, preds0
+                        continue
+                    pm0, pa0 = _pool_from_daily_abs(preds0)          # [1,12,nm], [1,1,na]
+
+                    # Prepare carry vectors
+                    next_m = _prev_monthly_from_preds(pm0, out_m_idx, str(rollout_cfg.get("carry_granularity","monthly")))
+                    prev_m = (next_m if next_m is not None else None)
+                    prev_a = (pa0[:, 0, out_a_idx] if out_a_idx else None)
+                    del xb0, preds0, pm0, pa0
+
+                    # Evaluate years 1..Y-1 with injected carry from previous year
+                    for y in range(1, Y):
+                        ds, de = _year_bounds(y, y + 1)
+                        xb = inputs[:, ds:de, loc].T.unsqueeze(0)  # [1,365,nin]
+
+                        # Inject carries
+                        if (prev_m is not None) and in_m_idx:
+                            _inject_monthly_carry(
+                                xb, prev_m, in_m_idx=in_m_idx,
+                                first_month_len=first_month_len,
+                                granularity=str(rollout_cfg.get("carry_granularity", "monthly")),
+                                logger=_LOG,
+                            )
+                        if (prev_a is not None) and in_a_idx:
+                            _safe_index_copy(
+                                xb, 2, in_a_idx,
+                                prev_a.unsqueeze(1).expand(1, 365, len(in_a_idx)),
+                                where_len=365, logger=_LOG, name="annual carry→inputs",
+                            )
+
+                        # Guards
+                        if not torch.isfinite(xb).all():
+                            _LOG.warning("[gather/FS] non-finite INPUT (loc=%d, year=%d)", loc, y)
+                            del xb
+                            # carry remains from previous step; continue sequence
+                            continue
+
+                        preds = model(xb)  # [1,365,nm+na]
+                        if not torch.isfinite(preds).all():
+                            _LOG.warning("[gather/FS] non-finite PRED (loc=%d, year=%d)", loc, y)
+                            del xb, preds
+                            continue
+
+                        pm, pa = _pool_from_daily_abs(preds)  # [1,12,nm], [1,1,na]
+
+                        # Labels for this (loc, year)
+                        (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+                        ybm = labels_m[:, ms:me, loc].T.unsqueeze(0)  # [1,12,nm]
+                        yba = labels_a[:, ys:ye, loc].T.unsqueeze(0)  # [1, 1,na]
+
+                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
+                            for j, name in enumerate(monthly_names):
+                                y_true = ybm[..., j].reshape(-1).detach().cpu().numpy()
+                                y_pred = pm[..., j].reshape(-1).detach().cpu().numpy()
+                                buf[name][0].append(y_true); buf[name][1].append(y_pred)
+                            for j, name in enumerate(annual_names):
+                                y_true = yba[..., j].reshape(-1).detach().cpu().numpy()
+                                y_pred = pa[..., j].reshape(-1).detach().cpu().numpy()
+                                buf[name][0].append(y_true); buf[name][1].append(y_pred)
+                        else:
+                            _LOG.warning("[gather/FS] non-finite LABELS (loc=%d, year=%d) — skipped", loc, y)
+
+                        # Update carry for next year
+                        next_m = _prev_monthly_from_preds(pm, out_m_idx, str(rollout_cfg.get("carry_granularity","monthly")))
+                        prev_m = (next_m if next_m is not None else None)
+                        prev_a = (pa[:, 0, out_a_idx] if out_a_idx else None)
+
+                        del xb, preds, pm, pa, ybm, yba
+
+            continue  # next outer batch
+
+        # ---- MODE 3: windowed_tail_only (existing semantics; pairs only on tail year) ----
+        # Use your current micro-batched windowed loop (D = ceil(H); W = D+1)
+        H = float(rollout_cfg.get("carry_horizon", 0.0) or 0.0)
+        D = _ceil_years(H)
+        W = D + 1
+
+        # Build windows = all (loc, t) with t in [D..Y-1]
+        windows: list[tuple[int, int]] = []
+        for loc in range(L):
+            for t in range(D, Y):
+                windows.append((loc, t))
+        if not windows:
+            continue
+
+        base_mb = int(mb_size) if (mb_size is not None and mb_size > 0) else 2048
+        scale   = 1.0 / float(max(1, W))
+        micro   = max(1, int(base_mb * scale))
+        micro   = min(micro, len(windows))
+
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            t_mb = torch.tensor([micro], dtype=torch.int64, device=device)
+            torch.distributed.broadcast(t_mb, src=0)
+            micro = int(t_mb.item())
+
+        with _model_mode(model, str(rollout_cfg.get("carry_granularity", "monthly")), enabled=True):
+            w_idx = 0
+            while w_idx < len(windows):
+                s = w_idx
+                e = min(w_idx + micro, len(windows))
+                w_idx = e
+                B = e - s
+
+                locs    = [windows[k][0] for k in range(s, e)]
+                targets = [windows[k][1] for k in range(s, e)]
+
+                prev_m = None
+                prev_a = None
+
+                for y_off in range(W):
+                    y0s = [t - D + y_off for t in targets]
+
+                    xb_list = []
+                    for loc, y_abs in zip(locs, y0s):
+                        ds, de = _year_bounds(y_abs, y_abs + 1)
+                        xb_list.append(inputs[:, ds:de, loc].T)
+                    xb = torch.stack(xb_list, dim=0)  # [B,365,nin]
+
+                    # Inject carries
+                    if y_off > 0:
+                        if (prev_m is not None) and in_m_idx:
+                            _inject_monthly_carry(
+                                xb, prev_m, in_m_idx=in_m_idx,
+                                first_month_len=first_month_len,
+                                granularity=str(rollout_cfg.get("carry_granularity", "monthly")),
+                                logger=_LOG,
+                            )
+                        if (prev_a is not None) and in_a_idx:
+                            _safe_index_copy(
+                                xb, 2, in_a_idx,
+                                prev_a.unsqueeze(1).expand(B, 365, len(in_a_idx)),
+                                where_len=365, logger=_LOG, name="annual carry→inputs",
+                            )
+
+                    # Guards
+                    if not torch.isfinite(xb).all():
+                        _LOG.warning("[gather/WIN] non-finite INPUT (B=%d, y_off=%d)", B, y_off)
+                        del xb
+                        continue
+
+                    preds_abs_daily = model(xb)
+                    if not torch.isfinite(preds_abs_daily).all():
+                        _LOG.warning("[gather/WIN] non-finite PRED (B=%d, y_off=%d)", B, y_off)
+                        del xb, preds_abs_daily
+                        continue
+
+                    pm, pa = _pool_from_daily_abs(preds_abs_daily)
+
+                    # Prepare next carry
+                    next_m = _prev_monthly_from_preds(pm, out_m_idx, str(rollout_cfg.get("carry_granularity","monthly")))
+                    prev_m = (next_m if next_m is not None else None)
+                    prev_a = (pa[:, 0, out_a_idx] if out_a_idx else None)
+
+                    # Tail-year only → collect pairs
+                    if y_off == W - 1:
+                        ybm_list, yba_list = [], []
+                        for loc, t in zip(locs, targets):
+                            (ms, me), (ys, ye) = _slice_last_year_bounds(t)
+                            ybm_list.append(labels_m[:, ms:me, loc].T)  # [12,nm]
+                            yba_list.append(labels_a[:, ys:ye, loc].T)  # [1, na]
+                        ybm = torch.stack(ybm_list, dim=0)
+                        yba = torch.stack(yba_list, dim=0)
+
+                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
+                            for j, name in enumerate(monthly_names):
+                                y_true = ybm[..., j].reshape(-1).detach().cpu().numpy()
+                                y_pred = pm[..., j].reshape(-1).detach().cpu().numpy()
+                                buf[name][0].append(y_true); buf[name][1].append(y_pred)
+                            for j, name in enumerate(annual_names):
+                                y_true = yba[..., j].reshape(-1).detach().cpu().numpy()
+                                y_pred = pa[..., j].reshape(-1).detach().cpu().numpy()
+                                buf[name][0].append(y_true); buf[name][1].append(y_pred)
+                        else:
+                            _LOG.warning("[gather/WIN] non-finite LABELS (B=%d)", B)
+
+                    del xb, preds_abs_daily, pm, pa
+
+    # Concatenate & optional downsample per variable
     rng = np.random.default_rng(123)
-    out = {}
+    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
     for k, (ys, ps) in buf.items():
         y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
         p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
         n = y.size
         if (max_points_per_var is not None) and (n > max_points_per_var):
             idx = rng.choice(n, size=max_points_per_var, replace=False)
-            y = y[idx]
-            p = p[idx]
+            y = y[idx]; p = p[idx]
         out[k] = (y, p)
-
     return out

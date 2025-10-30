@@ -3,16 +3,12 @@ from __future__ import annotations
 # ---------------------------------------------------------------------------
 # Library imports
 # ---------------------------------------------------------------------------
-import json
 import logging
-import math
 import random
 import sys
-import time
-from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -29,6 +25,12 @@ sys.path.append(str(project_root))
 
 from src.training.distributed import ddp_mean_scalar
 from src.training.history import History
+
+# --- Carry rollout helpers (from carry branch) ------------------------------
+from src.training.carry import (
+    rollout_train_outer_batch,
+    rollout_eval_outer_batch,
+)
 
 # --- Mass-balance logging helpers -------------------------------------------
 def _accum_bd_sums(acc: Dict[str, float], bd: Optional[dict], mult: float) -> None:
@@ -69,7 +71,6 @@ class EarlyStopping:
         self.best_epoch = -1
 
     def step(self, value: float, epoch_idx: int) -> None:
-        """Update state at epoch end; identical logic to `step_on_check`."""
         if epoch_idx < self.warmup_epochs:
             return
         if value < self.best - self.min_delta:
@@ -82,9 +83,6 @@ class EarlyStopping:
                 self.should_stop = True
 
     def step_on_check(self, value: float, epoch_idx: int) -> None:
-        """
-        Update state on an interim validation check (mid-epoch). Same logic as `step`.
-        """
         if epoch_idx < self.warmup_epochs:
             return
         if value < self.best - self.min_delta:
@@ -95,7 +93,7 @@ class EarlyStopping:
             self.bad_epochs += 1
             if self.bad_epochs >= self.patience:
                 self.should_stop = True
-                
+
 # ---------------------------------------------------------------------------
 # Misc
 # ---------------------------------------------------------------------------
@@ -134,11 +132,12 @@ def fit(
     best_val_init: float = float("inf"),
     history_seed: Optional[dict] = None,
     samples_seen_seed: int = 0,
-    rollout_cfg: Optional[dict] = None,  # kept for calendar metadata passthrough; not used for carry
+    rollout_cfg: Optional[dict] = None,
+    validate_only: bool = False,
 ) -> Tuple["History", float, bool]:
     """
     Train with micro-batching + grad accumulation, optional DDP, mid-epoch validation,
-    and checkpointing.
+    carry rollout (when enabled via rollout_cfg), and checkpointing.
 
     Returns:
       (history, best_val, stopped_early_flag)
@@ -171,6 +170,43 @@ def fit(
     is_main_fit = (not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0)
     model_device = next(model.parameters()).device
 
+    # --- Carry flag (controls training/eval path) ---
+    def _carry_on(cfg: Optional[dict]) -> bool:
+        try:
+            return float((cfg or {}).get("carry_horizon", 0.0) or 0.0) > 0.0
+        except Exception:
+            return False
+
+    carry_enabled = _carry_on(rollout_cfg)
+
+    if log and is_main_fit:
+        sig = (rollout_cfg or {}).get("schema_sig")
+        if sig:
+            log.info("[schema] signature=%s", sig)
+
+    # ---------- Validation-only short-circuit ----------
+    if validate_only:
+        # Use deterministic subset if present in plan
+        batch_indices = None
+        if val_plan is not None and "fixed_val_batch_ids" in val_plan:
+            batch_indices = list(val_plan["fixed_val_batch_ids"])
+
+        eval_mb = (getattr(args, "eval_mb_size", None) or mb_size)
+        avg_val_loss, val_cnt, mb_avgs = validate(
+            model, loss_func, valid_dl,
+            device=model_device,
+            batch_indices=batch_indices,
+            rollout_cfg=rollout_cfg,
+            eval_mb_size=eval_mb,
+        )
+        history.update(train_loss=float("nan"), val_loss=avg_val_loss)
+        if log and is_main_fit:
+            log.info("Validation-only: val_loss=%.6f (windows=%d)", avg_val_loss, val_cnt)
+            if getattr(args, "use_mass_balances", False) and mb_avgs:
+                log.info("Val-only MB (weighted avg per-window): %s",
+                         " | ".join(f"{k}={v:.6f}" for k, v in sorted(mb_avgs.items())))
+        return history, avg_val_loss, False
+
     # --- Early stopping state (rehydrate if provided) ---
     early = None
     if early_stop_patience is not None and early_stop_patience > 0:
@@ -195,11 +231,6 @@ def fit(
     global_batch_idx = len(history.batch_step) if history.batch_step else 0
     global_opt_step  = len(history.lr_steps)   if history.lr_steps   else 0
 
-    if log and is_main_fit:
-        sig = (rollout_cfg or {}).get("schema_sig")
-        if sig:
-            log.info("[schema] signature=%s", sig)
-
     # -----------------------------------------------------------------------
     # Epoch loop
     # -----------------------------------------------------------------------
@@ -213,8 +244,8 @@ def fit(
                 valid_dl.sampler.set_epoch(epoch)
 
         if log and is_main_fit:
-            log.info("Starting Training - [Epoch %d/%d] accum_steps=%s, mb_size=%s",
-                     epoch + 1, epochs, eff_accum, mb_size)
+            log.info("Starting Training - [Epoch %d/%d] accum_steps=%s, mb_size=%s (carry=%s)",
+                     epoch + 1, epochs, eff_accum, mb_size, carry_enabled)
 
         every_n = max(1, len(train_dl) // 20)
 
@@ -238,107 +269,148 @@ def fit(
             n_years = int(labels_a.shape[1])
             n_locs  = int(inputs.shape[2])
 
-            # samples_seen (teacher-forced windows)
-            history.samples_seen += max(0, n_years - 1) * n_locs
+            # Determine samples_seen according to carry semantics
+            if carry_enabled:
+                from math import ceil
+                H = float((rollout_cfg or {}).get("carry_horizon", 0.0) or 0.0)
+                D = int(ceil(H))
+                history.samples_seen += max(0, n_years - D) * n_locs
+            else:
+                history.samples_seen += max(0, n_years - 1) * n_locs
+
+            # -------------------------- carry rollout path --------------------------
+            if carry_enabled:
+                # NOTE: expect rollout_train_outer_batch to return at least
+                #   (avg_batch_loss, global_opt_step)
+                # It may also (optionally) return (avg_batch_loss, global_opt_step, mb_sums, n_windows)
+                rt = rollout_train_outer_batch(
+                    model=model,
+                    loss_func=loss_func,
+                    opt=opt,
+                    scheduler=scheduler,
+                    inputs=inputs,
+                    labels_m=labels_m,
+                    labels_a=labels_a,
+                    mb_size=mb_size,
+                    eff_accum=eff_accum,
+                    eff_clip=eff_clip,
+                    history=history,
+                    global_opt_step=global_opt_step,
+                    device=model_device,
+                    rollout_cfg=rollout_cfg,
+                )
+                # Unpack with backward compatibility
+                if isinstance(rt, tuple) and len(rt) >= 2:
+                    avg_batch_loss, global_opt_step = rt[0], rt[1]
+                    # Optional MB fold-in from rollout, if provided
+                    if len(rt) >= 4:
+                        mb_sums_batch, n_win_batch = rt[2], int(rt[3])
+                        if isinstance(mb_sums_batch, dict) and n_win_batch > 0:
+                            for k, v in mb_sums_batch.items():
+                                epoch_train_mb_sums[k] = epoch_train_mb_sums.get(k, 0.0) + float(v)
+                            epoch_train_windows += int(n_win_batch)
+                else:
+                    raise RuntimeError("rollout_train_outer_batch returned unexpected shape.")
+
+                train_losses.append(float(avg_batch_loss))
+                history.add_batch(float(avg_batch_loss), global_batch_idx)
+                global_batch_idx += 1
 
             # ----------------------- teacher-forced path -----------------------
-            # Stack all (year, location) windows -> per-window mini-batch
-            x_list, yM_list, yA_list = [], [], []
-            yM_prev_last_list, yA_prev_list = [], []
+            else:
+                # Stack all (year, location) windows -> per-window mini-batch
+                x_list, yM_list, yA_list = [], [], []
 
-            for y in range(1, n_years):
-                # slices for current supervision window y
-                x_slice  = inputs[:,   y*365:(y+1)*365, :].permute(2, 1, 0)  # [nl,365,nin]
-                yM_slice = labels_m[:, y*12:(y+1)*12,  :].permute(2, 1, 0)  # [nl,12,nm]
-                yA_slice = labels_a[:, y:(y+1),        :].permute(2, 1, 0)  # [nl,1, na]
+                for y in range(1, n_years):
+                    # slices for current supervision window y
+                    x_slice  = inputs[:,   y*365:(y+1)*365, :].permute(2, 1, 0)  # [nl,365,nin]
+                    yM_slice = labels_m[:, y*12:(y+1)*12,  :].permute(2, 1, 0)  # [nl,12,nm]
+                    yA_slice = labels_a[:, y:(y+1),        :].permute(2, 1, 0)  # [nl,1, na]
 
-                # previous-year anchors (Dec of y-1, and annual of y-1)
-                dec_prev = labels_m[:, y*12 - 1, :].permute(1, 0).unsqueeze(1)   # [nl,1,nm]
-                ann_prev = labels_a[:, y - 1,    :].permute(1, 0).unsqueeze(1)   # [nl,1,na]
+                    x_list.append(x_slice);      yM_list.append(yM_slice);  yA_list.append(yA_slice)
 
-                x_list.append(x_slice);      yM_list.append(yM_slice);  yA_list.append(yA_slice)
-                yM_prev_last_list.append(dec_prev);  yA_prev_list.append(ann_prev)
+                Xw   = torch.cat(x_list, dim=0)  # [Nw,365,nin]
+                YMw  = torch.cat(yM_list, dim=0) # [Nw,12,nm]
+                YAw  = torch.cat(yA_list, dim=0) # [Nw,1, na]
+                Nw   = int(Xw.shape[0])
 
-            Xw   = torch.cat(x_list,            dim=0)  # [Nw,365,nin]
-            YMw  = torch.cat(yM_list,           dim=0)  # [Nw,12,nm]
-            YAw  = torch.cat(yA_list,           dim=0)  # [Nw,1, na]
-            YMwP = torch.cat(yM_prev_last_list, dim=0)  # [Nw,1, nm]  (Dec_{y-1})
-            YAwP = torch.cat(yA_prev_list,      dim=0)  # [Nw,1, na]  (Annual_{y-1})
-            Nw   = int(Xw.shape[0])
+                if getattr(args, "shuffle_windows", False) and Nw > 1:
+                    perm = torch.randperm(Nw, device=Xw.device)
+                    Xw, YMw, YAw = Xw[perm], YMw[perm], YAw[perm]
 
-            if getattr(args, "shuffle_windows", False) and Nw > 1:
-                perm = torch.randperm(Nw, device=Xw.device)
-                Xw, YMw, YAw, YMwP, YAwP = Xw[perm], YMw[perm], YAw[perm], YMwP[perm], YAwP[perm]
+                micro_size = min(mb_size, Nw)
+                num_micro  = (Nw + micro_size - 1) // micro_size
+                microbatches_done = 0
+                running_sum_loss  = 0.0
 
-            micro_size = min(mb_size, Nw)
-            num_micro  = (Nw + micro_size - 1) // micro_size
-            microbatches_done = 0
-            running_sum_loss  = 0.0
+                for mb_idx in range(num_micro):
+                    s = mb_idx * micro_size
+                    e = min((mb_idx + 1) * micro_size, Nw)
 
-            for mb_idx in range(num_micro):
-                s = mb_idx * micro_size
-                e = min((mb_idx + 1) * micro_size, Nw)
+                    xb   = Xw[s:e]
+                    yb_m = YMw[s:e]
+                    yb_a = YAw[s:e]
 
-                xb   = Xw[s:e]
-                yb_m = YMw[s:e]
-                yb_a = YAw[s:e]
+                    # Guard minibatch inputs
+                    if not torch.isfinite(xb).all():
+                        if log:
+                            log.warning("[train/teacher] non-finite INPUT minibatch %s", tuple(xb.shape))
+                        del xb, yb_m, yb_a
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        continue
 
-                # Guard minibatch inputs
-                if not torch.isfinite(xb).all():
-                    if log:
-                        log.warning(
-                            "[train/teacher] non-finite INPUT minibatch: shape=%s, finite=%s",
-                            tuple(xb.shape), bool(torch.isfinite(xb).all().item())
-                        )
-                    # Skip this microbatch
-                    del xb, yb_m, yb_a
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    continue
+                    preds = model(xb)  # [B,365,nm+na]
 
-                preds = model(xb)  # [B,365,nm+na]
-
-                # Build Pre in Physical Space to Pass to loss for water mass balance
-                extra_daily = None
-                try:
-                    in_order = (rollout_cfg or {}).get("input_order", [])
-                    if "pre" in in_order:
-                        pre_idx = in_order.index("pre")
-                        pre_norm = xb[:, :, pre_idx]  # xb is in INPUT_ORDER
-                        st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
-                        mu = float(st.get("mean", 0.0))
-                        sd = float(st.get("std", 1.0))
-                        pre_phys = pre_norm * sd + mu
-                        extra_daily = {"pre": pre_phys}
-                except Exception:
+                    # Build extra_daily for water-balance (physical Pre)
                     extra_daily = None
+                    try:
+                        in_order = (rollout_cfg or {}).get("input_order", [])
+                        if "pre" in in_order:
+                            pre_idx = in_order.index("pre")
+                            pre_norm = xb[:, :, pre_idx]
+                            st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
+                            mu = float(st.get("mean", 0.0))
+                            sd = float(st.get("std", 1.0))
+                            pre_phys = pre_norm * sd + mu
+                            extra_daily = {"pre": pre_phys}
+                    except Exception:
+                        extra_daily = None
 
-                # check finity
-                if not torch.isfinite(preds).all():
-                    if log:
-                        log.warning(
-                            "[train/teacher] non-finite PRED minibatch: x_shape=%s, pred_shape=%s",
-                            tuple(xb.shape), tuple(preds.shape)
-                        )
-                    del preds, xb, yb_m, yb_a
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    continue
+                    if not torch.isfinite(preds).all():
+                        if log:
+                            log.warning("[train/teacher] non-finite PRED minibatch %s", tuple(preds.shape))
+                        del preds, xb, yb_m, yb_a
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        continue
 
-                # Loss Function
-                loss = loss_func(preds, yb_m, yb_a, extra_daily=extra_daily)
+                    loss = loss_func(preds, yb_m, yb_a, extra_daily=extra_daily)
 
-                # --- accumulate MB breakdown (weighted contributions) per window ----
-                bd = getattr(loss_func, "last_breakdown", None)
-                _accum_bd_sums(epoch_train_mb_sums, bd, mult=(e - s))
-                epoch_train_windows += (e - s)
+                    # Accumulate MB weighted contributions
+                    bd = getattr(loss_func, "last_breakdown", None)
+                    _accum_bd_sums(epoch_train_mb_sums, bd, mult=(e - s))
+                    epoch_train_windows += (e - s)
 
-                running_sum_loss += float(loss.detach().cpu()) * (e - s)
+                    running_sum_loss += float(loss.detach().cpu()) * (e - s)
 
-                (loss / eff_accum).backward()
-                microbatches_done += 1
+                    (loss / eff_accum).backward()
+                    microbatches_done += 1
 
-                if microbatches_done % eff_accum == 0:
+                    if microbatches_done % eff_accum == 0:
+                        if eff_clip is not None:
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
+                        opt.step()
+                        opt.zero_grad(set_to_none=True)
+                        if scheduler is not None:
+                            scheduler.step()
+                        lr_now = opt.param_groups[0]["lr"]
+                        history.lr_values.append(float(lr_now))
+                        history.lr_steps.append(global_opt_step)
+                        global_opt_step += 1
+
+                # Flush remainder if needed
+                if microbatches_done % eff_accum != 0:
                     if eff_clip is not None:
                         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
                     opt.step()
@@ -350,23 +422,10 @@ def fit(
                     history.lr_steps.append(global_opt_step)
                     global_opt_step += 1
 
-            # Flush remainder if needed
-            if microbatches_done % eff_accum != 0:
-                if eff_clip is not None:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
-                opt.step()
-                opt.zero_grad(set_to_none=True)
-                if scheduler is not None:
-                    scheduler.step()
-                lr_now = opt.param_groups[0]["lr"]
-                history.lr_values.append(float(lr_now))
-                history.lr_steps.append(global_opt_step)
-                global_opt_step += 1
-
-            avg_batch_loss = running_sum_loss / max(1, Nw)
-            train_losses.append(avg_batch_loss)
-            history.add_batch(avg_batch_loss, global_batch_idx)
-            global_batch_idx += 1
+                avg_batch_loss = running_sum_loss / max(1, Nw)
+                train_losses.append(avg_batch_loss)
+                history.add_batch(avg_batch_loss, global_batch_idx)
+                global_batch_idx += 1
 
             # --------------------------- in-epoch validation ---------------------------
             if val_plan is not None:
@@ -395,17 +454,15 @@ def fit(
                         dist.broadcast(ids, src=0)
                         batch_ids = ids.tolist()
 
-                    # NOTE: validate now returns (avg, cnt, mb_avgs); ignore mb_avgs here
                     interim_avg, interim_cnt, _ = validate(
                         model, loss_func, valid_dl, device=model_device, batch_indices=batch_ids,
                         rollout_cfg=rollout_cfg,
+                        eval_mb_size=(getattr(args, "eval_mb_size", None) or mb_size),
                     )
 
                     # Mid-epoch early stopping check
                     if early is not None:
                         early.step_on_check(interim_avg, epoch)
-
-                        # Optional: early exit during the epoch
                         stop_now = torch.tensor(
                             [1 if (is_main_fit and early.should_stop) else 0],
                             device=model_device,
@@ -463,6 +520,19 @@ def fit(
         # ============================ end outer-batch loop ============================
         history.close_epoch()
 
+        # --- HARD CLEANUP before epoch-end validation (from carry branch) ---
+        for _name in (
+            "Xw","YMw","YAw","xb","yb_m","yb_a","preds",
+            "x_list","yM_list","yA_list",
+            "inputs","labels_m","labels_a",
+        ):
+            if _name in locals():
+                try: del locals()[_name]
+                except Exception: pass
+        import gc; gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         # Break out if we stopped mid-epoch
         if stopped_early_flag:
             break
@@ -476,6 +546,7 @@ def fit(
             model, loss_func, valid_dl, device=model_device,
             batch_indices=epoch_end_batch_indices,
             rollout_cfg=rollout_cfg,
+            eval_mb_size=(getattr(args, "eval_mb_size", None) or mb_size),
         )
         if val_cnt == 0:
             if log and is_main_fit:
@@ -603,7 +674,6 @@ def plan_validation(
         "fixed_val_batch_ids": fixed_ids,
     }
 
-# If subsetting validation batches, sample k indices from total_batches
 def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
     """Randomly select k validation batch indices from total_batches (sorted)."""
     k = min(max(0, int(k)), int(total_batches))
@@ -613,7 +683,6 @@ def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
         return list(range(total_batches))
     return random.sample(range(total_batches), k)
 
-# Main validation function (teacher-forced only)
 def validate(
     model: torch.nn.Module,
     loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor, Optional[Dict[str, torch.Tensor]]], torch.Tensor],
@@ -621,17 +690,26 @@ def validate(
     device: Optional[torch.device] = None,
     max_batches: Optional[int] = None,
     batch_indices: Optional[Iterable[int]] = None,
-    rollout_cfg: Optional[dict] = None,  # accepted but not used for carry
+    rollout_cfg: Optional[dict] = None,
+    eval_mb_size: Optional[int] = None,
 ) -> Tuple[float, int, Dict[str, float]]:
     """
-    Evaluate on a validation dataloader using teacher-forced per-(year,location) windows.
+    Evaluate on a validation dataloader.
+      - carry_horizon > 0.0 → windowed carry evaluation (via rollout_eval_outer_batch)
+      - carry_horizon = 0.0 → teacher-forced per-(year,location) windows
     Returns (avg_loss, num_windows, mb_avgs_dict).
-      - mb_avgs_dict contains weighted contributions per mass-balance term,
-        averaged per window over the validation subset.
     """
     model.eval()
     if device is None:
         device = next(model.parameters()).device
+
+    def _carry_on(cfg: Optional[dict]) -> bool:
+        try:
+            return float((cfg or {}).get("carry_horizon", 0.0) or 0.0) > 0.0
+        except Exception:
+            return False
+
+    carry_enabled = _carry_on(rollout_cfg)
 
     use_index_subset = batch_indices is not None
     index_set = set(batch_indices) if use_index_subset else None
@@ -640,7 +718,6 @@ def validate(
 
     total_loss = 0.0
     total_cnt  = 0
-    # --- NEW: MB sums over validation windows --------------------------------
     mb_sums: Dict[str, float] = {}
 
     with torch.inference_mode():
@@ -654,43 +731,69 @@ def validate(
             labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
             labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
-            # Teacher-forced evaluation per (year, location) window
-            n_locations = int(inputs.shape[2])
-            n_years     = int(labels_a.shape[1])
+            if carry_enabled:
+                # Prefer rollout_eval_outer_batch; allow optional MB return for logging
+                result = rollout_eval_outer_batch(
+                    model=model,
+                    loss_func=loss_func,
+                    inputs=inputs,
+                    labels_m=labels_m,
+                    labels_a=labels_a,
+                    device=device,
+                    rollout_cfg=rollout_cfg,
+                    mb_size=(int(eval_mb_size) if eval_mb_size else 1470),
+                )
+                # Expected legacy: (batch_sum_loss, n_windows)
+                # Optional extended: (batch_sum_loss, n_windows, mb_sums_dict)
+                if isinstance(result, tuple) and len(result) >= 2:
+                    batch_sum_loss = float(result[0])
+                    n_windows      = int(result[1])
+                    total_loss += batch_sum_loss
+                    total_cnt  += n_windows
+                    if len(result) >= 3 and isinstance(result[2], dict):
+                        # Already window-weighted sums from rollout; just add
+                        for k, v in result[2].items():
+                            mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+                else:
+                    raise RuntimeError("rollout_eval_outer_batch returned unexpected shape.")
+            else:
+                # Teacher-forced evaluation per (year, location) window
+                n_locations = int(inputs.shape[2])
+                n_years     = int(labels_a.shape[1])
 
-            for loc in range(n_locations):
-                for year_idx in range(1, n_years):
-                    x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
-                    yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
-                    yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]   # [na,1]
+                for loc in range(n_locations):
+                    for year_idx in range(1, n_years):
+                        x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
+                        yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
+                        yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]   # [na,1]
 
-                    xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
-                    yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
-                    yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
+                        xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
+                        yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
+                        yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
 
-                    # Build Pre in Physical Space to pass to loss for water mass balance
-                    extra_daily = None
-                    try:
-                        in_order = (rollout_cfg or {}).get("input_order", [])
-                        if "pre" in in_order:
-                            pre_idx = in_order.index("pre")
-                            pre_norm = xb[:, :, pre_idx]  # xb is in INPUT_ORDER
-                            st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
-                            mu = float(st.get("mean", 0.0))
-                            sd = float(st.get("std", 1.0))
-                            pre_phys = pre_norm * sd + mu
-                            extra_daily = {"pre": pre_phys}
-                    except Exception:
+                        # Build extra_daily for water-balance (physical Pre)
                         extra_daily = None
+                        try:
+                            in_order = (rollout_cfg or {}).get("input_order", [])
+                            if "pre" in in_order:
+                                pre_idx = in_order.index("pre")
+                                pre_norm = xb[:, :, pre_idx]
+                                st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
+                                mu = float(st.get("mean", 0.0))
+                                sd = float(st.get("std", 1.0))
+                                pre_phys = pre_norm * sd + mu
+                                extra_daily = {"pre": pre_phys}
+                        except Exception:
+                            extra_daily = None
 
-                    preds_daily = model(xb)  # [1,365,out]
-                    val_loss = loss_func(preds_daily, yb_m, yb_a, extra_daily=extra_daily)
-                    total_loss += float(val_loss.item())
-                    total_cnt  += 1
+                        preds_daily = model(xb)      # [1,365,out]
+                        val_loss = loss_func(preds_daily, yb_m, yb_a, extra_daily=extra_daily)
+                        total_loss += float(val_loss.item())
+                        total_cnt  += 1
 
-                    # --- NEW: accumulate MB breakdown (weighted contributions) -----
-                    bd = getattr(loss_func, "last_breakdown", None)
-                    _accum_bd_sums(mb_sums, bd, mult=1.0)
+                        # Accumulate MB breakdown
+                        bd = getattr(loss_func, "last_breakdown", None)
+                        _accum_bd_sums(mb_sums, bd, mult=1.0)
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -708,7 +811,7 @@ def validate(
         dist.all_reduce(t_sum, op=dist.ReduceOp.SUM)
         dist.all_reduce(t_cnt, op=dist.ReduceOp.SUM)
 
-        # Reduce MB sums as well
+        # Reduce MB sums as well (if any collected)
         if mb_sums:
             keys = sorted(mb_sums.keys())
             buf  = torch.tensor([mb_sums[k] for k in keys], device=dev, dtype=torch.float64)

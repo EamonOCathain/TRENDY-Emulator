@@ -9,14 +9,6 @@ import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-# Torch runtime flags (determinism / precision)
-# -----------------------------------------------------------------------------#
-torch.autograd.set_detect_anomaly(True)
-torch.backends.cuda.matmul.allow_tf32 = False
-torch.backends.cudnn.allow_tf32 = False
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-
 # -----------------------------------------------------------------------------#
 # Project paths and environment bootstrap
 # -----------------------------------------------------------------------------#
@@ -47,6 +39,7 @@ from src.training.tester import (
     run_and_save_test_suite,
     run_and_save_metrics_csv,
     run_and_save_scatter_grids,
+    run_and_save_scatter_tail_only,   
 )
 from src.training.varschema import VarSchema
 
@@ -73,8 +66,10 @@ def parse_args():
     parser.add_argument("--resume", type=str, default=None,
                         help="Path to a checkpoint .pt (epoch*.pt or best.pt) to resume training")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--mb_size", type=int, default=1,  # windows per microbatch
+    parser.add_argument("--mb_size", type=int, default=1470,  # windows per microbatch
                         help="Windows per microbatch")
+    parser.add_argument("--eval_mb_size", type=int, default=2940,
+                    help="Microbatch size for validation/testing carry rollout. Defaults to --mb_size if unset.")
     parser.add_argument("--accum_steps", type=int, default=None,
                         help="Gradient accumulation steps")
     parser.add_argument("--grad_clip", type=float, default=None,
@@ -88,12 +83,16 @@ def parse_args():
     parser.add_argument("--use_foundation", type=str, default=None,
                         help=("Path to checkpoint to initialize model weights from "
                               "(optimizer/scheduler/history/epoch are ignored)"))
+    parser.add_argument("--delta_luh", action="store_true",
+                        help="If set, include luh2_deltas in the annual forcing list.")
+    
+    # Modes
+    parser.add_argument("--val_only", action="store_true",
+                    help="Run only the validation pass (skip training and testing).")
     parser.add_argument("--train_only", action="store_true",
                         help="Skip testing after training.")
     parser.add_argument("--test_only", action="store_true",
                         help="Run only the testing suite (skip training/validation).")
-    parser.add_argument("--delta_luh", action="store_true",
-                        help="If set, include luh2_deltas in the annual forcing list.")
 
     # --- Optimiser & scheduler ---
     parser.add_argument("--lr", type=float, default=9e-5)
@@ -156,6 +155,25 @@ def parse_args():
                         help="Scan datasets for non-finite values before training (warns if any found)")
     parser.add_argument("--var_weights", type=str, default=None, help='Comma list of "<var>=<weight>" to override per-variable loss weights, e.g. "lai=2,gpp=0.5". Names must match OUTPUT vars.',)
 
+    # --- Microbatching / eval ---
+
+
+    # --- Carry controls ---
+    parser.add_argument("--carry_years", type=str, default="0",
+                        help='Carry horizon across years. Single numeric value: "0", a float ("2.5"), or fraction "3/12".')
+    parser.add_argument("--carry_granularity", type=str, default="annual",
+                        choices=["monthly", "annual"],
+                        help="Carry coupling across years: monthly=last-month state→next Jan; annual=annual-mean→all days next year.")
+
+    # --- DataLoader prefetch ---
+    parser.add_argument("--prefetch_factor", type=int, default=2,
+                        help="Batches prefetched per DataLoader worker (train/test).")
+    parser.add_argument("--val_prefetch_factor", type=int, default=2,
+                        help="Batches prefetched per DataLoader worker (validation).")
+
+    # --- Modes ---
+
+    
     return parser.parse_args()
 
 # -----------------------------------------------------------------------------#
@@ -180,6 +198,36 @@ def _check_frac(name, val):
 
 _check_frac("subset_frac", args.subset_frac)
 _check_frac("test_frac", args.test_frac)
+
+# ===== Carry-years parsing (single value) =====
+def _to_float(token: str) -> float:
+    token = token.strip().lower()
+    if "/" in token:
+        num, den = token.split("/", 1)
+        return float(num) / float(den)
+    return float(token)
+
+try:
+    carry_value = _to_float(args.carry_years)
+except Exception as e:
+    raise SystemExit(f"Invalid --carry_years value '{args.carry_years}': {e}")
+
+if carry_value < 0:
+    raise SystemExit("--carry_years must be >= 0")
+
+# In annual mode: clamp 0 < carry < 1 to 1.0 (keep exact 0.0)
+if args.carry_granularity == "annual" and 0.0 < carry_value < 1.0:
+    logging.getLogger(args.job_name).warning(
+        f"[carry] annual granularity: clamped carry years {carry_value} -> 1.0 (no fractional carry)"
+    )
+    carry_value = 1.0
+
+# Turn off shuffling if carry > 0
+if carry_value > 0 and args.shuffle_windows:
+    logging.getLogger(args.job_name).warning(
+        "[carry] Disabling window shuffling because carry_horizon>0."
+    )
+    args.shuffle_windows = False
 
 def _parse_var_weights(s: str | None) -> dict[str, float]:
     if not s:
@@ -306,16 +354,16 @@ def main():
     exclude_vars = set(getattr(args, "exclude_vars", []))
     
     # Build Datasets from Dataloader
-    # where you call get_train_val_test(...)
     ds_dict = get_train_val_test(
         std_dict,
-        block_locs=70,
+        block_locs=70,               
         exclude_vars=exclude_vars,
         tl_activated=args.transfer_learn,
         tl_start=tl_start_year,
         tl_end=tl_end_year,
         replace_map=replace_map,
-        delta_luh=args.delta_luh,         
+        delta_luh=args.delta_luh,
+        carry_years=carry_value,      
     )
 
     if is_main:
@@ -350,6 +398,8 @@ def main():
         train_ds, val_ds, test_ds,
         bs=1,
         num_workers=(args.num_workers if args.num_workers is not None else workers_per_rank),
+        prefetch_factor=args.prefetch_factor,          
+        val_prefetch_factor=args.val_prefetch_factor, 
         ddp=ddp,
     )
 
@@ -499,6 +549,8 @@ def main():
         "output_order": OUTPUT_ORDER,
         "input_order": INPUT_ORDER, 
         "schema_sig": schema_sig,
+        "carry_horizon": float(carry_value),   
+        "carry_granularity": str(args.carry_granularity),   
     }
 
     if is_main:
@@ -570,7 +622,7 @@ def main():
         monthly_weights=monthly_weights,
         annual_weights=annual_weights,
         mb_var_idx=mb_var_idx,
-        water_balance_weight=args.water_balance,
+        water_balance_weight=args.water_balance,          
         npp_balance_weight=args.npp_balance,
         nbp_balance_weight=args.nbp_balance,
         nbp_delta_ctotal_weight=args.nbp_d_ctotal_balance,
@@ -737,6 +789,64 @@ def main():
     # -------------------------------------------------------------------------
     try:
         if not args.test_only:
+            if args.val_only:
+                if is_main:
+                    log.info("Running validation-only mode (no training, no testing)")
+                # Load best if present (optional)
+                def _reload_best() -> bool:
+                    p = run_dir / "checkpoints" / "best.pt"
+                    try:
+                        if not p.exists():
+                            return False
+                        ck = torch.load(p, map_location="cpu", weights_only=True)
+                        state = ck.get("model_state", ck) if isinstance(ck, dict) else ck
+                        target = model.module if isinstance(model, DDP) else model
+                        target.load_state_dict(state, strict=False)
+                        if is_main:
+                            log.info("Reloaded best weights for val_only run")
+                        return True
+                    except Exception as e:
+                        if is_main:
+                            log.warning(f"Failed to reload best weights for val_only: {e}")
+                        return False
+
+                _reload_best()
+
+                history, val_loss, _ = fit(
+                    epochs=1,
+                    model=model,
+                    loss_func=loss_fn,
+                    opt=opt,                         # unused by validate_only path
+                    train_dl=train_dl,               # unused by validate_only path
+                    valid_dl=valid_dl,
+                    log=(log if is_main else None),
+                    save_cb=None,
+                    accum_steps=args.accum_steps,
+                    grad_clip=args.grad_clip,
+                    scheduler=None,
+                    val_plan=val_plan,
+                    mb_size=args.mb_size,
+                    ddp=ddp,
+                    early_stop_patience=None,
+                    early_stop_min_delta=0.0,
+                    early_stop_warmup_epochs=0,
+                    start_dt=start_dt,
+                    run_dir=run_dir,
+                    args=args,
+                    start_epoch=0,
+                    best_val_init=float("inf"),
+                    history_seed=None,
+                    samples_seen_seed=0,
+                    rollout_cfg=rollout_cfg,
+                    validate_only=True,              # <— key switch
+                )
+
+                if is_main:
+                    (run_dir / "info").mkdir(parents=True, exist_ok=True)
+                    with open(run_dir / "info" / "val_only_metrics.txt", "w") as f:
+                        f.write(f"val_loss={val_loss}\n")
+                    log.info(f"Validation-only complete — val_loss={val_loss:.6f}")
+                return
 
             if resume_pending:
                 se  = resume_payload.get("start_epoch", 0)
@@ -833,6 +943,7 @@ def main():
                     rollout_cfg=rollout_cfg,
                     run_dir=run_dir,
                     logger=log,
+                    eval_mb_size=args.eval_mb_size, 
                 )
 
                 log.info("[plots] starting full plots (subsample=200k)")
@@ -844,7 +955,20 @@ def main():
                     run_dir=run_dir,
                     logger=log,
                     subsample_points=200_000,
+                    eval_mb_size=args.eval_mb_size,  
                 ), "full_plots")
+
+                # Tail-only scatter (used when carry_horizon > 0)
+                _safe(lambda: run_and_save_scatter_tail_only(
+                    model=model,
+                    test_dl=test_dl,
+                    device=DEVICE,
+                    rollout_cfg=rollout_cfg,
+                    run_dir=run_dir,
+                    logger=log,
+                    subsample_points=200_000,
+                    eval_mb_size=args.eval_mb_size,  
+                ), "tail_only_scatter")
 
     if is_main:
         log.info("Succesfully completed training: %s", run_dir)
