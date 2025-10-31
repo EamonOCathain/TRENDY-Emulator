@@ -232,8 +232,10 @@ class YearProcessor(nn.Module):
 
     def _forward_sequential_months(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Month→month carry path: predict month m, compute monthly-state mean,
-        inject it into the inputs of month m+1 along the monthly-state input channels.
+        Month→month carry path with DETACHED carry:
+        - after finishing month m, compute the mean over the monthly-state outputs,
+            detach it from the graph, and inject into month m+1 inputs under no_grad.
+        - result: months are independent for autograd; only shared params get grads.
         """
         B, _, _ = x.shape
         device = x.device
@@ -242,24 +244,26 @@ class YearProcessor(nn.Module):
         in_m_idx  = self.in_monthly_state_idx.to(device)
         out_m_idx = self.out_monthly_state_idx.to(device)
 
-        x_work = x.clone()
+        # Work copy we’re free to overwrite. Keep it detached so writes don’t build graphs.
+        # (Inputs typically don’t require grad anyway, but this makes the intent explicit.)
+        x_work = x.detach().clone()
+
         prev_m_mean: torch.Tensor | None = None
 
         for m, L in enumerate(self.month_lengths):
             day_ids = self.month_day_idx[m, :L]  # [L] long
 
-            # --- Inject previous month carry into CURRENT month inputs (vectorised) ---
+            # --- Inject previous-month carry into CURRENT month inputs (DETACHED) ---
             if (m > 0) and (prev_m_mean is not None) and (in_m_idx.numel() > 0):
-                # inject shape: [B, L, n_mstates]
-                inject = prev_m_mean.view(B, 1, -1).expand(B, L, -1)
-                # build broadcastable indices for (B, L, n_mstates)
-                b_idx   = torch.arange(B, device=device).view(B, 1, 1).expand(B, L, in_m_idx.numel())
-                r_idx   = day_ids.view(1, L, 1).expand(B, L, in_m_idx.numel())
-                c_idx   = in_m_idx.view(1, 1, -1).expand(B, L, in_m_idx.numel())
-                x_work.index_put_((b_idx, r_idx, c_idx), inject, accumulate=False)
+                inject = prev_m_mean.view(B, 1, -1).expand(B, L, -1)  # [B, L, n_mstates]
+                b_idx = torch.arange(B, device=device).view(B, 1, 1).expand(B, L, in_m_idx.numel())
+                r_idx = day_ids.view(1, L, 1).expand(B, L, in_m_idx.numel())
+                c_idx = in_m_idx.view(1, 1, -1).expand(B, L, in_m_idx.numel())
+                with torch.no_grad():
+                    x_work.index_put_((b_idx, r_idx, c_idx), inject, accumulate=False)
 
             # --- run month m ---
-            Xm = x_work[:, day_ids, :]  # [B, L, in_dim]
+            Xm = x_work[:, day_ids, :].contiguous()  # [B, L, in_dim]
             if L < 31:
                 pad_len = 31 - L
                 pad = torch.zeros(B, pad_len, self.input_dim, device=device, dtype=Xm.dtype)
@@ -270,21 +274,24 @@ class YearProcessor(nn.Module):
                 Xm31 = Xm
                 mask31 = torch.zeros(B, 31, dtype=torch.bool, device=device)
 
+            # This forward builds the graph only within month m
             Ym31 = self.inner(Xm31, key_padding_mask=mask31)  # [B,31,out_dim]
             out[:, day_ids, :] = Ym31[:, :L, :]
 
-            # --- prepare carry for NEXT month and inject (vectorised) ---
+            # --- prepare DETACHED carry for NEXT month and inject (also DETACHED) ---
             if m < 11:
-                m_slice = Ym31[:, :L, :][:, :, out_m_idx]  # [B, L, n_mstates]
-                prev_m_mean = m_slice.mean(dim=1)          # [B, n_mstates]
+                # Compute monthly-state mean and DETACH so no grads flow month→month
+                m_slice = Ym31[:, :L, :][:, :, out_m_idx]          # [B, L, n_mstates]
+                prev_m_mean = m_slice.mean(dim=1).detach()         # [B, n_mstates]  (DETACHED)
 
-                next_len = self.month_lengths[m + 1]
-                next_ids = self.month_day_idx[m + 1, :next_len].to(device)  # [next_len]
                 if in_m_idx.numel() > 0:
-                    inject_next = prev_m_mean.view(B, 1, -1).expand(B, next_len, -1)  # [B,next_len,n_mstates]
-                    b_idx   = torch.arange(B, device=device).view(B, 1, 1).expand(B, next_len, in_m_idx.numel())
-                    r_idx   = next_ids.view(1, next_len, 1).expand(B, next_len, in_m_idx.numel())
-                    c_idx   = in_m_idx.view(1, 1, -1).expand(B, next_len, in_m_idx.numel())
-                    x_work.index_put_((b_idx, r_idx, c_idx), inject_next, accumulate=False)
+                    next_len = self.month_lengths[m + 1]
+                    next_ids = self.month_day_idx[m + 1, :next_len].to(device)  # [next_len]
+                    inject_next = prev_m_mean.view(B, 1, -1).expand(B, next_len, -1)
+                    b_idx = torch.arange(B, device=device).view(B, 1, 1).expand(B, next_len, in_m_idx.numel())
+                    r_idx = next_ids.view(1, next_len, 1).expand(B, next_len, in_m_idx.numel())
+                    c_idx = in_m_idx.view(1, 1, -1).expand(B, next_len, in_m_idx.numel())
+                    with torch.no_grad():
+                        x_work.index_put_((b_idx, r_idx, c_idx), inject_next, accumulate=False)
 
         return out
