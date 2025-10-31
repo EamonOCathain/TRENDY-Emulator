@@ -25,28 +25,25 @@ start_dt_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
 from src.paths.paths import *                     
 
 from src.models.custom_transformer import YearProcessor
+from src.dataset.dataloader import get_train_val_test, get_data
+from src.dataset.dataset import base, get_subset
 from src.training.checkpoints import save_cb, extract_state_dict_for_foundation
 from src.training.history import History
 from src.training.loss import build_loss_fn
-from src.training.trainer import fit, plan_validation
-from src.dataset.dataloader import get_train_val_test, get_data
 from src.training.distributed import init_distributed
 from src.training.logging import save_args, setup_logging
 from src.training.scheduler import build_cosine_wr_scheduler
 from src.training.stats import get_split_stats, set_seed, load_standardisation_only
-from src.dataset.dataset import base, get_subset
+from src.training.trainer import train, plan_validation
 from src.training.tester import (
-    run_and_save_test_suite,
-    run_and_save_metrics_csv,
-    run_and_save_scatter_grids,
-    run_and_save_scatter_tail_only,   
+    evaluate_all_modes,
+    run_diagnostics,
 )
 from src.training.varschema import VarSchema
 
 # -----------------------------------------------------------------------------#
 # Global run configuration
 # -----------------------------------------------------------------------------#
-training_dir = train_pipeline_dir  # Overwrite training dir root from paths module
 
 # SLURM resources
 workers = max(1, int(os.getenv("SLURM_CPUS_PER_TASK", "4")))
@@ -121,8 +118,6 @@ def parse_args():
                         help="Gradient accumulation steps")
     parser.add_argument("--grad_clip", type=float, default=None,
                         help="Gradient norm clip (None disables)")
-    parser.add_argument("--shuffle_windows", action="store_true",
-                        help="Shuffle windows in the dataloader")
     parser.add_argument("--num_workers", type=int, default=8)
     
     # --- Optimiser & scheduler ---
@@ -203,11 +198,11 @@ if carry_value < 0:
     raise SystemExit("--carry_years must be >= 0")
 
 # Turn off shuffling if carry > 0
-if carry_value > 0 and args.shuffle_windows:
+args.shuffle_windows = (carry_value == 0)
+if not args.shuffle_windows:
     logging.getLogger(args.job_name).warning(
-        "[carry] Disabling window shuffling because carry_horizon>0."
+        "[carry] Disabling window shuffling because carry_years>0."
     )
-    args.shuffle_windows = False
 
 # Raise error if carry years not 0 and model mode isnt sequential
 if args.carry_years > 0 and args.model_monthly_mode != "sequential_months":
@@ -282,7 +277,7 @@ def main():
     # -------------------------------------------------------------------------
     today = datetime.now().strftime("%Y-%m-%d")
     run_leaf = f"{slurm_id}_{args.job_name}"
-    run_dir = training_dir / "runs" / today / run_leaf
+    run_dir = train_pipeline_dir / "runs" / today / run_leaf
 
     (run_dir / "saves").mkdir(parents=True, exist_ok=True)
     (run_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
@@ -412,10 +407,10 @@ def main():
 
     # Per-rank dataloader stats (handy for debugging DDP)
     if ddp and dist.is_initialized():
-        dist.barrier()
+        dist.barrier(device_ids=[LOCAL_RANK])
         log.info(f"[Rank {RANK}] train_ds={len(train_ds)}, val_ds={len(val_ds)}, test_ds={len(test_ds)}")
         log.info(f"[Rank {RANK}] train_batches={len(train_dl)}, val_batches={len(valid_dl)}, test_batches={len(test_dl)}")
-        dist.barrier()
+        dist.barrier(device_ids=[LOCAL_RANK])
     else:
         if is_main:
             log.info(f"Dataset sizes — train={len(train_ds)}, val={len(val_ds)}, test={len(test_ds)}")
@@ -477,29 +472,6 @@ def main():
     monthly_names = schema.out_monthly_names()
     annual_names = schema.out_annual_names()
     output_names = monthly_names + annual_names
-    
-    # Default all-supervised weights to 1.0
-    monthly_weights = [1.0 for _ in monthly_names]
-    annual_weights  = [1.0 for _ in annual_names]
-
-    # Apply per-variable overrides from --var_weights
-    vw = _parse_var_weights(getattr(args, "var_weights", None))
-    if vw:
-        # name -> index maps (head-local)
-        m_idx = {n: i for i, n in enumerate(monthly_names)}
-        a_idx = {n: i for i, n in enumerate(annual_names)}
-        for name, w in vw.items():
-            if name in m_idx:
-                monthly_weights[m_idx[name]] = float(w)
-                if is_main:
-                    print(f"[loss] monthly weight override: {name}={w}")
-            elif name in a_idx:
-                annual_weights[a_idx[name]] = float(w)
-                if is_main:
-                    print(f"[loss] annual weight override:  {name}={w}")
-            else:
-                if is_main:
-                    print(f"[loss][WARN] --var_weights entry '{name}' not in outputs; ignoring.")
 
     idx_monthly = list(range(len(monthly_names)))
     idx_annual = list(range(len(monthly_names), len(output_names)))
@@ -538,7 +510,7 @@ def main():
         "input_order": INPUT_ORDER, 
         "schema_sig": schema_sig,
         "carry_horizon": int(carry_value),  
-        "model_monthly_mode": str(args.model_monthly_mode) 
+        "monthly_mode": str(args.model_monthly_mode) 
     }
 
     if is_main:
@@ -602,6 +574,25 @@ def main():
     monthly_weights = [1.0 for _ in monthly_names]
     annual_weights  = [1.0 for _ in annual_names]
     
+    # Apply per-variable overrides from --var_weights
+    vw = _parse_var_weights(getattr(args, "var_weights", None))
+    if vw:
+        # name -> index maps (head-local)
+        m_idx = {n: i for i, n in enumerate(monthly_names)}
+        a_idx = {n: i for i, n in enumerate(annual_names)}
+        for name, w in vw.items():
+            if name in m_idx:
+                monthly_weights[m_idx[name]] = float(w)
+                if is_main:
+                    print(f"[loss] monthly weight override: {name}={w}")
+            elif name in a_idx:
+                annual_weights[a_idx[name]] = float(w)
+                if is_main:
+                    print(f"[loss] annual weight override:  {name}={w}")
+            else:
+                if is_main:
+                    print(f"[loss][WARN] --var_weights entry '{name}' not in outputs; ignoring.")
+    
     loss_fn = build_loss_fn(
         idx_monthly=idx_monthly,
         idx_annual=idx_annual,
@@ -632,6 +623,9 @@ def main():
         transformer_kwargs={"max_len": 31},
         mode=args.model_monthly_mode,
     ).float().to(DEVICE)
+    
+    # Log model mode
+    log.info("[model] constructed with initial mode=%s", (model.module if isinstance(model, DDP) else model).mode)
 
     def _ckpt_io_dims(ckpt: dict) -> tuple[int, int]:
         return int(ckpt.get("input_dim", -1)), int(ckpt.get("output_dim", -1))
@@ -800,7 +794,7 @@ def main():
 
                 _reload_best()
 
-                history, val_loss, _ = fit(
+                history, val_loss, _ = train(
                     epochs=1,
                     model=model,
                     loss_func=loss_fn,
@@ -813,8 +807,6 @@ def main():
                     grad_clip=args.grad_clip,
                     scheduler=None,
                     val_plan=val_plan,
-                    train_mb_size=args.mb_size,
-                    eval_mb_size=args.eval_mb_size,
                     ddp=ddp,
                     early_stop_patience=None,
                     early_stop_min_delta=0.0,
@@ -846,7 +838,7 @@ def main():
             else:
                 se, bvi, hs, sss = 0, float("inf"), None, 0
 
-            history, _, _ = fit(
+            history, _, _ = train(
                 args.epochs, model, loss_fn, opt, train_dl, valid_dl,
                 log=(log if is_main else None),
                 save_cb=save_cb_main,
@@ -854,8 +846,6 @@ def main():
                 grad_clip=args.grad_clip,
                 scheduler=scheduler,
                 val_plan=val_plan,
-                train_mb_size=args.mb_size,
-                eval_mb_size=args.eval_mb_size,
                 ddp=ddp,
                 early_stop_patience=args.early_stop_patience if args.early_stop else None,
                 early_stop_min_delta=args.early_stop_min_delta,
@@ -867,7 +857,7 @@ def main():
                 best_val_init=bvi,
                 history_seed=hs,
                 samples_seen_seed=sss,
-                rollout_cfg=rollout_cfg
+                rollout_cfg=rollout_cfg,
             )
 
     except KeyboardInterrupt:
@@ -895,7 +885,7 @@ def main():
             log.info(f"Model weights saved to {final_path}")
 
         if ddp and dist.is_initialized():
-            dist.barrier()
+            dist.barrier(device_ids=[LOCAL_RANK])
 
         if not args.train_only:
 
@@ -910,56 +900,44 @@ def main():
             reload_best_weights()
 
             if ddp and dist.is_initialized():
-                dist.barrier()
+                dist.barrier(device_ids=[LOCAL_RANK])
 
-            _ = run_and_save_test_suite(
+            # Use the best weights (if available) for testing/diagnostics
+            _ = reload_best_weights()
+
+            if ddp and dist.is_initialized():
+                dist.barrier(device_ids=[LOCAL_RANK])
+
+            # Evaluate losses in all modes and write JSONs under run_dir/test
+            results = evaluate_all_modes(
                 model=model,
                 loss_func=loss_fn,
                 test_dl=test_dl,
                 device=DEVICE,
-                logger=log,
                 rollout_cfg=rollout_cfg,
+                args=args,
                 run_dir=run_dir,
-                is_main=is_main,
-                ddp=ddp,
-                world_size=WORLD_SIZE,
-                eval_mb_size=args.eval_mb_size,   # <<< ensure test uses eval_mb_size
+                logger=log,
+                eval_mb_size=args.eval_mb_size,
+                full_sequence_horizon=123,
             )
 
             if is_main:
-                _ = run_and_save_metrics_csv(
+                # Metrics CSVs, NPZs, and scatter plots (teacher-forced, full-sequence, and tail-only if H>0)
+                log.info("[diagnostics] starting metrics/plots (subsample pairs=2M, plots=200k)")
+                _safe(lambda: run_diagnostics(
                     model=model,
                     test_dl=test_dl,
                     device=DEVICE,
                     rollout_cfg=rollout_cfg,
                     run_dir=run_dir,
                     logger=log,
-                    eval_mb_size=args.eval_mb_size, 
-                )
-
-                log.info("[plots] starting full plots (subsample=200k)")
-                _safe(lambda: run_and_save_scatter_grids(
-                    model=model,
-                    test_dl=test_dl,
-                    device=DEVICE,
-                    rollout_cfg=rollout_cfg,
-                    run_dir=run_dir,
-                    logger=log,
-                    subsample_points=200_000,
-                    eval_mb_size=args.eval_mb_size,  
-                ), "full_plots")
-
-                # Tail-only scatter (used when carry_horizon > 0)
-                _safe(lambda: run_and_save_scatter_tail_only(
-                    model=model,
-                    test_dl=test_dl,
-                    device=DEVICE,
-                    rollout_cfg=rollout_cfg,
-                    run_dir=run_dir,
-                    logger=log,
-                    subsample_points=200_000,
-                    eval_mb_size=args.eval_mb_size,  
-                ), "tail_only_scatter")
+                    subsample_points_pairs=2_000_000,
+                    subsample_points_plots=200_000,
+                    do_teacher_forced=True,
+                    do_full_sequence=True,
+                    do_tail_only=True,
+                ), "run_diagnostics")
 
     if is_main:
         log.info("Succesfully completed training: %s", run_dir)

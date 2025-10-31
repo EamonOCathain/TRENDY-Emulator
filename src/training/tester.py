@@ -1,211 +1,97 @@
+#!/usr/bin/env python3
+"""
+Simplified tester: wrappers around trainer.test() + optional diagnostics.
+
+Public entry points:
+  - evaluate_all_modes(...)
+  - run_diagnostics(...)
+
+Usage pattern:
+  results = evaluate_all_modes(
+      model, loss_func, test_dl, device,
+      rollout_cfg=rollout_cfg, args=args, run_dir=run_dir,
+      logger=log, eval_mb_size=args.eval_mb_size,
+      full_sequence_horizon=123,    # or override as needed
+  )
+
+  # Optional diagnostics (plots/CSVs/NPZs)
+  run_diagnostics(
+      model, test_dl, device, rollout_cfg, run_dir,
+      logger=log,
+      do_teacher_forced=True, do_full_sequence=True, do_tail_only=True
+  )
+"""
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
 # Standard library
 # ---------------------------------------------------------------------------
-import csv
 import json
 import logging
-import math
-import time
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple
-
-# ---------------------------------------------------------------------------
-# Third-party
-# ---------------------------------------------------------------------------
+from typing import Dict, Iterable, Mapping, Optional, Tuple
 import numpy as np
 import torch
-import torch.distributed as dist
-from torch.utils.data import DataLoader
+import sys
 
 # ---------------------------------------------------------------------------
-# Project
+# Project imports
 # ---------------------------------------------------------------------------
-from src.analysis.vis_modular import scatter_grid_from_pairs
-from src.training.carry import gather_pred_label_pairs, rollout_outer_batch
+project_root = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel")
+sys.path.append(str(project_root))
+
+from src.training.trainer import test_once, model_mode, unwrap
 from src.dataset.variables import output_attributes
+from src.analysis.vis_modular import scatter_grid_from_pairs
+
 # =============================================================================
-# Utilities: finite checks & small DDP helper
+# Constants
+# =============================================================================
+
+MONTH_LENGTHS_FALLBACK = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+# =============================================================================
+# Small helpers (metrics, denorm, I/O)
 # =============================================================================
 
 def _finite_mask_np(y: np.ndarray, yhat: np.ndarray) -> np.ndarray:
-    """Elementwise finiteness mask for paired arrays (True where both finite)."""
     return np.isfinite(y) & np.isfinite(yhat)
 
-
-def _is_finite_batch_torch(x: torch.Tensor, m: torch.Tensor, a: torch.Tensor) -> bool:
-    """True iff x, m, a are all finite (no NaN/Inf)."""
-    return torch.isfinite(x).all() and torch.isfinite(m).all() and torch.isfinite(a).all()
-
-
-def _ddp_sum_int(v: int, device: torch.device) -> int:
-    """
-    All-reduce a single integer across DDP ranks and return the summed int.
-    If not in DDP, returns v unchanged.
-    """
-    if dist.is_available() and dist.is_initialized():
-        t = torch.tensor([int(v)], dtype=torch.int64, device=device)
-        dist.all_reduce(t, op=dist.ReduceOp.SUM)
-        return int(t.item())
-    return int(v)
-
-# ========= Physical-space helpers =========
-
-def _to_physical_pairs(
-    pairs_norm: Mapping[str, tuple[np.ndarray, np.ndarray]],
-    std_map: Mapping[str, Mapping[str, float]],
-) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-    """
-    Convert normalized (z-scored) pairs back to physical units using
-    std_map[var] = {"mean": μ, "std": σ}. Falls back to identity if missing.
-    """
-    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-    for var, (y, yhat) in pairs_norm.items():
-        stats = std_map.get(var, {})
-        mu = float(stats.get("mean", 0.0))
-        sd = float(stats.get("std", 1.0))
-        if not np.isfinite(sd) or sd == 0.0:
-            sd = 1.0
-        out[var] = (y * sd + mu, yhat * sd + mu)
-    return out
-
-
-def _save_pairs_npz(
-    out_path: Path,
-    pairs_phys: Mapping[str, tuple[np.ndarray, np.ndarray]],
-    meta: Optional[Mapping[str, dict]] = None,
-) -> None:
-    """
-    Save pairs as an .npz with keys like '<var>__y' and '<var>__yhat'.
-    Also writes a '<file>.meta.json' with units/long names if provided.
-    """
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = {}
-    for k, (y, yhat) in pairs_phys.items():
-        arrays[f"{k}__y"] = y
-        arrays[f"{k}__yhat"] = yhat
-    np.savez_compressed(out_path, **arrays)
-    if meta:
-        out_path.with_suffix(".meta.json").write_text(json.dumps(meta, indent=2))
-
-
-def _name_unit_maps_for_pairs(
-    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]
-) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """
-    Build:
-      - name_map:   var -> display name (long_name or var)
-      - xlabel_map: display name -> 'Observed (unit)'
-      - ylabel_map: display name -> 'Predicted (unit)'
-    """
-    name_map: dict[str, str] = {}
-    xlabel_map: dict[str, str] = {}
-    ylabel_map: dict[str, str] = {}
-
-    for var in pairs.keys():
-        meta = output_attributes.get(var, {})
-        disp = meta.get("long_name", var)
-        unit = meta.get("units", "")
-        name_map[var] = disp
-        suffix = f" ({unit})" if unit else ""
-        xlabel_map[disp] = f"Observed{suffix}"
-        ylabel_map[disp] = f"Predicted{suffix}"
-    return name_map, xlabel_map, ylabel_map
-
-
-def _title_with_r2_base(
-    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
-    base: str
-) -> str:
-    """Compose a title with global R² on the given arrays."""
-    try:
-        _, g = _compute_metrics_per_variable(pairs)
-        r2 = g["R2"]
-        if math.isfinite(r2):
-            return f"{base} • R²={r2:.3f}"
-    except Exception:
-        pass
-    return base
-
-# =============================================================================
-# Metrics (computed in physical space)
-# =============================================================================
-
 def metric_r2(y: np.ndarray, yhat: np.ndarray) -> float:
-    """
-    Coefficient of determination R^2:
-      R^2 = 1 - sum((y - yhat)^2) / sum((y - mean(y))^2)
-    Returns NaN if variance(y) == 0 or there are no finite pairs.
-    """
     m = _finite_mask_np(y, yhat)
     if not np.any(m):
         return float("nan")
-    y  = y[m].astype(np.float64, copy=False)
-    yh = yhat[m].astype(np.float64, copy=False)
-    denom = np.sum((y - y.mean()) ** 2)
+    y, yh = y[m].astype(np.float64, copy=False), yhat[m].astype(np.float64, copy=False)
+    denom = np.sum((y - y.mean())**2)
     if denom <= 0.0:
         return float("nan")
-    num = np.sum((y - yh) ** 2)
-    return 1.0 - (num / denom)
-
+    return 1.0 - np.sum((y - yh)**2) / denom
 
 def metric_nrmse(y: np.ndarray, yhat: np.ndarray) -> float:
-    """
-    Normalized RMSE:
-      nRMSE = RMSE / std(y)  (on normalized data, std≈1, so ~RMSE)
-    Returns NaN if std(y) == 0 or no finite pairs.
-    """
     m = _finite_mask_np(y, yhat)
     if not np.any(m):
         return float("nan")
-    y  = y[m].astype(np.float64, copy=False)
-    yh = yhat[m].astype(np.float64, copy=False)
-    denom = y.std(ddof=0)
-    if denom <= 0.0:
+    y, yh = y[m].astype(np.float64, copy=False), yhat[m].astype(np.float64, copy=False)
+    sd = y.std(ddof=0)
+    if sd <= 0.0:
         return float("nan")
-    rmse = np.sqrt(np.mean((y - yh) ** 2))
-    return rmse / denom
-
+    return float(np.sqrt(np.mean((y - yh)**2)) / sd)
 
 def metric_acc(y: np.ndarray, yhat: np.ndarray) -> float:
-    """
-    Anomaly Correlation Coefficient:
-      Pearson correlation of mean-removed series.
-    Returns NaN if either centered variance is 0 or no finite pairs.
-    """
     m = _finite_mask_np(y, yhat)
     if not np.any(m):
         return float("nan")
-    y  = y[m].astype(np.float64, copy=False)
-    yh = yhat[m].astype(np.float64, copy=False)
+    y, yh = y[m].astype(np.float64, copy=False), yhat[m].astype(np.float64, copy=False)
     yc, yhc = y - y.mean(), yh - yh.mean()
-    num   = np.sum(yc * yhc)
-    den_y = np.sqrt(np.sum(yc ** 2))
-    den_h = np.sqrt(np.sum(yhc ** 2))
-    den = den_y * den_h
-    if den <= 0.0:
-        return float("nan")
-    return float(num / den)
-
-
-# =============================================================================
-# CSV metrics: compute per-variable + a global equal-weight row (no NSE)
-# =============================================================================
+    num = np.sum(yc * yhc)
+    den = np.sqrt(np.sum(yc**2)) * np.sqrt(np.sum(yhc**2))
+    return float(num / den) if den > 0 else float("nan")
 
 def _compute_metrics_per_variable(
     pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]
 ) -> tuple[list[dict], dict]:
-    """
-    Args:
-      pairs: {var_name: (y, yhat)} arrays in physical units.
-
-    Returns:
-      rows: list of dicts, one per variable
-      global_row: dict of equal-weight mean across variables (ignores NaNs)
-    """
-    rows: list[dict] = []
+    rows = []
     for var, (y, yhat) in pairs.items():
         m = _finite_mask_np(y, yhat)
         n = int(np.count_nonzero(m))
@@ -216,604 +102,506 @@ def _compute_metrics_per_variable(
             "nRMSE":metric_nrmse(y, yhat),
             "ACC":  metric_acc(y, yhat),
         })
-
     def _mean_ignore_nan(vals: Iterable[float]) -> float:
-        vals = np.asarray(list(vals), dtype=float)
-        m = np.isfinite(vals)
-        return float(np.mean(vals[m])) if np.any(m) else float("nan")
-
+        arr = np.asarray(list(vals), dtype=float)
+        m = np.isfinite(arr)
+        return float(np.mean(arr[m])) if np.any(m) else float("nan")
     global_row = {
         "variable": "GLOBAL(equal_weight)",
-        "n": int(np.sum([r["n"] for r in rows])),  # informative only
+        "n": int(np.sum([r["n"] for r in rows])),
         "R2":    _mean_ignore_nan([r["R2"]    for r in rows]),
         "nRMSE": _mean_ignore_nan([r["nRMSE"] for r in rows]),
         "ACC":   _mean_ignore_nan([r["ACC"]   for r in rows]),
     }
     return rows, global_row
 
-
-def write_metrics_csv(
-    *,
-    out_csv_path: Path,
-    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
-) -> None:
-    """
-    Write CSV with first row = GLOBAL(equal_weight), then one row per variable.
-    Columns: variable, n, R2, nRMSE, ACC
-    """
-    var_rows, global_row = _compute_metrics_per_variable(pairs)
-    var_rows_sorted = sorted(var_rows, key=lambda r: r["variable"])  # stable order
-
+def write_metrics_csv(out_csv_path: Path, pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]) -> dict:
+    rows, global_row = _compute_metrics_per_variable(pairs)
+    rows_sorted = sorted(rows, key=lambda r: r["variable"])
     out_csv_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_csv_path.open("w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["variable", "n", "R2", "nRMSE", "ACC"])
+    def _fmt(x: float) -> str:
+        return f"{x:.6f}" if np.isfinite(x) else "nan"
+    with out_csv_path.open("w") as f:
+        f.write("variable,n,R2,nRMSE,ACC\n")
+        f.write(f'{global_row["variable"]},{global_row["n"]},{_fmt(global_row["R2"])},'
+                f'{_fmt(global_row["nRMSE"])},{_fmt(global_row["ACC"])}\n')
+        for r in rows_sorted:
+            f.write(f'{r["variable"]},{r["n"]},{_fmt(r["R2"])},{_fmt(r["nRMSE"])},{_fmt(r["ACC"])}\n')
+    return global_row
 
-        def _fmt(x: float) -> str:
-            return f"{x:.6f}" if math.isfinite(x) else "nan"
+def _to_physical_pairs(
+    pairs_norm: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    std_map: Mapping[str, Mapping[str, float]],
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for var, (y, yhat) in pairs_norm.items():
+        stats = std_map.get(var, {})
+        mu = float(stats.get("mean", 0.0))
+        sd = float(stats.get("std",  1.0)) or 1.0
+        out[var] = (y * sd + mu, yhat * sd + mu)
+    return out
 
-        # Global row
-        w.writerow([
-            global_row["variable"], global_row["n"],
-            _fmt(global_row["R2"]),
-            _fmt(global_row["nRMSE"]),
-            _fmt(global_row["ACC"]),
-        ])
+def _save_pairs_npz(out_path: Path, pairs_phys: Mapping[str, tuple[np.ndarray, np.ndarray]], meta: Optional[Mapping[str, dict]] = None):
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    arrays = {}
+    for k, (y, yhat) in pairs_phys.items():
+        arrays[f"{k}__y"] = y
+        arrays[f"{k}__yhat"] = yhat
+    np.savez_compressed(out_path, **arrays)
+    if meta:
+        out_path.with_suffix(".meta.json").write_text(json.dumps(meta, indent=2))
 
-        # Per-variable rows
-        for r in var_rows_sorted:
-            w.writerow([r["variable"], r["n"], _fmt(r["R2"]), _fmt(r["nRMSE"]), _fmt(r["ACC"])])
+def _name_unit_maps_for_pairs(
+    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]]
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    name_map, xlabel_map, ylabel_map = {}, {}, {}
+    for var in pairs.keys():
+        meta = output_attributes.get(var, {})
+        disp = meta.get("long_name", var)
+        unit = meta.get("units", "")
+        name_map[var] = disp
+        suffix = f" ({unit})" if unit else ""
+        xlabel_map[disp] = f"Observed{suffix}"
+        ylabel_map[disp] = f"Predicted{suffix}"
+    return name_map, xlabel_map, ylabel_map
 
+def _title_with_r2_base(
+    pairs: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    base: str
+) -> str:
+    try:
+        _, g = _compute_metrics_per_variable(pairs)
+        r2 = g["R2"]
+        if np.isfinite(r2):
+            return f"{base} • R²={r2:.3f}"
+    except Exception:
+        pass
+    return base
 
-def run_and_save_metrics_csv(
+# =============================================================================
+# Pair gathering (three modes)
+# =============================================================================
+
+def _year_bounds(y0: int, y1: int) -> tuple[int, int]:
+    return (y0 * 365, y1 * 365)
+
+def _slice_last_year_bounds(t: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    return (t * 12, (t + 1) * 12), (t, t + 1)
+
+@torch.no_grad()
+def gather_pred_label_pairs(
     *,
-    out_dir_name: str = "test",
     model: torch.nn.Module,
-    test_dl: DataLoader,
+    test_dl,
+    device: torch.device,
+    rollout_cfg: dict,
+    eval_mode: str,  # {"teacher_forced","full_sequence","tail_only"}
+    max_points_per_var: int | None = 2_000_000,
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """
+    Returns {var: (y_norm, yhat_norm)} in NORMALISED units, matching runtime semantics.
+    - teacher_forced: H=0, evaluate all years independently; monthly_mode = user.
+    - full_sequence:  warm-up y=0, score 1..Y-1; monthly_mode = 'sequential_months'.
+    - tail_only:      windowed with H=rollout_cfg['carry_horizon']; score tail year; monthly_mode forced sequential if H>0 else user.
+    """
+    assert eval_mode in {"teacher_forced", "full_sequence", "tail_only"}
+    model.eval()
+
+    monthly_names = list(rollout_cfg.get("out_monthly_names", []))
+    annual_names  = list(rollout_cfg.get("out_annual_names", []))
+    buf = {n: ([], []) for n in (monthly_names + annual_names)}
+
+    month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
+    bounds = [0]; 
+    for m in month_lengths: bounds.append(bounds[-1] + m)
+    first_month_len = int(month_lengths[0])
+
+    # Index helpers (sanitise per batch)
+    def _san_idx(idx_list, size):
+        if not idx_list: return []
+        good = [int(i) for i in idx_list if 0 <= int(i) < size]
+        return good
+
+    # Pool daily absolutes -> (monthly, annual)
+    def _pool_from_daily_abs(y_daily_abs: torch.Tensor, nm: int, na: int) -> tuple[torch.Tensor, torch.Tensor]:
+        y_m_daily = y_daily_abs[..., :nm]
+        y_a_daily = y_daily_abs[..., nm:nm+na]
+        pieces = [y_m_daily[:, bounds[i]:bounds[i+1], :].mean(dim=1, keepdim=True) for i in range(12)]
+        preds_m = torch.cat(pieces, dim=1)            # [B,12,nm]
+        preds_a = y_a_daily.mean(dim=1, keepdim=True) # [B,1, na]
+        return preds_m, preds_a
+
+    # Carry helpers
+    def _prev_monthly_from_preds(preds_m: torch.Tensor, out_m_idx: list[int]) -> Optional[torch.Tensor]:
+        if (preds_m is None) or (not out_m_idx): return None
+        return preds_m[:, -1, out_m_idx]
+
+    def _inject_monthly_carry(x_year: torch.Tensor, carry_vec: torch.Tensor, in_m_idx: list[int]):
+        if (carry_vec is None) or (not in_m_idx): return
+        B = x_year.size(0)
+        idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
+        # January inject
+        Ljan = first_month_len
+        x_year[:, :Ljan, :].index_copy_(
+            2, idx, carry_vec.unsqueeze(1).expand(B, Ljan, len(in_m_idx))
+        )
+        # Poison Feb–Dec for those features
+        if Ljan < 365:
+            x_year[:, Ljan:, :].index_fill_(2, idx, float("nan"))
+
+    def _isfinite_except_monthly_carry_mask(x_year: torch.Tensor, in_m_idx: list[int]) -> bool:
+        if not in_m_idx:
+            return torch.isfinite(x_year).all().item()
+        finite = torch.isfinite(x_year)
+        B, D, N = x_year.shape
+        allowed = torch.zeros((B, D, N), dtype=torch.bool, device=x_year.device)
+        if first_month_len < D:
+            idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
+            allowed[:, first_month_len:, :].index_fill_(2, idx, True)
+        ok = finite | allowed
+        return ok.all().item()
+
+    for batch_inputs, batch_monthly, batch_annual in test_dl:
+        inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)   # [nin,365*Y,L]
+        labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)  # [nm,12*Y,L]
+        labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)   # [na,Y,L]
+
+        nin, Ttot, L = int(inputs.shape[0]), int(inputs.shape[1]), int(inputs.shape[2])
+        Y = int(labels_a.shape[1])
+        if L <= 0 or Y <= 0:
+            continue
+
+        nm = int(labels_m.shape[0]); na = int(labels_a.shape[0])
+
+        in_m_idx  = _san_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin)
+        in_a_idx  = _san_idx(rollout_cfg.get("in_annual_state_idx", [])  or [], nin)
+        out_m_idx = _san_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm)
+        out_a_idx = _san_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na)
+
+        # ----------- MODE A: teacher-forced (H=0, user monthly mode) -----------
+        if eval_mode == "teacher_forced":
+            user_mode = rollout_cfg.get("monthly_mode", "batch_months")
+            with model_mode(model, user_mode):
+                for y in range(Y):
+                    ds, de = _year_bounds(y, y + 1)
+                    xb = torch.stack([inputs[:, ds:de, loc].T for loc in range(L)], dim=0)  # [L,365,nin]
+                    if not torch.isfinite(xb).all():  # strict finiteness in TF
+                        continue
+                    preds_abs = model(xb)  # [L,365,nm+na]
+                    if not torch.isfinite(preds_abs).all():
+                        continue
+                    pm, pa = _pool_from_daily_abs(preds_abs, nm, na)
+                    (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+                    ybm = torch.stack([labels_m[:, ms:me, loc].T for loc in range(L)], dim=0)  # [L,12,nm]
+                    yba = torch.stack([labels_a[:, ys:ye, loc].T for loc in range(L)], dim=0)  # [L, 1,na]
+                    if not (torch.isfinite(ybm).all() and torch.isfinite(yba).all()):
+                        continue
+                    for j, name in enumerate(monthly_names):
+                        buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
+                        buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
+                    for j, name in enumerate(annual_names):
+                        buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
+                        buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+            continue
+
+        # ----------- MODE B: full-sequence (warm-up + carry, forced sequential) -----------
+        if eval_mode == "full_sequence":
+            with model_mode(model, "sequential_months"):
+                for loc in range(L):
+                    ds0, de0 = _year_bounds(0, 1)
+                    xb0 = inputs[:, ds0:de0, loc].T.unsqueeze(0)  # [1,365,nin]
+                    if not torch.isfinite(xb0).all():
+                        continue
+                    preds0 = model(xb0)
+                    if not torch.isfinite(preds0).all():
+                        continue
+                    pm0, pa0 = _pool_from_daily_abs(preds0, nm, na)
+                    prev_m = _prev_monthly_from_preds(pm0, out_m_idx)
+                    prev_a = pa0[:, 0, out_a_idx] if out_a_idx else None
+
+                    for y in range(1, Y):
+                        ds, de = _year_bounds(y, y+1)
+                        xb = inputs[:, ds:de, loc].T.unsqueeze(0)
+                        if (prev_m is not None) and in_m_idx:
+                            _inject_monthly_carry(xb, prev_m, in_m_idx)
+                        if (prev_a is not None) and in_a_idx:
+                            idx = torch.as_tensor(in_a_idx, device=xb.device, dtype=torch.long)
+                            xb.index_copy_(2, idx, prev_a.unsqueeze(1).expand(1, 365, len(in_a_idx)))
+                        if not _isfinite_except_monthly_carry_mask(xb, in_m_idx):
+                            continue
+                        preds = model(xb)
+                        if not torch.isfinite(preds).all():
+                            continue
+                        pm, pa = _pool_from_daily_abs(preds, nm, na)
+                        (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+                        ybm = labels_m[:, ms:me, loc].T.unsqueeze(0)
+                        yba = labels_a[:, ys:ye, loc].T.unsqueeze(0)
+                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
+                            for j, name in enumerate(monthly_names):
+                                buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
+                                buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
+                            for j, name in enumerate(annual_names):
+                                buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
+                                buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+                        prev_m = _prev_monthly_from_preds(pm, out_m_idx)
+                        prev_a = pa[:, 0, out_a_idx] if out_a_idx else None
+            continue
+
+        # ----------- MODE C: tail-only (windowed; H = cfg['carry_horizon']) -----------
+        H = int(rollout_cfg.get("carry_horizon", 0) or 0)
+        target_mode = "sequential_months" if H > 0 else rollout_cfg.get("monthly_mode", "batch_months")
+        windows = [(loc, t) for loc in range(L) for t in range(H, Y)]
+        if not windows:
+            continue
+
+        with model_mode(model, target_mode):
+            # Simple streaming loop over windows (no microbatching here; dataset batches already chunk)
+            for loc, t in windows:
+                prev_m = None
+                prev_a = None
+                for y_off in range(H + 1):
+                    y_abs = t - H + y_off
+                    ds, de = _year_bounds(y_abs, y_abs + 1)
+                    xb = inputs[:, ds:de, loc].T.unsqueeze(0)  # [1,365,nin]
+                    if y_off > 0:
+                        if (prev_m is not None) and in_m_idx:
+                            _inject_monthly_carry(xb, prev_m, in_m_idx)
+                        if (prev_a is not None) and in_a_idx:
+                            idx = torch.as_tensor(in_a_idx, device=xb.device, dtype=torch.long)
+                            xb.index_copy_(2, idx, prev_a.unsqueeze(1).expand(1, 365, len(in_a_idx)))
+                    if not _isfinite_except_monthly_carry_mask(xb, in_m_idx):
+                        continue
+                    preds_abs = model(xb)
+                    if not torch.isfinite(preds_abs).all():
+                        continue
+                    pm, pa = _pool_from_daily_abs(preds_abs, nm, na)
+                    prev_m = _prev_monthly_from_preds(pm, out_m_idx)
+                    prev_a = pa[:, 0, out_a_idx] if out_a_idx else None
+
+                    # collect only tail
+                    if y_off == H:
+                        (ms, me), (ys, ye) = _slice_last_year_bounds(t)
+                        ybm = labels_m[:, ms:me, loc].T.unsqueeze(0)
+                        yba = labels_a[:, ys:ye, loc].T.unsqueeze(0)
+                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
+                            for j, name in enumerate(monthly_names):
+                                buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
+                                buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
+                            for j, name in enumerate(annual_names):
+                                buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
+                                buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+
+    # Concatenate & optional downsample
+    rng = np.random.default_rng(123)
+    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for k, (ys, ps) in buf.items():
+        y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
+        p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
+        n = y.size
+        if (max_points_per_var is not None) and (n > max_points_per_var):
+            idx = rng.choice(n, size=max_points_per_var, replace=False)
+            y = y[idx]; p = p[idx]
+        out[k] = (y, p)
+    return out
+
+
+# =============================================================================
+# Wrappers around trainer.test()
+# =============================================================================
+
+def _merge_monthly_mode(cfg: dict, args, carry_horizon: int) -> dict:
+    """Respect rule: if H=0 → user mode; if H>0 → sequential."""
+    out = dict(cfg or {})
+    out["carry_horizon"] = int(carry_horizon)
+    user_mode = getattr(args, "model_monthly_mode", "batch_months")
+    out["monthly_mode"] = ("sequential_months" if carry_horizon > 0 else user_mode)
+    return out
+
+def evaluate_all_modes(
+    *,
+    model: torch.nn.Module,
+    loss_func,
+    test_dl,
+    device: torch.device,
+    rollout_cfg: Optional[dict],
+    args: object,
+    run_dir: Path,
+    logger: Optional[logging.Logger] = None,
+    eval_mb_size: Optional[int] = None,   # kept for API parity; mb size comes from args.eval_mb_size
+    full_sequence_horizon: int = 123,     # label only; actual H is Y-1 inside test_once(full_sequence)
+) -> Dict[str, dict]:
+    """
+    Runs the loss-only tests via trainer.test() in the requested modes:
+      - Teacher-forced (H=0, monthly_mode=user)
+      - Full sequence (H=Y-1 per batch, monthly_mode='sequential_months')
+      - Tail-only (ONLY if rollout_cfg.carry_horizon > 0) with that user-provided H
+
+    Returns a dict with the raw trainer.test() outputs for each mode and writes JSONs.
+    """
+    log = logger or logging.getLogger("evaluate_all_modes")
+    test_root = run_dir / "test"
+    test_root.mkdir(parents=True, exist_ok=True)
+
+    # -------------------- Teacher-forced (H=0) --------------------
+    tf_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=0)
+    log.info(
+        "[eval] teacher_forced: cfg.monthly_mode=%s | model.mode(now)=%s",
+        tf_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+    )
+    tf_out = test_once(
+        model=model, loss_func=loss_func, test_dl=test_dl, device=device,
+        base_cfg=tf_cfg,
+        loss_policy="tail_only",
+        carry_mode="fixed",        # use H from base_cfg (0)
+        args=args,
+        logger=log,
+    )
+    (test_root / "test_teacher_forced.json").write_text(json.dumps(tf_out, indent=2))
+    if log:
+        log.info("[Test] Teacher-forced avg=%.6f", tf_out["sum_loss"] / max(1, tf_out["count"]))
+
+    # ---------------- Full-sequence (H = Y-1 per batch) ----------------
+    # Note: test_once(..., carry_mode="full_sequence") sets cfg["carry_horizon"] = Y-1 per outer batch.
+    # We still pass a cfg with monthly_mode forced to sequential for clarity/consistency.
+    fs_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=int(full_sequence_horizon))
+    log.info(
+        "[eval] full_sequence: cfg.monthly_mode=%s | model.mode(now)=%s",
+        fs_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+    )
+    fs_out = test_once(
+        model=model, loss_func=loss_func, test_dl=test_dl, device=device,
+        base_cfg=fs_cfg,
+        loss_policy="tail_only",
+        carry_mode="full_sequence",  # derive H = Y-1 per batch
+        args=args,
+        logger=log,
+    )
+    (test_root / "test_carry_full_sequence.json").write_text(json.dumps(fs_out, indent=2))
+    if log:
+        log.info("[Test] Carry-%dy avg=%.6f", int(full_sequence_horizon), fs_out["sum_loss"] / max(1, fs_out["count"]))
+
+    out = {"teacher_forced": tf_out, "carry_full_sequence": fs_out}
+
+    # ---------------- Tail-only (user H>0) ----------------
+    H_user = int((rollout_cfg or {}).get("carry_horizon", 0) or 0)
+    tail_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=H_user)
+    log.info(
+        "[eval] tail_only(H=%d): cfg.monthly_mode=%s | model.mode(now)=%s",
+        H_user, tail_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+    )
+    if H_user > 0:
+        tail_out = test_once(
+            model=model, loss_func=loss_func, test_dl=test_dl, device=device,
+            base_cfg=tail_cfg,           # contains user H
+            loss_policy="tail_only",
+            carry_mode="fixed",          # use H from base_cfg (user's H)
+            args=args,
+            logger=log,
+        )
+        (test_root / "test_carry_tail_only.json").write_text(json.dumps(tail_out, indent=2))
+        if log:
+            log.info("[Test] Tail-only (H=%d) avg=%.6f", H_user, tail_out["sum_loss"] / max(1, tail_out["count"]))
+        out["carry_tail_only"] = tail_out
+
+    return out
+
+
+# =============================================================================
+# optional diagnostics (pairs → CSV/NPZ; scatter plots)
+# =============================================================================
+
+def run_diagnostics(
+    *,
+    model: torch.nn.Module,
+    test_dl,
     device: torch.device,
     rollout_cfg: dict,
     run_dir: Path,
     logger: Optional[logging.Logger] = None,
-    subsample_points: int = 2_000_000,
-    eval_mb_size: Optional[int] = None,  # used for tail-only windows
-) -> dict:
+    subsample_points_pairs: int = 2_000_000,
+    subsample_points_plots: int = 200_000,
+    do_teacher_forced: bool = True,
+    do_full_sequence: bool = True,
+    do_tail_only: bool = True,
+) -> None:
     """
-    Write metrics in PHYSICAL space ONLY, and save NPZs (also physical):
-      - metrics_teacher_forced_physical.csv   + pairs_teacher_forced.npz
-      - metrics_carry_full_sequence_physical.csv + pairs_carry_full_sequence.npz
-      - metrics_carry_tail_only_physical.csv + pairs_carry_tail_only.npz   (when H>0)
-
-    Returns a dict of GLOBAL(equal_weight) rows computed on PHYSICAL units.
+    Produces metrics CSVs and scatter grids in PHYSICAL units for selected modes.
+    Files written under run_dir / "test".
     """
-    test_root = run_dir / out_dir_name
+    log = logger or logging.getLogger("diagnostics")
+    test_root = run_dir / "test"
+    plots_dir = test_root / "plots"
     test_root.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
 
     std_map = (rollout_cfg or {}).get("std_out", {})
 
-    # ---------- teacher-forced ----------
-    tf_pairs_norm = gather_pred_label_pairs(
-        model=model, test_dl=test_dl, device=device,
-        rollout_cfg=rollout_cfg,
-        eval_mode="teacher_forced",
-        mb_size=None,
-        max_points_per_var=subsample_points,
-    )
-    tf_pairs_phys = _to_physical_pairs(tf_pairs_norm, std_map)
-    tf_csv_phys = test_root / "metrics_teacher_forced_physical.csv"
-    write_metrics_csv(out_csv_path=tf_csv_phys, pairs=tf_pairs_phys)
-    if logger: logger.info(f"[Metrics] Wrote {tf_csv_phys}")
+    def _prep_and_write(tag: str, pairs_norm: Mapping[str, tuple[np.ndarray, np.ndarray]]):
+        pairs_phys = _to_physical_pairs(pairs_norm, std_map)
 
-    tf_npz = test_root / "pairs_teacher_forced.npz"
-    tf_meta = {
-        var: {
-            "units": output_attributes.get(var, {}).get("units", ""),
-            "long_name": output_attributes.get(var, {}).get("long_name", var),
-        } for var in tf_pairs_phys.keys()
-    }
-    _save_pairs_npz(tf_npz, tf_pairs_phys, tf_meta)
-    if logger: logger.info(f"[Pairs] Saved physical pairs → {tf_npz}")
+        # metrics CSV
+        csv_path = test_root / f"metrics_{tag}_physical.csv"
+        global_row = write_metrics_csv(out_csv_path=csv_path, pairs=pairs_phys)
+        if log: log.info("[Metrics] %s (R2=%.3f, nRMSE=%.3f, ACC=%.3f)", tag,
+                         global_row["R2"], global_row["nRMSE"], global_row["ACC"])
 
-    # ---------- full-sequence carry ----------
-    fs_pairs_norm = gather_pred_label_pairs(
-        model=model, test_dl=test_dl, device=device,
-        rollout_cfg=rollout_cfg,
-        eval_mode="full_sequence",
-        mb_size=None,
-        max_points_per_var=subsample_points,
-    )
-    fs_pairs_phys = _to_physical_pairs(fs_pairs_norm, std_map)
-    fs_csv_phys = test_root / "metrics_carry_full_sequence_physical.csv"
-    write_metrics_csv(out_csv_path=fs_csv_phys, pairs=fs_pairs_phys)
-    if logger: logger.info(f"[Metrics] Wrote {fs_csv_phys}")
-
-    fs_npz = test_root / "pairs_carry_full_sequence.npz"
-    fs_meta = {
-        var: {
-            "units": output_attributes.get(var, {}).get("units", ""),
-            "long_name": output_attributes.get(var, {}).get("long_name", var),
-        } for var in fs_pairs_phys.keys()
-    }
-    _save_pairs_npz(fs_npz, fs_pairs_phys, fs_meta)
-    if logger: logger.info(f"[Pairs] Saved physical pairs → {fs_npz}")
-
-    # ---------- tail-only carry (auto when H>0) ----------
-    out_dict = {
-        "teacher_forced": _compute_metrics_per_variable(tf_pairs_phys)[1],
-        "carry_full_sequence": _compute_metrics_per_variable(fs_pairs_phys)[1],
-    }
-
-    H = float(rollout_cfg.get("carry_horizon", 0.0) or 0.0)
-    if H > 0.0:
-        tail_pairs_norm = gather_pred_label_pairs(
-            model=model, test_dl=test_dl, device=device,
-            rollout_cfg=rollout_cfg,
-            eval_mode="windowed_tail_only",
-            mb_size=eval_mb_size,
-            max_points_per_var=subsample_points,
-        )
-        tail_pairs_phys = _to_physical_pairs(tail_pairs_norm, std_map)
-        tail_csv_phys = test_root / "metrics_carry_tail_only_physical.csv"
-        write_metrics_csv(out_csv_path=tail_csv_phys, pairs=tail_pairs_phys)
-        if logger: logger.info(f"[Metrics] Wrote {tail_csv_phys}")
-
-        tail_npz = test_root / "pairs_carry_tail_only.npz"
-        tail_meta = {
+        # npz
+        meta = {
             var: {
                 "units": output_attributes.get(var, {}).get("units", ""),
                 "long_name": output_attributes.get(var, {}).get("long_name", var),
-            } for var in tail_pairs_phys.keys()
+            } for var in pairs_phys.keys()
         }
-        _save_pairs_npz(tail_npz, tail_pairs_phys, tail_meta)
-        if logger: logger.info(f"[Pairs] Saved physical pairs → {tail_npz}")
+        npz_path = test_root / f"pairs_{tag}.npz"
+        _save_pairs_npz(npz_path, pairs_phys, meta)
 
-        out_dict["carry_tail_only"] = _compute_metrics_per_variable(tail_pairs_phys)[1]
-
-    return out_dict
-
-# =============================================================================
-# Scatter grids: teacher-forced vs carry (titles now R² only)
-# =============================================================================
-
-def run_and_save_scatter_grids(
-    *,
-    model,
-    test_dl,
-    device,
-    rollout_cfg,
-    run_dir: Path,
-    logger=None,
-    subsample_points: int = 200_000,
-    eval_mb_size: Optional[int] = None,   # not used here
-) -> None:
-    """
-    Generates two scatter grids in PHYSICAL units:
-      1) Teacher-forced
-      2) Full sequence carry
-    Titles include global R² (computed in physical space). Axes show units.
-    """
-    test_root = run_dir / "test"
-    plots_dir = test_root / "plots"
-    plots_dir.mkdir(parents=True, exist_ok=True)
-
-    std_map = (rollout_cfg or {}).get("std_out", {})
-
-    def _prep_for_plot(pairs_phys: Mapping[str, tuple[np.ndarray, np.ndarray]]):
-        # drop vars with too few finite points
-        cleaned: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-        for k, (y, p) in (pairs_phys or {}).items():
+        # scatter plot (drop tiny vars)
+        cleaned = {}
+        for k, (y, p) in pairs_phys.items():
             m = np.isfinite(y) & np.isfinite(p)
             if np.count_nonzero(m) >= 50:
                 cleaned[k] = (y[m], p[m])
+
         if not cleaned:
-            return {}, {}, {}, {}
+            if log: log.warning("[Plots] No valid pairs for %s; skipping plot.", tag)
+            return
+
         name_map, xlabel_map, ylabel_map = _name_unit_maps_for_pairs(cleaned)
-        pairs_pretty = {name_map[k]: v for k, v in cleaned.items()}
-        return cleaned, pairs_pretty, xlabel_map, ylabel_map
+        pretty = {name_map[k]: v for k, v in cleaned.items()}
+
+        title = _title_with_r2_base(pretty, f"Observed vs Predicted ({tag.replace('_',' ').title()})")
+        out_img = plots_dir / f"scatter_{tag}.png"
+        scatter_grid_from_pairs(
+            pretty, ncols=3, suptitle=title, out_path=out_img,
+            subsample=subsample_points_plots, density_alpha=True,
+            xlabel_by_name=xlabel_map, ylabel_by_name=ylabel_map, dpi=700,
+        )
+        if log: log.info("[Plots] Saved → %s", out_img)
 
     # Teacher-forced
-    tf_pairs_norm = gather_pred_label_pairs(
-        model=model, test_dl=test_dl, device=device,
-        rollout_cfg=rollout_cfg, eval_mode="teacher_forced",
-        mb_size=None, max_points_per_var=subsample_points,
-    )
-    tf_pairs_phys = _to_physical_pairs(tf_pairs_norm, std_map)
-    tf_clean, tf_pretty, tf_xlab, tf_ylab = _prep_for_plot(tf_pairs_phys)
-    if tf_pretty:
-        tf_title = _title_with_r2_base(tf_pretty, "Observed vs Predicted (Teacher-Forced)")
-        scatter_grid_from_pairs(
-            tf_pretty, ncols=3, suptitle=tf_title,
-            out_path=plots_dir / "scatter_teacher_forced.png",
-            subsample=subsample_points, density_alpha=True,
-            xlabel_by_name=tf_xlab, ylabel_by_name=tf_ylab, dpi=700,
+    if do_teacher_forced:
+        tf_pairs = gather_pred_label_pairs(
+            model=model, test_dl=test_dl, device=device,
+            rollout_cfg=rollout_cfg, eval_mode="teacher_forced",
+            max_points_per_var=subsample_points_pairs,
         )
-        if logger: logger.info(f"[Plots] Saved → {plots_dir / 'scatter_teacher_forced.png'}")
-    else:
-        if logger: logger.warning("[Plots] No valid TF pairs for plotting; skipping.")
+        _prep_and_write("teacher_forced", tf_pairs)
 
-    # Full-sequence carry
-    fs_pairs_norm = gather_pred_label_pairs(
-        model=model, test_dl=test_dl, device=device,
-        rollout_cfg=rollout_cfg, eval_mode="full_sequence",
-        mb_size=None, max_points_per_var=subsample_points,
-    )
-    fs_pairs_phys = _to_physical_pairs(fs_pairs_norm, std_map)
-    fs_clean, fs_pretty, fs_xlab, fs_ylab = _prep_for_plot(fs_pairs_phys)
-    if fs_pretty:
-        fs_title = _title_with_r2_base(fs_pretty, "Observed vs Predicted (Full-Sequence Carry)")
-        scatter_grid_from_pairs(
-            fs_pretty, ncols=3, suptitle=fs_title,
-            out_path=plots_dir / "scatter_carry_full_sequence.png",
-            subsample=subsample_points, density_alpha=True,
-            xlabel_by_name=fs_xlab, ylabel_by_name=fs_ylab, dpi=700,
+    # Full sequence
+    if do_full_sequence:
+        fs_pairs = gather_pred_label_pairs(
+            model=model, test_dl=test_dl, device=device,
+            rollout_cfg=rollout_cfg, eval_mode="full_sequence",
+            max_points_per_var=subsample_points_pairs,
         )
-        if logger: logger.info(f"[Plots] Saved → {plots_dir / 'scatter_carry_full_sequence.png'}")
-    else:
-        if logger: logger.warning("[Plots] No valid FS pairs for plotting; skipping.")
-        
-# =============================================================================
-# Loss-only testing (teacher-forced and carry=123y)
-# =============================================================================
+        _prep_and_write("carry_full_sequence", fs_pairs)
 
-def test(
-    model, loss_func, test_dl, device,
-    logger: Optional[logging.Logger] = None,
-    rollout_cfg: Optional[dict] = None,
-    test_mb_size: Optional[int] = None,   # << add
-) -> Dict[str, Any]:
-    if logger is None:
-        logger = logging.getLogger("test")
-
-    H = int((rollout_cfg or {}).get("carry_horizon", 0) or 0)
-
-    model.eval()
-    sum_loss = 0.0
-    n_windows = 0
-    n_batches = 0
-    t0 = time.time()
-    skipped_batches = 0
-    skipped_windows = 0
-
-    with torch.no_grad():
-        total_batches = len(test_dl)
-        if total_batches == 0:
-            logger.warning("Test dataloader is empty; returning zeros.")
-            return {"sum_loss": 0.0, "count": 0, "num_batches": 0,
-                    "skipped_batches": 0, "skipped_windows": 0}
-
-        every_n = max(1, total_batches // 10)
-
-        for batch_inputs, batch_monthly, batch_annual in test_dl:
-            inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
-            labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
-            labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
-
-            if (not torch.isfinite(inputs).all() or
-                not torch.isfinite(labels_m).all() or
-                not torch.isfinite(labels_a).all()):
-                Y = int(labels_a.shape[1]) if labels_a.ndim >= 2 else 0
-                L = int(inputs.shape[2])    if inputs.ndim    >= 3 else 0
-                
-                expected_windows = max(0, (Y - H) * L)  # tail-only semantics; H=0 → Y*L
-                skipped_batches += 1
-                skipped_windows += expected_windows
-                logger.warning("[test] Skipping batch %d: non-finite values", n_batches)
-                continue
-
-            # Use the unified outer-batch (eval mode)
-            s, n, _ = rollout_outer_batch(
-                model=model,
-                inputs=inputs,
-                labels_m=labels_m,
-                labels_a=labels_a,
-                device=device,
-                rollout_cfg=rollout_cfg or {},
-                training=False,
-                loss_func=loss_func,
-                mb_size=test_mb_size,  # external control here
-            )
-
-            if not (isinstance(s, (float, int)) and math.isfinite(float(s))) or int(n) <= 0:
-                skipped_batches += 1
-                skipped_windows += max(int(n), 0)
-                continue
-
-            sum_loss += float(s)
-            n_windows += int(n)
-            n_batches += 1
-
-            if (n_batches % every_n == 0) or (n_batches == total_batches):
-                logger.info("[Test] %5.1f%% — elapsed=%.1fs",
-                            100.0 * n_batches / total_batches, time.time() - t0)
-
-    return {
-        "sum_loss": sum_loss,
-        "count": n_windows,
-        "num_batches": n_batches,
-        "skipped_batches": skipped_batches,
-        "skipped_windows": skipped_windows,
-    }
-
-def test_with_and_without_carry(
-    model, loss_func, test_dl, device,
-    logger: Optional[logging.Logger] = None,
-    rollout_cfg: Optional[dict] = None,
-    test_mb_size: Optional[int] = None,     
-) -> Dict[str, Any]:
-    
-    """Runs the tests for carry = 0 and carry = 123"""
-    if logger is None:
-        logger = logging.getLogger("test_with_and_without_carry")
-
-    logger.info("=== Starting test: teacher-forced (no carry) ===")
-    tf_cfg = deepcopy(rollout_cfg) if rollout_cfg is not None else {}
-    tf_cfg["carry_horizon"] = 0
-    tf_out = test(model, loss_func, test_dl, device, logger, tf_cfg, test_mb_size=test_mb_size)
-    tf_out["carry_horizon_forced"] = 0.0
-
-    logger.info("=== Starting test: full carry (123-year horizon) ===")
-    carry_cfg = deepcopy(rollout_cfg) if rollout_cfg is not None else {}
-    carry_cfg["carry_horizon"] = 123
-    carry_out = test(model, loss_func, test_dl, device, logger, carry_cfg, test_mb_size=test_mb_size)
-    carry_out["carry_horizon_forced"] = 123.0
-
-    logger.info("=== Test complete ===")
-    logger.info("Teacher-forced avg loss: %.6f", tf_out["sum_loss"]/max(1, tf_out["count"]))
-    logger.info("Carry(123y)    avg loss: %.6f", carry_out["sum_loss"]/max(1, carry_out["count"]))
-    return {"teacher_forced": tf_out, "carry_123y": carry_out}
-
-@torch.no_grad()
-def test_tail_only_carry(
-    *, model, loss_func, test_dl, device, rollout_cfg: dict,
-    logger: Optional[logging.Logger] = None,
-    eval_mb_size: Optional[int] = None,
-) -> Dict[str, Any]:
-    if logger is None:
-        logger = logging.getLogger("test_tail_only_carry")
-
+    # Tail-only (only meaningful if H>0)
     H = int(rollout_cfg.get("carry_horizon", 0) or 0)
-    if H <= 0:
-        logger.info("[tail_only] carry_horizon <= 0; nothing to do.")
-        return {"sum_loss": 0.0, "count": 0, "num_batches": 0}
-
-    total_loss = 0.0
-    total_windows = 0
-    batches = 0
-
-    for bi, bm, ba in test_dl:
-        s, n, _ = rollout_outer_batch(
-            model=model,
-            inputs=bi.squeeze(0).float().to(device, non_blocking=True),
-            labels_m=bm.squeeze(0).float().to(device, non_blocking=True),
-            labels_a=ba.squeeze(0).float().to(device, non_blocking=True),
-            device=device,
-            rollout_cfg=rollout_cfg,
-            training=False,
-            loss_func=loss_func,
-            mb_size=eval_mb_size,        # << full external control here (tail-only)
-            logger=logger,
+    if do_tail_only and H > 0:
+        tail_pairs = gather_pred_label_pairs(
+            model=model, test_dl=test_dl, device=device,
+            rollout_cfg=rollout_cfg, eval_mode="tail_only",
+            max_points_per_var=subsample_points_pairs,
         )
-        if math.isfinite(s) and n > 0:
-            total_loss    += float(s)
-            total_windows += int(n)
-            batches       += 1
-
-    return {"sum_loss": total_loss, "count": total_windows, "num_batches": batches}
-
-def run_and_save_scatter_tail_only(
-    *,
-    model: torch.nn.Module,
-    test_dl: DataLoader,
-    device: torch.device,
-    rollout_cfg: dict,
-    run_dir: Path,
-    logger: Optional[logging.Logger] = None,
-    subsample_points: int = 200_000,
-    eval_mb_size: Optional[int] = None,
-) -> Optional[Path]:
-    """
-    Tail-year-only scatter in PHYSICAL units when carry_horizon>0,
-    using windowed microbatch semantics as training. Saves one PNG.
-    """
-    H = float(rollout_cfg.get("carry_horizon", 0.0) or 0.0)
-    if H <= 0.0:
-        if logger: logger.info("[tail_only] carry_horizon <= 0; skipping tail-only scatter.")
-        return None
-
-    test_root = run_dir / "test"
-    plots_dir = test_root / "plots"
-    plots_dir.mkdir(parents=True, exist_ok=True)
-
-    std_map = (rollout_cfg or {}).get("std_out", {})
-
-    # Tail-year pairs (normalized → physical)
-    pairs_norm = gather_pred_label_pairs(
-        model=model, test_dl=test_dl, device=device,
-        rollout_cfg=rollout_cfg, eval_mode="windowed_tail_only",
-        mb_size=eval_mb_size, max_points_per_var=subsample_points,
-    )
-    pairs_phys = _to_physical_pairs(pairs_norm, std_map)
-
-    # Clean + pretty labels
-    cleaned = {}
-    for k, (y, p) in pairs_phys.items():
-        m = np.isfinite(y) & np.isfinite(p)
-        if np.count_nonzero(m) >= 50:
-            cleaned[k] = (y[m], p[m])
-
-    if not cleaned:
-        if logger: logger.warning("[tail_only] no valid pairs for tail-only scatter; skipping.")
-        return None
-
-    name_map, xlabel_map, ylabel_map = _name_unit_maps_for_pairs(cleaned)
-    pretty = {name_map[k]: v for k, v in cleaned.items()}
-    title = _title_with_r2_base(pretty, f"Observed vs Predicted (Tail-Only Carry, H={H:g}y)")
-
-    out_path = plots_dir / "scatter_carry_tail_only.png"
-    scatter_grid_from_pairs(
-        pretty, ncols=3, suptitle=title, out_path=out_path,
-        subsample=subsample_points, density_alpha=True,
-        xlabel_by_name=xlabel_map, ylabel_by_name=ylabel_map, dpi=700,
-    )
-    if logger: logger.info(f"[tail_only] Saved scatter grid → {out_path}")
-    return out_path
-
-# =============================================================================
-# Full suite wrapper: run both tests, DDP-reduce, log, and save JSONs
-# =============================================================================
-
-def run_and_save_test_suite(
-    *,
-    model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
-    test_dl: DataLoader,
-    device: torch.device,
-    logger: Optional[logging.Logger],
-    rollout_cfg: Optional[dict],
-    run_dir: Path,
-    is_main: bool,
-    ddp: bool,
-    world_size: int,  # kept for API parity (not directly used)
-    eval_mb_size: Optional[int] = None,
-) -> Dict[str, Any]:
-    """
-    Execute the evaluation suite:
-      - Teacher-forced (carry_horizon=0.0)
-      - Carry with horizon=123y
-      - Tail-only carry (same tail-year-only loss placement as training) IF rollout_cfg.horizon > 0
-
-    Reduces (sum,count) across DDP, logs global means, and writes JSON outputs.
-    Returns a dict with local + reduced summaries for all modes.
-    """
-    if logger is None:
-        logger = logging.getLogger("run_and_save_test_suite")
-
-    # ---- Run legacy two-pass tests ----
-    suite = test_with_and_without_carry(
-        model=model,
-        loss_func=loss_func,
-        test_dl=test_dl,
-        device=device,
-        logger=logger,
-        rollout_cfg=rollout_cfg,
-        test_mb_size=eval_mb_size,
-    )
-
-    # ------------- helpers for DDP reduction -------------
-    def _ddp_sum_field(out: dict, key: str) -> int:
-        val = int(out.get(key, 0))
-        if ddp and dist.is_initialized():
-            t = torch.tensor([val], dtype=torch.int64, device=device)
-            dist.all_reduce(t, op=dist.ReduceOp.SUM)
-            return int(t.item())
-        return val
-
-    def _reduce_sum_count(local: dict) -> tuple[float, float, float]:
-        local_sum = float(local.get("sum_loss", 0.0))
-        local_cnt = float(local.get("count", 0.0))
-        if ddp and dist.is_initialized():
-            t = torch.tensor([local_sum, local_cnt], dtype=torch.float64, device=device)
-            dist.all_reduce(t, op=dist.ReduceOp.SUM)
-            global_sum, global_cnt = t.tolist()
-        else:
-            global_sum, global_cnt = local_sum, local_cnt
-        global_avg = (global_sum / max(1.0, global_cnt))
-        return global_sum, global_cnt, global_avg
-
-    # ------------- reduce + persist TF & C123 -------------
-    tf_sum, tf_cnt, tf_avg       = _reduce_sum_count(suite["teacher_forced"])
-    c123_sum, c123_cnt, c123_avg = _reduce_sum_count(suite["carry_123y"])
-
-    tf_skipped_batches = _ddp_sum_field(suite["teacher_forced"], "skipped_batches")
-    tf_skipped_windows = _ddp_sum_field(suite["teacher_forced"], "skipped_windows")
-    c_skipped_batches  = _ddp_sum_field(suite["carry_123y"],      "skipped_batches")
-    c_skipped_windows  = _ddp_sum_field(suite["carry_123y"],      "skipped_windows")
-
-    if is_main:
-        logger.info("[Test/Teacher-Forced] skipped %d batch(es), %d window(s) due to non-finite data",
-                    tf_skipped_batches, tf_skipped_windows)
-        logger.info("[Test/Carry-123y]    skipped %d batch(es), %d window(s) due to non-finite data",
-                    c_skipped_batches, c_skipped_windows)
-        logger.info("[Test/Teacher-Forced] avg_loss=%.6f (sum=%.6f, count=%d)",
-                    tf_avg, tf_sum, int(tf_cnt))
-        logger.info("[Test/Carry-123y]    avg_loss=%.6f (sum=%.6f, count=%d)",
-                    c123_avg, c123_sum, int(c123_cnt))
-
-        info_dir = run_dir / "test"
-        info_dir.mkdir(parents=True, exist_ok=True)
-
-        tf_payload = {
-            **suite["teacher_forced"],
-            "global_sum_loss": tf_sum,
-            "global_count": tf_cnt,
-            "global_avg_loss": tf_avg,
-            "global_skipped_batches": tf_skipped_batches,
-            "global_skipped_windows": tf_skipped_windows,
-        }
-        c123_payload = {
-            **suite["carry_123y"],
-            "global_sum_loss": c123_sum,
-            "global_count": c123_cnt,
-            "global_avg_loss": c123_avg,
-            "global_skipped_batches": c_skipped_batches,
-            "global_skipped_windows": c_skipped_windows,
-        }
-
-        (info_dir / "test_teacher_forced.json").write_text(json.dumps(tf_payload, indent=2))
-        (info_dir / "test_carry_123y.json").write_text(json.dumps(c123_payload, indent=2))
-
-    # ------------- NEW: tail-only carry when H>0 -------------
-    tail_payload_reduced = None
-    H = float((rollout_cfg or {}).get("carry_horizon", 0.0) or 0.0)
-    if H > 0.0:
-        logger.info("=== Starting test: tail-only carry eval (training semantics) ===")
-        tail_local = test_tail_only_carry(
-            model=model,
-            loss_func=loss_func,
-            test_dl=test_dl,
-            device=device,
-            rollout_cfg=rollout_cfg or {},
-            logger=logger,
-            eval_mb_size=eval_mb_size,
-        )
-        t_sum, t_cnt, t_avg = _reduce_sum_count(tail_local)
-
-        if is_main:
-            info_dir = run_dir / "test"
-            info_dir.mkdir(parents=True, exist_ok=True)
-            tail_payload = {
-                **tail_local,
-                "global_sum_loss": t_sum,
-                "global_count": t_cnt,
-                "global_avg_loss": t_avg,
-            }
-            (info_dir / "test_carry_tail_only.json").write_text(json.dumps(tail_payload, indent=2))
-            logger.info("[Test/Carry-tail_only] avg_loss=%.6f (sum=%.6f, count=%d)",
-                        t_avg, t_sum, int(t_cnt))
-
-        tail_payload_reduced = {
-            "global_sum_loss": t_sum,
-            "global_count": t_cnt,
-            "global_avg_loss": t_avg,
-        }
-
-    # ------------- assemble return dict -------------
-    suite["reduced"] = {
-        "teacher_forced": {
-            "global_sum_loss": tf_sum,
-            "global_count": tf_cnt,
-            "global_avg_loss": tf_avg,
-            "global_skipped_batches": tf_skipped_batches,
-            "global_skipped_windows": tf_skipped_windows,
-        },
-        "carry_123y": {
-            "global_sum_loss": c123_sum,
-            "global_count": c123_cnt,
-            "global_avg_loss": c123_avg,
-            "global_skipped_batches": c_skipped_batches,
-            "global_skipped_windows": c_skipped_windows,
-        },
-    }
-    if tail_payload_reduced is not None:
-        suite["reduced"]["carry_tail_only"] = tail_payload_reduced
-
-    return suite
+        _prep_and_write(f"carry_tail_only_H{H}", tail_pairs)

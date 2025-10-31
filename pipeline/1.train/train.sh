@@ -2,7 +2,7 @@
 #SBATCH --job-name=Training
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A100:1
+#SBATCH --gres=gpu:A100:8
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=400G
 #SBATCH --time=3-00:00:00
@@ -51,22 +51,20 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name test_new_diff \
-  --epochs 1 \
-  --subset_frac 0.001 \
-  --mb_size 2940 \
+  --job_name batch_months_test \
+  --epochs 20 \
   --num_workers 4 \
-  --val_frac 0.005 \
-  --test_frac 0.001 \
-  --shuffle_windows \
+  --subset_frac 0.01 \
+  --val_frac 0.5 \
+  --test_frac 0.1 \
   --early_stop \
-  --early_stop_patience 10 \
+  --early_stop_patience 5 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt \
   --block_locs 70 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 1 \
+  --carry_years 0 \
   --eval_mb_size 1470 \
+  --train_mb_size 2490 \
   --model_monthly_mode sequential_months

@@ -31,22 +31,24 @@ def init_distributed():
     ddp = ("RANK" in os.environ) and ("WORLD_SIZE" in os.environ)
 
     if ddp:
-        # Initialize the default process group. NCCL is the standard backend
-        # for multi-GPU training on Linux (GPU-only).
-        dist.init_process_group(backend="nccl")
+        local_rank = int(os.environ.get("LOCAL_RANK", "0"))
 
-        # LOCAL_RANK is set by torchrun/torch.distributed.launch
-        local_rank = int(os.environ["LOCAL_RANK"])
-
-        # Bind this process to its GPU
+        # 1) Bind this process to its GPU *first*
         torch.cuda.set_device(local_rank)
-        device = torch.device(f"cuda:{local_rank}")
+        device = torch.device("cuda", local_rank)
 
-        # Query group metadata
+        # 2) Now initialize the process group
+        dist.init_process_group(backend="nccl", init_method="env://")
+
+        # 3) Touch the device so NCCL sees the CUDA context
+        _ = torch.empty(0, device=device)
+
+        # 4) Device-aware barrier (prevents the NCCL warning/hang risk)
+        dist.barrier(device_ids=[local_rank])
+
         world_size = dist.get_world_size()
         rank = dist.get_rank()
     else:
-        # Single-process fallback
         local_rank = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         world_size = 1

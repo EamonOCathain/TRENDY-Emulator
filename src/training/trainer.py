@@ -1,19 +1,24 @@
+# src/training/trainer.py
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
-# Library imports
+# Standard library
 # ---------------------------------------------------------------------------
 import logging
 import random
 import sys
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
+# ---------------------------------------------------------------------------
+# Third-party
+# ---------------------------------------------------------------------------
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn.parallel import DistributedDataParallel as DDP  # noqa: F401
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
@@ -26,27 +31,134 @@ sys.path.append(str(project_root))
 from src.training.distributed import ddp_mean_scalar
 from src.training.history import History
 
-# --- Carry rollout helpers (from carry branch) ------------------------------
-from src.training.carry import rollout_outer_batch
+# Logger
+_LOG = logging.getLogger("carry")
 
-# --- Mass-balance logging helpers -------------------------------------------
-def _accum_bd_sums(acc: Dict[str, float], bd: Optional[dict], mult: float) -> None:
+MONTH_LENGTHS_FALLBACK = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+POPULATION_NORMALISE = True
+# ---------------------------------------------------------------------------
+# Helpers for rollout 
+# ---------------------------------------------------------------------------
+
+def _year_bounds(y0: int, y1: int) -> tuple[int, int]:
+    """Return [day_start, day_end) indices for years [y0..y1) in a 365*n layout."""
+    return (y0 * 365, y1 * 365)
+
+def _slice_last_year_bounds(t: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return ([month_start, month_end), [year_start, year_end)) for target year t."""
+    return (t * 12, (t + 1) * 12), (t, t + 1)
+
+def _sanitize_idx(idx_list, size, name, logger=None):
+    """Clamp/validate index list against a dimension size; warn if dropping."""
+    if not idx_list:
+        return []
+    good = [int(i) for i in idx_list
+            if isinstance(i, (int, np.integer)) and 0 <= int(i) < size]
+    if logger and len(good) != len(idx_list):
+        bad = [i for i in idx_list if i not in good]
+        logger.warning(f"[carry] Dropping invalid {name} indices {bad} for size={size}")
+    return good
+
+
+def _safe_index_copy(x, dim, idx_list, values, where_len=None, logger=None, name=""):
     """
-    Accumulate per-call weighted contributions from loss_fn.last_breakdown["weighted"].
-    `mult` should be the number of windows represented by this loss call.
+    Safely copy `values` into `x` along dimension `dim` at `idx_list`.
+    If idx/value width mismatches or idx is empty, silently skip (with logs).
     """
-    if not bd or "weighted" not in bd:
+    size = x.size(dim)
+    idx_list = _sanitize_idx(idx_list, size, name, logger)
+    if not idx_list:
         return
-    for k, v in bd["weighted"].items():
-        if v is None:
-            continue
-        acc[k] = acc.get(k, 0.0) + float(v) * float(mult)
+    idx = torch.as_tensor(idx_list, device=x.device, dtype=torch.long)
+    need = idx.numel()
+    got = values.size(-1)
+    if need != got:
+        if logger:
+            logger.error(f"[carry] Value width ({got}) != len(idx) ({need}) for {name}; skipping injection.")
+        return
+    x.index_copy_(dim, idx, values)
 
-def _normalize_bd_sums(acc: Dict[str, float], denom: float) -> Dict[str, float]:
-    """Convert accumulated sums to averages per window."""
-    if denom <= 0:
-        return {k: float("nan") for k in acc.keys()}
-    return {k: (v / denom) for k, v in acc.items()}
+def month_slices_from_lengths(month_lengths: List[int]) -> List[tuple[int, int]]:
+    """Convert 12 month lengths (sum=365) into [(start, end), ...] slices."""
+    assert len(month_lengths) == 12, "month_lengths must have 12 entries"
+    assert sum(month_lengths) == 365, "noleap calendar expected"
+    s = 0
+    out = []
+    for L in month_lengths:
+        out.append((s, s + L))
+        s += L
+    return out
+
+def _prev_monthly_from_preds(
+    preds_m: torch.Tensor,
+    out_m_idx: List[int],
+) -> Optional[torch.Tensor]:
+    """From monthly (absolutes), take December (m=11) for the carry vector. Returns [B, len(out_m_idx)]."""
+    if (preds_m is None) or (not out_m_idx):
+        return None
+    return preds_m[:, -1, out_m_idx]
+
+def _inject_monthly_carry(
+    x_year: torch.Tensor,
+    carry_vec: torch.Tensor,
+    in_m_idx: List[int],
+    first_month_len: int,
+    logger: Optional[logging.Logger] = None,
+):
+    """
+    Inject carried monthly state into the next year's inputs.
+    - Write into January only (0:first_month_len).
+    - Force NaN for these same features for Feb–Dec so any accidental use errors.
+
+      x_year:    [B, 365, nin]
+      carry_vec: [B, len(in_m_idx)]
+    """
+    logger = logger or _LOG
+    if (carry_vec is None) or (not in_m_idx):
+        return
+    if not torch.isfinite(carry_vec).all():
+        logger.warning("[carry] non-finite monthly carry vector; skipping injection.")
+        return
+
+    B = x_year.size(0)
+
+    # 1) Inject January values
+    _safe_index_copy(
+        x_year[:, :first_month_len, :],  # January days only
+        2, in_m_idx,
+        carry_vec.unsqueeze(1).expand(B, first_month_len, len(in_m_idx)),
+        where_len=first_month_len, logger=logger, name="monthly carry→inputs(january-only)",
+    )
+
+    # 2) Poison the rest of the year for these features with NaN
+    try:
+        idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
+        x_year[:, first_month_len:, :].index_fill_(2, idx, float("nan"))
+    except Exception as e:
+        logger.error("[carry] failed to set NaNs for post-January monthly-carry inputs: %s", e)
+
+def _isfinite_except_monthly_carry_mask(
+    x_year: torch.Tensor,
+    in_m_idx: List[int],
+    first_month_len: int,
+) -> bool:
+    """
+    Return True iff x_year is finite, except allow NaNs for the *monthly-carry*
+    input features (in_m_idx) on days after January (first_month_len..364).
+    Everything else must be finite.
+    """
+    if not in_m_idx:
+        return torch.isfinite(x_year).all().item()
+
+    finite = torch.isfinite(x_year)
+    B, D, N = x_year.shape
+    allowed = torch.zeros((B, D, N), dtype=torch.bool, device=x_year.device)
+    if first_month_len < D:
+        idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
+        allowed[:, first_month_len:, :].index_fill_(2, idx, True)
+    ok = finite | allowed
+    return ok.all().item()
+
 
 # ---------------------------------------------------------------------------
 # Early stopping helper
@@ -92,41 +204,483 @@ class EarlyStopping:
                 self.should_stop = True
 
 # ---------------------------------------------------------------------------
-# Misc
+# Helpers for Validation 
+# ---------------------------------------------------------------------------
+
+def plan_validation(
+    train_stats: Dict[str, int],
+    valid_dl,
+    validation_frequency: float,
+    validation_size: float,
+) -> Dict[str, int]:
+    """
+    Plan how often and how many batches to use for validation, and (optionally)
+    precompute a fixed subset of validation batch indices to reuse every time.
+    """
+    # frequency -> every N train batches
+    train_batches = int(train_stats["batches"])
+    validate_every_batches = max(1, int(round(validation_frequency * train_batches)))
+
+    # how many val batches exist / to use each probe
+    val_total_batches = len(valid_dl)
+    val_batches_to_use = int(round(validation_size * val_total_batches))
+    val_batches_to_use = min(val_total_batches, max(1, val_batches_to_use))
+
+    # fixed subset of val batch indices (same across the run)
+    rng = random.Random(42)  # constant seed (deterministic subset)
+    indices = list(range(val_total_batches))
+    rng.shuffle(indices)
+    fixed_ids = sorted(indices[:val_batches_to_use])
+
+    return {
+        "validate_every_batches": validate_every_batches,
+        "val_batches_to_use": val_batches_to_use,
+        "train_batches": train_batches,
+        "val_total_batches": val_total_batches,
+        "fixed_val_batch_ids": fixed_ids,
+    }
+
+def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
+    """Randomly select k validation batch indices from total_batches (sorted)."""
+    k = min(max(0, int(k)), int(total_batches))
+    if k == 0:
+        return []
+    if k >= total_batches:
+        return list(range(total_batches))
+    return random.sample(range(total_batches), k)
+
+# ---------------------------------------------------------------------------
+# Helpers for Mass Balance Logging 
+# ---------------------------------------------------------------------------
+def _accum_bd_sums(acc: Dict[str, float], bd: Optional[dict], mult: float) -> None:
+    """
+    Accumulate per-call weighted contributions from loss_fn.last_breakdown["weighted"].
+    `mult` should be the number of windows represented by this loss call.
+    """
+    if not bd or "weighted" not in bd:
+        return
+    for k, v in bd["weighted"].items():
+        if v is None:
+            continue
+        acc[k] = acc.get(k, 0.0) + float(v) * float(mult)
+
+def _normalize_bd_sums(acc: Dict[str, float], denom: float) -> Dict[str, float]:
+    """Convert accumulated sums to averages per window."""
+    if denom <= 0:
+        return {k: float("nan") for k in acc.keys()}
+    return {k: (v / denom) for k, v in acc.items()}
+
+def log_mb_series(log: Optional[logging.Logger], tag: str, mb_dict: Dict[str, float]) -> None:
+    """
+    Pretty print mass-balance key/values in a stable, compact format.
+    """
+    if not log or not mb_dict:
+        return
+    line = " | ".join(f"{k}={mb_dict[k]:.6f}" for k in sorted(mb_dict))
+    log.info("%s: %s", tag, line)
+
+# ---------------------------------------------------------------------------
+# DDP Helpers
 # ---------------------------------------------------------------------------
 
 def unwrap(model):
     """Return the underlying model when wrapped in DDP; otherwise return as-is."""
     return model.module if isinstance(model, DDP) else model
 
+def is_main_rank() -> bool:
+    return (not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0)
 
 
-# ---------------------------------------------------------------------------
-# Core training loop
-# ---------------------------------------------------------------------------
+def broadcast_indices_for_ddp(batch_ids: List[int], device: torch.device) -> List[int]:
+    """
+    Ensure all ranks use the same list of validation/test batch indices.
+    On rank 0: send; others: receive.
+    Returns a plain Python list on every rank.
+    """
+    if not (dist.is_available() and dist.is_initialized()):
+        return list(batch_ids)
 
-def fit(
+    rank0 = (dist.get_rank() == 0)
+    if rank0:
+        idx = torch.tensor(batch_ids, dtype=torch.int64, device=device)
+        n   = torch.tensor([idx.numel()], dtype=torch.int64, device=device)
+    else:
+        n   = torch.zeros(1, dtype=torch.int64, device=device)
+
+    dist.broadcast(n, src=0)
+    if not rank0:
+        idx = torch.empty(int(n.item()), dtype=torch.int64, device=device)
+
+    dist.broadcast(idx, src=0)
+    return idx.tolist()
+
+@contextmanager
+def model_mode(model, mode: Optional[str]):
+    log = logging.getLogger("monthly_mode")
+    target = unwrap(model)
+    if mode is None or not hasattr(target, "set_mode"):
+        yield
+        return
+    prev = getattr(target, "mode", None)
+    log.info("[mode] enter: requested=%s | before=%s | ddp=%s",
+             mode, prev, isinstance(model, DDP))
+    try:
+        target.set_mode(mode)
+        log.info("[mode] applied: actual_now=%s", getattr(target, "mode", None))
+        yield
+    finally:
+        if prev is not None:
+            target.set_mode(prev)
+        log.info("[mode] exit: restored_to=%s | actual_now=%s",
+                 prev, getattr(target, "mode", None))
+
+
+# =============================================================================
+# Rollout Over a Single Batch (for train/val/test)
+# =============================================================================
+
+def rollout(
+    *,
+    model: torch.nn.Module,
+    inputs: torch.Tensor,        # [nin, 365*Y, L]
+    labels_m: torch.Tensor,      # [nm,  12*Y, L]
+    labels_a: torch.Tensor,      # [na,   1*Y, L]
+    device: torch.device,
+    rollout_cfg: dict,
+    # mode & optimisation toggles
+    training: bool = False,
+    loss_func: Optional[Callable[..., torch.Tensor]] = None,
+    opt: Optional[torch.optim.Optimizer] = None,
+    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+    mb_size: Optional[int] = None,      # windows per microbatch
+    eff_accum: int = 1,
+    eff_clip: Optional[float] = None,
+    history=None,
+    global_opt_step: int = 0,
+    logger: Optional[logging.Logger] = None,
+) -> tuple[float, int, int, Dict[str, float]]:
+    """
+    Unified windowed loop for training/validation/testing.
+
+    Policy knobs in rollout_cfg (all optional; defaults shown):
+      - carry_horizon: int H (default 0). Window spans W=H+1 years.
+      - loss_policy: "tail_only" | "all_years"   (default "tail_only")
+      - min_target_year: int (default 1)         skip scoring year 0 everywhere
+      - weighting_policy: "per_target" | "per_window"
+            For "all_years": how to count denominator units.
+            Default "per_target" (recommended for comparability).
+    Returns:
+      (sum_loss, units_done, next_global_opt_step, mb_sums)
+    """
+    log = logger or _LOG
+
+    # ---- read policy knobs ----
+    H = int(rollout_cfg.get("carry_horizon", 0) or 0)
+    loss_policy = (rollout_cfg.get("loss_policy") or "tail_only").lower()
+    min_target_year = int(rollout_cfg.get("min_target_year", 1) or 1)
+    weighting_policy = (rollout_cfg.get("weighting_policy") or
+                        ("per_target" if loss_policy == "all_years" else "per_window")).lower()
+
+    assert loss_policy in {"tail_only", "all_years"}
+    assert weighting_policy in {"per_target", "per_window"}
+    
+    # Decide monthly model mode
+    user_mode = rollout_cfg.get("monthly_mode", "batch_months")
+    assert user_mode in ("batch_months", "sequential_months"), \
+        f"Invalid monthly_mode='{user_mode}' (expected 'batch_months' or 'sequential_months')"
+
+    # Always use sequential when carry_horizon > 0
+    target_mode = "sequential_months" if (H > 0) else user_mode
+
+    nin, Ttot, L = int(inputs.shape[0]), int(inputs.shape[1]), int(inputs.shape[2])
+    Y = int(labels_a.shape[1])
+    if L <= 0 or Y <= 0:
+        return 0.0, 0, global_opt_step, {}
+
+    nm = int(labels_m.shape[0]); na = int(labels_a.shape[0])
+
+    # indices (sanitised against current outer batch)
+    in_m_idx  = _sanitize_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin, "in_monthly_state_idx", log)
+    in_a_idx  = _sanitize_idx(rollout_cfg.get("in_annual_state_idx", [])  or [], nin, "in_annual_state_idx",  log)
+    out_m_idx = _sanitize_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm,  "out_monthly_state_idx", log)
+    out_a_idx = _sanitize_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na,  "out_annual_state_idx",  log)
+
+    # month metadata
+    month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
+    bounds = [0]
+    for m in month_lengths:
+        bounds.append(bounds[-1] + m)
+    first_month_len = int(month_lengths[0])
+
+    # helper: pool from daily absolutes → monthly means & annual means
+    def _pool_from_daily_abs(y_daily_abs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        y_m_daily = y_daily_abs[..., :nm]
+        y_a_daily = y_daily_abs[..., nm:nm+na]
+        pieces = [y_m_daily[:, bounds[i]:bounds[i+1], :].mean(dim=1, keepdim=True) for i in range(12)]
+        preds_m = torch.cat(pieces, dim=1)            # [B,12,nm]
+        preds_a = y_a_daily.mean(dim=1, keepdim=True) # [B,1, na]
+        return preds_m, preds_a
+
+    # choose valid target years: must satisfy t >= H and t >= min_target_year
+    t_min = max(H, min_target_year)
+    if t_min >= Y:
+        return 0.0, 0, global_opt_step, {}
+
+    # windows = (loc, target_year) for t in [t_min .. Y-1]
+    windows: list[tuple[int, int]] = [(loc, t) for loc in range(L) for t in range(t_min, Y)]
+    if not windows:
+        return 0.0, 0, global_opt_step, {}
+
+    # microbatch size in windows
+    if training:
+        micro = max(1, int(mb_size or 1))
+    else:
+        base = int(mb_size) if (mb_size is not None and mb_size > 0) else 2048
+        micro = max(1, base)
+    micro = min(micro, len(windows))
+    rollout_cfg["autotuned_mb_size_windows"] = int(micro)
+
+    # DDP: broadcast micro so all ranks use same
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        t_mb = torch.tensor([micro], dtype=torch.int64, device=device)
+        torch.distributed.broadcast(t_mb, src=0)
+        micro = int(t_mb.item())
+        rollout_cfg["autotuned_mb_size_windows"] = int(micro)
+
+    # move tensors once
+    inputs   = inputs.to(device, non_blocking=True)
+    labels_m = labels_m.to(device, non_blocking=True)
+    labels_a = labels_a.to(device, non_blocking=True)
+
+    total_loss = 0.0
+    units_done = 0           # denominator units (per-window or per-target)
+    microbatches_done = 0
+    mb_sums: Dict[str, float] = {}
+
+    # modes
+    if training: model.train()
+    else:        model.eval()
+
+    grad_ctx = torch.enable_grad() if training else torch.no_grad()
+    with model_mode(model, target_mode), grad_ctx:
+        w_idx = 0
+        while w_idx < len(windows):
+            s = w_idx; e = min(w_idx + micro, len(windows)); w_idx = e
+            B = e - s
+            locs    = [windows[k][0] for k in range(s, e)]
+            targets = [windows[k][1] for k in range(s, e)]
+
+            prev_m = None
+            prev_a = None
+
+            # iterate year-by-year inside each window
+            W = H + 1
+            for y_off in range(W):
+                y_abs_list = [t - H + y_off for t in targets]
+
+                # build xb [B,365,nin]
+                xb_list = []
+                for loc, y_abs in zip(locs, y_abs_list):
+                    ds, de = _year_bounds(y_abs, y_abs + 1)
+                    xb_list.append(inputs[:, ds:de, loc].T)
+                xb = torch.stack(xb_list, dim=0)  # [B,365,nin]
+
+                # inject carries for y_off > 0
+                if y_off > 0:
+                    if (prev_m is not None) and in_m_idx:
+                        _inject_monthly_carry(xb, prev_m, in_m_idx=in_m_idx,
+                                              first_month_len=first_month_len, logger=log)
+                    if (prev_a is not None) and in_a_idx:
+                        if torch.isfinite(prev_a).all():
+                            _safe_index_copy(
+                                xb, 2, in_a_idx,
+                                prev_a.unsqueeze(1).expand(B, 365, len(in_a_idx)),
+                                where_len=365, name="annual carry→inputs", logger=log,
+                            )
+                        else:
+                            log.warning("[carry] non-finite annual carry vector; skipping injection.")
+
+                # guard inputs (allow NaNs only for monthly-carry vars after Jan)
+                if not _isfinite_except_monthly_carry_mask(xb, in_m_idx, first_month_len):
+                    # Extra one-shot debug on first failure
+                    if y_off == 1 and B > 0:
+                        bad = ~torch.isfinite(xb)
+                        # collapse batch
+                        bad_any = bad.any(dim=0)  # [365, nin]
+                        # show first few offending (day, channel)
+                        where = bad_any.nonzero(as_tuple=False)
+                        log.warning("[debug] non-finite INPUT at %d positions; first 10 (day,chan): %s",
+                                    where.size(0), where[:10].tolist())
+                    log.warning("[rollout] non-finite INPUT (disallowed NaNs) (B=%d, y_off=%d)", B, y_off)
+                    del xb
+                    continue
+
+                # forward → daily absolutes
+                preds_abs_daily = model(xb)  # [B,365,nm+na]
+                if not torch.isfinite(preds_abs_daily).all():
+                    log.warning("[rollout] non-finite PRED (B=%d, y_off=%d)", B, y_off)
+                    del xb, preds_abs_daily
+                    continue
+
+                preds_m, preds_a = _pool_from_daily_abs(preds_abs_daily)
+
+                # next carry (detach during training)
+                next_m = _prev_monthly_from_preds(preds_m, out_m_idx)
+                if training:
+                    prev_m = (next_m.detach() if next_m is not None else None)
+                    prev_a = (preds_a[:, 0, out_a_idx].detach() if out_a_idx else None)
+                else:
+                    prev_m = (next_m if next_m is not None else None)
+                    prev_a = (preds_a[:, 0, out_a_idx] if out_a_idx else None)
+
+                # decide whether to score this y_off (tail_only vs all_years)
+                t_abs_vec = torch.as_tensor([t - H + y_off for t in targets], device=device)
+                score_this_step = False
+                if loss_policy == "tail_only":
+                    score_this_step = (y_off == W - 1)  # only tail year
+                else:
+                    # all target years where t_abs >= min_target_year
+                    score_this_step = bool(torch.any(t_abs_vec >= min_target_year).item())
+
+                if score_this_step:
+                    # labels for current target year(s)
+                    # tail_only: one target per window (t)
+                    # all_years: if min_target_year cuts, only those >= threshold count
+                    ybm_list = []
+                    yba_list = []
+                    valid_mask = []
+                    for loc, t in zip(locs, targets):
+                        t_abs = t - H + y_off
+                        if loss_policy == "all_years" and t_abs < min_target_year:
+                            valid_mask.append(False)
+                            ybm_list.append(None); yba_list.append(None)
+                            continue
+                        (ms, me), (ys, ye) = _slice_last_year_bounds(t_abs)
+                        ybm_list.append(labels_m[:, ms:me, loc].T)  # [12,nm]
+                        yba_list.append(labels_a[:, ys:ye, loc].T)  # [1, na]
+                        valid_mask.append(True)
+
+                    if not any(valid_mask):
+                        del xb, preds_abs_daily, preds_m, preds_a
+                        continue
+
+                    # pack only valid rows
+                    xb_sel = xb  # <- ensure defined for both branches
+                    if all(valid_mask):
+                        ybm = torch.stack(ybm_list, dim=0)              # [B,12,nm]
+                        yba = torch.stack(yba_list, dim=0)              # [B, 1,na]
+                        B_eff = B
+                        # xb_sel stays as xb
+                    else:
+                        sel = [i for i, ok in enumerate(valid_mask) if ok]
+                        ybm = torch.stack([ybm_list[i] for i in sel], dim=0)
+                        yba = torch.stack([yba_list[i] for i in sel], dim=0)
+                        preds_abs_daily = preds_abs_daily[sel, ...]
+                        xb_sel = xb[sel, :, :]                          
+                        B_eff = len(sel)
+
+                    if (not torch.isfinite(ybm).all()) or (not torch.isfinite(yba).all()):
+                        log.warning("[rollout] non-finite LABELS (B_eff=%d)", B_eff)
+                        del xb, preds_abs_daily, preds_m, preds_a, ybm, yba
+                        continue
+
+                    # extra_daily (optional)
+                    extra_daily = None
+                    try:
+                        in_order = (rollout_cfg or {}).get("input_order", [])
+                        std_in   = ((rollout_cfg or {}).get("std_stats_in", {}) or {})
+                        want_feats = (rollout_cfg or {}).get("extra_daily_features", ["pre"])
+                        ed: Dict[str, torch.Tensor] = {}
+                        for feat in want_feats:
+                            if feat in in_order:
+                                idx = in_order.index(feat)
+                                mu  = float(((std_in.get(feat) or {}).get("mean", 0.0)))
+                                sd  = float(((std_in.get(feat) or {}).get("std",  1.0)))
+                                feat_phys = preds_abs_daily.new_empty((B_eff, 365))
+                                feat_phys[:] = xb_sel[:, :, idx] * sd + mu
+                                ed[feat] = feat_phys
+                        if ed:
+                            extra_daily = ed
+                    except Exception:
+                        extra_daily = None
+
+                    # compute loss on daily absolutes (same signature)
+                    try:
+                        loss = loss_func(preds_abs_daily, ybm, yba, extra_daily=extra_daily)
+                    except TypeError:
+                        loss = loss_func(preds_abs_daily, ybm, yba)
+
+                    # weighting: what is one “unit”?
+                    if loss_policy == "tail_only" or weighting_policy == "per_window":
+                        unit_contrib = (B_eff if POPULATION_NORMALISE else 1)
+                    else:  # all_years & per_target
+                        unit_contrib = (B_eff if POPULATION_NORMALISE else 1)
+
+                    total_loss += float(loss.detach().cpu()) * unit_contrib
+                    units_done += unit_contrib
+
+                    if training:
+                        (loss / max(1, eff_accum)).backward()
+                        microbatches_done += 1
+                        if microbatches_done % max(1, eff_accum) == 0:
+                            if eff_clip is not None:
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), eff_clip)
+                            if opt is not None:
+                                opt.step()
+                                opt.zero_grad(set_to_none=True)
+                            if scheduler is not None:
+                                scheduler.step()
+                            if history is not None and opt is not None:
+                                history.lr_values.append(float(opt.param_groups[0]["lr"]))
+                                history.lr_steps.append(global_opt_step)
+                            global_opt_step += 1
+
+                    # mass-balance breakdown
+                    bd = getattr(loss_func, "last_breakdown", None)
+                    if isinstance(bd, dict) and ("weighted" in bd):
+                        for k, v in bd["weighted"].items():
+                            if v is None:
+                                continue
+                            mb_sums[k] = mb_sums.get(k, 0.0) + float(v) * float(unit_contrib)
+
+                del xb, preds_abs_daily, preds_m, preds_a
+
+        # flush pending grads
+        if training and (microbatches_done % max(1, eff_accum) != 0):
+            if eff_clip is not None:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), eff_clip)
+            if opt is not None:
+                opt.step()
+                opt.zero_grad(set_to_none=True)
+            if scheduler is not None:
+                scheduler.step()
+            if history is not None and opt is not None:
+                history.lr_values.append(float(opt.param_groups[0]["lr"]))
+                history.lr_steps.append(global_opt_step)
+            global_opt_step += 1
+
+    return total_loss, units_done, global_opt_step, mb_sums
+
+def train(
     epochs: int,
     model: torch.nn.Module,
     loss_func,
-    opt,
-    train_dl,
-    valid_dl,
-    log=None,
-    save_cb=None,
+    opt: Optimizer,
+    train_dl: DataLoader,
+    valid_dl: DataLoader,
+    log: Optional[logging.Logger] = None,
+    save_cb: Optional[Callable[[int, bool, float, "History"], None]] = None,
     accum_steps: Optional[int] = None,
     grad_clip: Optional[float] = None,
     scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     val_plan: Optional[dict] = None,
-    train_mb_size: Optional[int] = 1470,
-    eval_mb_size: Optional[int] = 1470,
     ddp: bool = False,
     early_stop_patience: Optional[int] = None,
     early_stop_min_delta: float = 0.0,
     early_stop_warmup_epochs: int = 0,
     start_dt: Optional[datetime] = None,
     run_dir: Optional[Path] = None,
-    args: Optional[object] = None,
+    args: Optional[object] = None,   # <- REQUIRED now (must carry mb sizes)
     start_epoch: int = 0,
     best_val_init: float = float("inf"),
     history_seed: Optional[dict] = None,
@@ -135,17 +689,24 @@ def fit(
     validate_only: bool = False,
 ) -> Tuple["History", float, bool]:
     """
-    Train with micro-batching + grad accumulation, optional DDP, mid-epoch validation,
-    carry rollout (when enabled via rollout_cfg), and checkpointing.
+    Unified training loop using a single rollout() engine for train/val.
 
-    Returns:
-      (history, best_val, stopped_early_flag)
+    Policy (for both train and val):
+      • carry_horizon = rollout_cfg["carry_horizon"] (0 ⇒ TF, >0 ⇒ carry)
+      • loss_policy   = "tail_only"
+      • min_target_year = 1  (skip scoring year 0)
+      • weighting     = per-window (implicit for tail_only)
+
+    Returns: (history, best_val, stopped_early_flag)
     """
+
     history = History(model)
     stopped_early_flag = False
     
-    train_mb  = 1470 if (train_mb_size is None or train_mb_size <= 0) else int(train_mb_size)
-    eval_mb   = 1470 if (eval_mb_size  is None or eval_mb_size  <= 0) else int(eval_mb_size)
+    # Make sure args passed in
+    assert args is not None, "trainer.train/validate require `args` (with train_mb_size/eval_mb_size)."
+
+    train_mb = int(args.train_mb_size)
 
     # --- Rehydrate history (resume) ---
     if history_seed:
@@ -160,26 +721,17 @@ def fit(
         history.lr_steps         = list(history_seed.get("lr_steps", []))
 
     history.samples_seen = int(samples_seen_seed)
-
     best_val = float(best_val_init)
-
+    
     # --- Effective knobs ---
     eff_accum = 1 if (accum_steps is None or accum_steps <= 1) else int(accum_steps)
     eff_clip  = grad_clip if (grad_clip is not None and grad_clip > 0) else None
 
-    # Helper flags
+    # Helper flags / device
     is_main_fit = (not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0)
     model_device = next(model.parameters()).device
 
-    # --- Carry flag (controls training/eval path) ---
-    def _carry_on(cfg: Optional[dict]) -> bool:
-        try:
-            return float((cfg or {}).get("carry_horizon", 0.0) or 0.0) > 0.0
-        except Exception:
-            return False
-
-    carry_enabled = _carry_on(rollout_cfg)
-
+    # Log schema signature if provided
     if log and is_main_fit:
         sig = (rollout_cfg or {}).get("schema_sig")
         if sig:
@@ -187,18 +739,17 @@ def fit(
 
     # ---------- Validation-only short-circuit ----------
     if validate_only:
-        # Use deterministic subset if present in plan
         batch_indices = None
-        if val_plan is not None and "fixed_val_batch_ids" in val_plan:
-            batch_indices = list(val_plan["fixed_val_batch_ids"])
+        batch_indices = list(val_plan.get("fixed_val_batch_ids", [])) if val_plan else None
 
         avg_val_loss, val_cnt, val_mb_avgs = validate(
             model, loss_func, valid_dl,
             device=model_device,
             batch_indices=batch_indices,
             rollout_cfg=rollout_cfg,
-            eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
+            args=args
         )
+        
         history.update(train_loss=float("nan"), val_loss=avg_val_loss)
         if log and is_main_fit:
             log.info("Validation-only: val_loss=%.6f (windows=%d)", avg_val_loss, val_cnt)
@@ -244,8 +795,10 @@ def fit(
                 valid_dl.sampler.set_epoch(epoch)
 
         if log and is_main_fit:
-            log.info("Starting Training - [Epoch %d/%d] accum_steps=%s, train_mb_size=%s (carry=%s)",
-                     epoch + 1, epochs, eff_accum, train_mb, carry_enabled)
+            log.info(
+                "Starting Training - [Epoch %d/%d] accum_steps=%s, train_mb_size=%s",
+                epoch + 1, epochs, eff_accum, train_mb
+            )
 
         every_n = max(1, len(train_dl) // 20)
 
@@ -253,174 +806,57 @@ def fit(
         train_losses: List[float] = []
         opt.zero_grad(set_to_none=True)
 
-        # --- Mass-balance epoch accumulators (train) ------------------------
+        # Mass-balance epoch accumulators (train)
         epoch_train_mb_sums: Dict[str, float] = {}
-        epoch_train_windows: int = 0
+        epoch_train_units: int = 0
 
         # ============================== outer-batch loop ==============================
         for batch_idx, (batch_inputs, batch_monthly, batch_annual) in enumerate(train_dl):
-            # inputs:   [nin, 365*n_years, n_locs]
-            # labels_m: [nm,  12*n_years,  n_locs]
-            # labels_a: [na,    n_years,   n_locs]
+            # Move once per outer batch
             inputs   = batch_inputs.squeeze(0).float().to(model_device)
             labels_m = batch_monthly.squeeze(0).float().to(model_device)
             labels_a = batch_annual.squeeze(0).float().to(model_device)
 
-            n_years = int(labels_a.shape[1])
-            n_locs  = int(inputs.shape[2])
+            # Build *train* rollout policy (TF or carry depending on cfg)
+            train_cfg = dict(rollout_cfg or {})
+            train_cfg.update({
+                "loss_policy": "tail_only",
+                "min_target_year": 1,
+                "monthly_mode": getattr(args, "model_monthly_mode", "batch_months"),
+            })
 
-            # Determine samples_seen according to carry semantics
-            if carry_enabled:
-                from math import ceil
-                H = float((rollout_cfg or {}).get("carry_horizon", 0.0) or 0.0)
-                D = int(ceil(H))
-                history.samples_seen += max(0, n_years - D) * n_locs
-            else:
-                history.samples_seen += max(0, n_years - 1) * n_locs
+            # Call the rollout for train
+            sum_loss, units_done, global_opt_step, mb_step = rollout(
+                model=model,
+                loss_func=loss_func,
+                opt=opt,
+                scheduler=scheduler,
+                inputs=inputs,
+                labels_m=labels_m,
+                labels_a=labels_a,
+                mb_size=train_mb,   
+                eff_accum=eff_accum,
+                eff_clip=eff_clip,
+                history=history,
+                global_opt_step=global_opt_step,
+                device=model_device,
+                rollout_cfg=train_cfg,
+                training=True,
+            )
 
-            # -------------------------- carry rollout path --------------------------
-            if carry_enabled:
-                rt = rollout_outer_batch(
-                    model=model,
-                    loss_func=loss_func,
-                    opt=opt,
-                    scheduler=scheduler,
-                    inputs=inputs,
-                    labels_m=labels_m,
-                    labels_a=labels_a,
-                    mb_size=train_mb,
-                    eff_accum=eff_accum,
-                    eff_clip=eff_clip,
-                    history=history,
-                    global_opt_step=global_opt_step,
-                    device=model_device,
-                    rollout_cfg=rollout_cfg,
-                    training=True,
-                )
-                # Returns (sum_loss, n_windows, global_opt_step, optional_mb_sums)
-                batch_sum_loss, n_windows, global_opt_step = float(rt[0]), int(rt[1]), int(rt[2])
-                avg_batch_loss = (batch_sum_loss / max(1, n_windows)) if n_windows > 0 else float("inf")
+            avg_batch_loss = sum_loss / max(1, units_done)
+            train_losses.append(float(avg_batch_loss))
+            history.add_batch(float(avg_batch_loss), global_batch_idx)
+            global_batch_idx += 1
 
-                # If you track mass-balance breakdowns:
-                if len(rt) >= 4 and isinstance(rt[3], dict) and n_windows > 0:
-                    for k, v in rt[3].items():
-                        epoch_train_mb_sums[k] = epoch_train_mb_sums.get(k, 0.0) + float(v)
-                    epoch_train_windows += int(n_windows)
+            # samples_seen consistent with scored units
+            history.samples_seen += int(units_done)
 
-                train_losses.append(float(avg_batch_loss))
-                history.add_batch(float(avg_batch_loss), global_batch_idx)
-                global_batch_idx += 1
-
-            # ----------------------- teacher-forced path -----------------------
-            else:
-                # Stack all (year, location) windows -> per-window mini-batch
-                x_list, yM_list, yA_list = [], [], []
-
-                for y in range(1, n_years):
-                    # slices for current supervision window y
-                    x_slice  = inputs[:,   y*365:(y+1)*365, :].permute(2, 1, 0)  # [nl,365,nin]
-                    yM_slice = labels_m[:, y*12:(y+1)*12,  :].permute(2, 1, 0)  # [nl,12,nm]
-                    yA_slice = labels_a[:, y:(y+1),        :].permute(2, 1, 0)  # [nl,1, na]
-
-                    x_list.append(x_slice);      yM_list.append(yM_slice);  yA_list.append(yA_slice)
-
-                Xw   = torch.cat(x_list, dim=0)  # [Nw,365,nin]
-                YMw  = torch.cat(yM_list, dim=0) # [Nw,12,nm]
-                YAw  = torch.cat(yA_list, dim=0) # [Nw,1, na]
-                Nw   = int(Xw.shape[0])
-
-                if getattr(args, "shuffle_windows", False) and Nw > 1:
-                    perm = torch.randperm(Nw, device=Xw.device)
-                    Xw, YMw, YAw = Xw[perm], YMw[perm], YAw[perm]
-
-                micro_size = min(train_mb, Nw)
-                num_micro  = (Nw + micro_size - 1) // micro_size
-                microbatches_done = 0
-                running_sum_loss  = 0.0
-
-                for mb_idx in range(num_micro):
-                    s = mb_idx * micro_size
-                    e = min((mb_idx + 1) * micro_size, Nw)
-
-                    xb   = Xw[s:e]
-                    yb_m = YMw[s:e]
-                    yb_a = YAw[s:e]
-
-                    # Guard minibatch inputs
-                    if not torch.isfinite(xb).all():
-                        if log:
-                            log.warning("[train/teacher] non-finite INPUT minibatch %s", tuple(xb.shape))
-                        del xb, yb_m, yb_a
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
-
-                    preds = model(xb)  # [B,365,nm+na]
-
-                    # Build extra_daily for water-balance (physical Pre)
-                    extra_daily = None
-                    try:
-                        in_order = (rollout_cfg or {}).get("input_order", [])
-                        if "pre" in in_order:
-                            pre_idx = in_order.index("pre")
-                            pre_norm = xb[:, :, pre_idx]
-                            st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
-                            mu = float(st.get("mean", 0.0))
-                            sd = float(st.get("std", 1.0))
-                            pre_phys = pre_norm * sd + mu
-                            extra_daily = {"pre": pre_phys}
-                    except Exception:
-                        extra_daily = None
-
-                    if not torch.isfinite(preds).all():
-                        if log:
-                            log.warning("[train/teacher] non-finite PRED minibatch %s", tuple(preds.shape))
-                        del preds, xb, yb_m, yb_a
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        continue
-
-                    loss = loss_func(preds, yb_m, yb_a, extra_daily=extra_daily)
-
-                    # Accumulate MB weighted contributions
-                    bd = getattr(loss_func, "last_breakdown", None)
-                    _accum_bd_sums(epoch_train_mb_sums, bd, mult=(e - s))
-                    epoch_train_windows += (e - s)
-
-                    running_sum_loss += float(loss.detach().cpu()) * (e - s)
-
-                    (loss / eff_accum).backward()
-                    microbatches_done += 1
-
-                    if microbatches_done % eff_accum == 0:
-                        if eff_clip is not None:
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
-                        opt.step()
-                        opt.zero_grad(set_to_none=True)
-                        if scheduler is not None:
-                            scheduler.step()
-                        lr_now = opt.param_groups[0]["lr"]
-                        history.lr_values.append(float(lr_now))
-                        history.lr_steps.append(global_opt_step)
-                        global_opt_step += 1
-
-                # Flush remainder if needed
-                if microbatches_done % eff_accum != 0:
-                    if eff_clip is not None:
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=eff_clip)
-                    opt.step()
-                    opt.zero_grad(set_to_none=True)
-                    if scheduler is not None:
-                        scheduler.step()
-                    lr_now = opt.param_groups[0]["lr"]
-                    history.lr_values.append(float(lr_now))
-                    history.lr_steps.append(global_opt_step)
-                    global_opt_step += 1
-
-                avg_batch_loss = running_sum_loss / max(1, Nw)
-                train_losses.append(avg_batch_loss)
-                history.add_batch(avg_batch_loss, global_batch_idx)
-                global_batch_idx += 1
+            # Mass-balance tallies
+            if mb_step:
+                for k, v in mb_step.items():
+                    epoch_train_mb_sums[k] = epoch_train_mb_sums.get(k, 0.0) + float(v)
+            epoch_train_units += int(units_done)
 
             # --------------------------- in-epoch validation ---------------------------
             if val_plan is not None:
@@ -436,15 +872,15 @@ def fit(
 
                     # DDP: broadcast chosen val batches to all ranks
                     if ddp and dist.is_available() and dist.is_initialized():
-                        is_main_rank = (dist.get_rank() == 0)
+                        is_rank0 = (dist.get_rank() == 0)
                         dev = model_device
-                        if is_main_rank:
+                        if is_rank0:
                             ids  = torch.tensor(batch_ids, dtype=torch.int64, device=dev)
                             size = torch.tensor([ids.numel()], dtype=torch.int64, device=dev)
                         else:
                             size = torch.zeros(1, dtype=torch.int64, device=dev)
                         dist.broadcast(size, src=0)
-                        if not is_main_rank:
+                        if not is_rank0:
                             ids = torch.empty(int(size.item()), dtype=torch.int64, device=dev)
                         dist.broadcast(ids, src=0)
                         batch_ids = ids.tolist()
@@ -452,9 +888,9 @@ def fit(
                     interim_avg, interim_cnt, _ = validate(
                         model, loss_func, valid_dl, device=model_device, batch_indices=batch_ids,
                         rollout_cfg=rollout_cfg,
-                        eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
+                        args = args
                     )
-                    
+
                     # Mid-epoch early stopping check
                     if early is not None:
                         early.step_on_check(interim_avg, epoch)
@@ -515,11 +951,9 @@ def fit(
         # ============================ end outer-batch loop ============================
         history.close_epoch()
 
-        # --- HARD CLEANUP before epoch-end validation (from carry branch) ---
+        # --- HARD CLEANUP before epoch-end validation ---
         for _name in (
-            "Xw","YMw","YAw","xb","yb_m","yb_a","preds",
-            "x_list","yM_list","yA_list",
-            "inputs","labels_m","labels_a",
+            "inputs","labels_m","labels_a","mb_step",
         ):
             if _name in locals():
                 try: del locals()[_name]
@@ -536,30 +970,30 @@ def fit(
         avg_train_loss = float(np.mean(train_losses)) if len(train_losses) else float("nan")
         avg_train_loss = ddp_mean_scalar(avg_train_loss, model_device)
 
-        epoch_end_batch_indices = val_plan["fixed_val_batch_ids"] if (val_plan is not None) else None
+        batch_indices = val_plan.get("fixed_val_batch_ids") if val_plan else None
+
         avg_val_loss, val_cnt, val_mb_avgs = validate(
-            model, loss_func, valid_dl, device=model_device,
-            batch_indices=epoch_end_batch_indices,
+            model, loss_func, valid_dl,
+            device=model_device,
+            batch_indices=batch_indices,  
             rollout_cfg=rollout_cfg,
-            eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
+            args=args,
         )
-        
+
         if val_cnt == 0:
             if log and is_main_fit:
                 log.warning("Validation produced 0 windows — check batch_indices/filters.")
             avg_val_loss = float("inf")
 
-        # Train MB avgs for this epoch (weighted contributions per window)
-        train_mb_avgs = _normalize_bd_sums(epoch_train_mb_sums, max(1, epoch_train_windows))
+        # Train MB averages for this epoch (weighted per-unit)
+        train_mb_avgs = _normalize_bd_sums(epoch_train_mb_sums, max(1, epoch_train_units))
 
         if log and is_main_fit:
             log.info("Epoch average train loss=%.6f, val loss=%.6f (val_cnt=%d)",
                      avg_train_loss, avg_val_loss, val_cnt)
-
-            # --- Mass-balance epoch logs (only when enabled) -------------------
             if getattr(args, "use_mass_balances", False):
                 if train_mb_avgs:
-                    log.info("Epoch MB train (weighted avg per-window): %s",
+                    log.info("Epoch MB train (weighted avg per-unit): %s",
                              " | ".join(f"{k}={v:.6f}" for k, v in sorted(train_mb_avgs.items())))
                 if val_mb_avgs:
                     log.info("Epoch MB val   (weighted avg per-window): %s",
@@ -567,15 +1001,15 @@ def fit(
 
         history.update(train_loss=avg_train_loss, val_loss=avg_val_loss)
 
-        # Persist MB series for plotting (if history supports it)
+        # Persist MB series for plotting (if supported)
         if getattr(args, "use_mass_balances", False) and hasattr(history, "add_mass_balance_epoch"):
             history.add_mass_balance_epoch(train_mb_avgs, val_mb_avgs)
 
-        # Update early stopping on epoch end
+        # Early stopping update on epoch end
         if early is not None:
             early.step_on_check(avg_val_loss, epoch)
 
-        # Best-effort per-epoch plots
+        # Per-epoch plots (best-effort)
         if log and is_main_fit and (run_dir is not None and args is not None and start_dt is not None):
             try:
                 elapsed_seconds = (datetime.now() - start_dt).total_seconds()
@@ -632,80 +1066,37 @@ def fit(
 
     return history, best_val, stopped_early_flag
 
-
-# ---------------------------------------------------------------------------
-# Validation utilities
-# ---------------------------------------------------------------------------
-
-def plan_validation(
-    train_stats: Dict[str, int],
-    valid_dl,
-    validation_frequency: float,
-    validation_size: float,
-) -> Dict[str, int]:
-    """
-    Plan how often and how many batches to use for validation, and (optionally)
-    precompute a fixed subset of validation batch indices to reuse every time.
-    """
-    # frequency -> every N train batches
-    train_batches = int(train_stats["batches"])
-    validate_every_batches = max(1, int(round(validation_frequency * train_batches)))
-
-    # how many val batches exist / to use each probe
-    val_total_batches = len(valid_dl)
-    val_batches_to_use = int(round(validation_size * val_total_batches))
-    val_batches_to_use = min(val_total_batches, max(1, val_batches_to_use))
-
-    # fixed subset of val batch indices (same across the run)
-    rng = random.Random(42)  # constant seed (deterministic subset)
-    indices = list(range(val_total_batches))
-    rng.shuffle(indices)
-    fixed_ids = sorted(indices[:val_batches_to_use])
-
-    return {
-        "validate_every_batches": validate_every_batches,
-        "val_batches_to_use": val_batches_to_use,
-        "train_batches": train_batches,
-        "val_total_batches": val_total_batches,
-        "fixed_val_batch_ids": fixed_ids,
-    }
-
-def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
-    """Randomly select k validation batch indices from total_batches (sorted)."""
-    k = min(max(0, int(k)), int(total_batches))
-    if k == 0:
-        return []
-    if k >= total_batches:
-        return list(range(total_batches))
-    return random.sample(range(total_batches), k)
-
 def validate(
     model: torch.nn.Module,
     loss_func,
-    valid_dl,
+    valid_dl: DataLoader,
     device: Optional[torch.device] = None,
     max_batches: Optional[int] = None,
     batch_indices: Optional[Iterable[int]] = None,
     rollout_cfg: Optional[dict] = None,
-    eval_mb_size: Optional[int] = 1470,
+    args: Optional[object] = None, 
 ) -> Tuple[float, int, Dict[str, float]]:
+    
+    # Make sure args passed in
+    assert args is not None, "trainer.train/validate require `args` (with train_mb_size/eval_mb_size)."
+    
     model.eval()
+    
     if device is None:
         device = next(model.parameters()).device
 
-    def _carry_on(cfg: Optional[dict]) -> bool:
-        try:
-            return float((cfg or {}).get("carry_horizon", 0.0) or 0.0) > 0.0
-        except Exception:
-            return False
-
-    carry_enabled = _carry_on(rollout_cfg)
+    # Use same policy as training: tail_only over t>=1; H from cfg (0 for TF val)
+    base_cfg = dict(rollout_cfg or {})
+    base_cfg.update({
+        "loss_policy": "tail_only",
+        "min_target_year": 1,
+        "monthly_mode": getattr(args, "model_monthly_mode", "batch_months"),
+    })
+    
+    mb_size_eval = int(args.eval_mb_size)
 
     use_index_subset = batch_indices is not None
     index_set = set(batch_indices) if use_index_subset else None
-    seen_selected = 0
-    need_selected = len(index_set) if use_index_subset else None
-
     total_loss = 0.0
     total_cnt  = 0
     mb_sums: Dict[str, float] = {}
@@ -721,77 +1112,28 @@ def validate(
             labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
             labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
-            if carry_enabled:
-                result = rollout_outer_batch(
-                    model=model,
-                    loss_func=loss_func,
-                    inputs=inputs,
-                    labels_m=labels_m,
-                    labels_a=labels_a,
-                    device=device,
-                    rollout_cfg=rollout_cfg,
-                    mb_size=(int(eval_mb_size) if eval_mb_size else 1470),
-                    training=False,
-                )
-                batch_sum_loss, n_windows = float(result[0]), int(result[1])
-                total_loss += batch_sum_loss
-                total_cnt  += n_windows
-                if len(result) >= 4 and isinstance(result[3], dict):
-                    for k, v in result[3].items():
-                        mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+            s, n, _step, mb_step = rollout(
+                model=model,
+                loss_func=loss_func,
+                inputs=inputs,
+                labels_m=labels_m,
+                labels_a=labels_a,
+                device=device,
+                rollout_cfg=base_cfg,
+                training=False,
+                mb_size=mb_size_eval,
+            )
 
-            else:
-                # Teacher-forced: iterate per (year, location) window
-                n_locations = int(inputs.shape[2])
-                n_years     = int(labels_a.shape[1])
-
-                for loc in range(n_locations):
-                    for year_idx in range(1, n_years):
-                        x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
-                        yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
-                        yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]  # [na,1]
-
-                        xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
-                        yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
-                        yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
-
-                        # Optional: extra_daily (physical Pre) if you use it
-                        extra_daily = None
-                        try:
-                            in_order = (rollout_cfg or {}).get("input_order", [])
-                            if "pre" in in_order:
-                                pre_idx = in_order.index("pre")
-                                pre_norm = xb[:, :, pre_idx]
-                                st = ((rollout_cfg or {}).get("std_stats_in", {}) or {}).get("pre", {})
-                                mu = float(st.get("mean", 0.0))
-                                sd = float(st.get("std", 1.0))
-                                pre_phys = pre_norm * sd + mu
-                                extra_daily = {"pre": pre_phys}
-                        except Exception:
-                            extra_daily = None
-
-                        preds_daily = model(xb)
-                        val_loss = loss_func(preds_daily, yb_m, yb_a, extra_daily=extra_daily)
-                        total_loss += float(val_loss.item())
-                        total_cnt  += 1
-
-                        # If your loss exposes a breakdown:
-                        bd = getattr(loss_func, "last_breakdown", None)
-                        if isinstance(bd, dict) and ("weighted" in bd):
-                            for k, v in bd["weighted"].items():
-                                if v is None:
-                                    continue
-                                mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+            total_loss += float(s)
+            total_cnt  += int(n)
+            if mb_step:
+                for k, v in mb_step.items():
+                    mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            if use_index_subset:
-                seen_selected += 1
-                if seen_selected >= need_selected:
-                    break
-
-    # DDP reduce if needed
+    # DDP reduction (sum/count and mb_sums) — keep your existing code here
     if dist.is_available() and dist.is_initialized():
         dev = device
         t_sum = torch.tensor([total_loss], device=dev, dtype=torch.float64)
@@ -808,8 +1150,78 @@ def validate(
         total_loss = float(t_sum.item())
         total_cnt  = int(t_cnt.item())
 
-    avg = (total_loss / total_cnt) if total_cnt > 0 else float("inf")
-
-    # Convert MB sums to per-window averages
+    avg = (total_loss / max(1, total_cnt)) if total_cnt > 0 else float("inf")
     mb_avgs = {k: (v / max(1, total_cnt)) for k, v in mb_sums.items()}
     return avg, total_cnt, mb_avgs
+
+# In tester module
+
+def test_once(
+    *,
+    model: torch.nn.Module,
+    loss_func,
+    test_dl: DataLoader,
+    device: torch.device,
+    base_cfg: Optional[dict],
+    loss_policy: str,                    # "tail_only" | "all_years"
+    carry_mode: str,                     # "fixed" | "full_sequence"
+    args: Optional[object] = None,   
+    logger: Optional[logging.Logger] = None,
+) -> Dict[str, float]:
+    """
+    Generic test pass. Returns dict with sum_loss, count, num_batches, and avg.
+    carry_mode:
+      - "fixed"         → use base_cfg["carry_horizon"] as H
+      - "full_sequence" → derive H = Y-1 per outer batch (123-year style)
+    """
+    cfg = dict(base_cfg or {})
+    cfg["loss_policy"] = loss_policy
+    cfg["min_target_year"] = int(cfg.get("min_target_year", 1) or 1)
+    user_mode = getattr(args, "model_monthly_mode", "batch_months")
+    # If doing full-sequence or any nonzero carry horizon, force sequential:
+    if (carry_mode == "full_sequence") or (int(cfg.get("carry_horizon", 0) or 0) > 0):
+        cfg["monthly_mode"] = "sequential_months"
+    else:
+        cfg["monthly_mode"] = user_mode
+    if loss_policy == "all_years":
+        cfg["weighting_policy"] = "per_target"
+
+    mb_size_eval = int(args.eval_mb_size)
+    
+    sum_loss = 0.0
+    count    = 0
+    num_batches = 0
+
+    with torch.no_grad():
+        for bi, bm, ba in test_dl:
+            inputs   = bi.squeeze(0).float().to(device, non_blocking=True)
+            labels_m = bm.squeeze(0).float().to(device, non_blocking=True)
+            labels_a = ba.squeeze(0).float().to(device, non_blocking=True)
+
+            if carry_mode == "full_sequence":
+                Y = int(labels_a.shape[1])
+                cfg["carry_horizon"] = max(0, Y - 1)  # span whole sequence
+            # else keep cfg["carry_horizon"] as provided (e.g., 0 or args.carry_years)
+
+            s, n, _step, _mb = rollout(
+                model=model, loss_func=loss_func,
+                inputs=inputs, labels_m=labels_m, labels_a=labels_a,
+                device=device, rollout_cfg=cfg, training=False,
+                mb_size=mb_size_eval,
+            )
+
+            if n > 0 and np.isfinite(s):
+                sum_loss += float(s)
+                count    += int(n)
+                num_batches += 1
+
+    # DDP reduce (optional, mirror your existing tester reduction)
+    if dist.is_available() and dist.is_initialized():
+        t = torch.tensor([sum_loss, float(count), float(num_batches)],
+                         device=device, dtype=torch.float64)
+        dist.all_reduce(t, op=dist.ReduceOp.SUM)
+        sum_loss, count, num_batches = t.tolist()
+        count = int(count); num_batches = int(num_batches)
+
+    avg = sum_loss / max(1.0, float(count))
+    return {"sum_loss": float(sum_loss), "count": int(count), "num_batches": int(num_batches), "avg_loss": float(avg)}

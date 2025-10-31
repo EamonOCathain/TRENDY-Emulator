@@ -241,45 +241,46 @@ class YearProcessor(nn.Module):
         in_m_idx  = self.in_monthly_state_idx.to(device)
         out_m_idx = self.out_monthly_state_idx.to(device)
 
-        # We'll mutate a working copy of x as we carry info forward
         x_work = x.clone()
+        prev_m_mean: torch.Tensor | None = None
 
         for m, L in enumerate(self.month_lengths):
-            # indices for this month (valid days) within 365
-            day_ids = self.month_day_idx[m, :L]                      # [L]
-            # Build a 31-day padded slice for the transformer
-            Xm = x_work[:, day_ids, :]                               # [B, L, in_dim]
+            day_ids = self.month_day_idx[m, :L]
+
+            # --- NEW: if we have a carried monthly state from previous month, overwrite inputs now
+            if (m > 0) and (prev_m_mean is not None) and (in_m_idx.numel() > 0):
+                inject = prev_m_mean.view(B, 1, -1).expand(B, L, -1)  # [B, L, n_mstates]
+                rows = day_ids.view(-1, 1)   # [L,1]
+                cols = in_m_idx.view(1, -1)  # [1,n_mstates]
+                for b in range(B):
+                    x_work[b].index_put_((rows, cols), inject[b])
+
+            # proceed as before
+            Xm = x_work[:, day_ids, :]
             if L < 31:
                 pad_len = 31 - L
                 pad = torch.zeros(B, pad_len, self.input_dim, device=device, dtype=Xm.dtype)
-                Xm31 = torch.cat([Xm, pad], dim=1)                   # [B, 31, in_dim]
+                Xm31 = torch.cat([Xm, pad], dim=1)
                 mask31 = torch.zeros(B, 31, dtype=torch.bool, device=device)
                 mask31[:, L:] = True
             else:
                 Xm31 = Xm
                 mask31 = torch.zeros(B, 31, dtype=torch.bool, device=device)
 
-            # run month transformer on just this month
-            Ym31 = self.inner(Xm31, key_padding_mask=mask31)         # [B, 31, out_dim]
-            # write back valid days into the 365-day canvas
+            Ym31 = self.inner(Xm31, key_padding_mask=mask31)
             out[:, day_ids, :] = Ym31[:, :L, :]
 
-            # compute monthly-state mean for carry
             if m < 11:
-                m_slice = Ym31[:, :L, :][:, :, out_m_idx]        # [B, L, n_mstates]
-                m_mean  = m_slice.mean(dim=1)                    # [B, n_mstates]
+                m_slice = Ym31[:, :L, :][:, :, out_m_idx]
+                prev_m_mean = m_slice.mean(dim=1)
 
                 next_len = self.month_lengths[m + 1]
-                next_ids = self.month_day_idx[m + 1, :next_len].to(x_work.device)  # ensure same device
-                in_m_idx = self.in_monthly_state_idx.to(x_work.device)
-
-                inject = m_mean.view(B, 1, -1).expand(B, next_len, -1)  # [B, L_next, n_mstates]
-
-                # --- write back (safe outer-product indexing) ---
-                rows = next_ids.view(-1, 1)      # [L_next, 1]
-                cols = in_m_idx.view(1, -1)      # [1, n_mstates]
+                next_ids = self.month_day_idx[m + 1, :next_len].to(x_work.device)
+                inject_next = prev_m_mean.view(B, 1, -1).expand(B, next_len, -1)
+                rows = next_ids.view(-1, 1)
+                cols = in_m_idx.view(1, -1)
                 for b in range(B):
-                    x_work[b].index_put_((rows, cols), inject[b])
+                    x_work[b].index_put_((rows, cols), inject_next[b])
         return out
     
     
