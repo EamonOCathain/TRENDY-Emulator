@@ -82,6 +82,7 @@ class CustomTransformer(nn.Module):
         return x.permute(0, 2, 1)       # [B, n_days, out_dim]
 
 # ------------------------------ Year Processor -----------------------------------
+# ------------------------------ Year Processor -----------------------------------
 class YearProcessor(nn.Module):
     """
     One module, two forward modes:
@@ -245,18 +246,20 @@ class YearProcessor(nn.Module):
         prev_m_mean: torch.Tensor | None = None
 
         for m, L in enumerate(self.month_lengths):
-            day_ids = self.month_day_idx[m, :L]
+            day_ids = self.month_day_idx[m, :L]  # [L] long
 
-            # --- NEW: if we have a carried monthly state from previous month, overwrite inputs now
+            # --- Inject previous month carry into CURRENT month inputs (vectorised) ---
             if (m > 0) and (prev_m_mean is not None) and (in_m_idx.numel() > 0):
-                inject = prev_m_mean.view(B, 1, -1).expand(B, L, -1)  # [B, L, n_mstates]
-                rows = day_ids.view(-1, 1)   # [L,1]
-                cols = in_m_idx.view(1, -1)  # [1,n_mstates]
-                for b in range(B):
-                    x_work[b].index_put_((rows, cols), inject[b])
+                # inject shape: [B, L, n_mstates]
+                inject = prev_m_mean.view(B, 1, -1).expand(B, L, -1)
+                # build broadcastable indices for (B, L, n_mstates)
+                b_idx   = torch.arange(B, device=device).view(B, 1, 1).expand(B, L, in_m_idx.numel())
+                r_idx   = day_ids.view(1, L, 1).expand(B, L, in_m_idx.numel())
+                c_idx   = in_m_idx.view(1, 1, -1).expand(B, L, in_m_idx.numel())
+                x_work.index_put_((b_idx, r_idx, c_idx), inject, accumulate=False)
 
-            # proceed as before
-            Xm = x_work[:, day_ids, :]
+            # --- run month m ---
+            Xm = x_work[:, day_ids, :]  # [B, L, in_dim]
             if L < 31:
                 pad_len = 31 - L
                 pad = torch.zeros(B, pad_len, self.input_dim, device=device, dtype=Xm.dtype)
@@ -267,133 +270,21 @@ class YearProcessor(nn.Module):
                 Xm31 = Xm
                 mask31 = torch.zeros(B, 31, dtype=torch.bool, device=device)
 
-            Ym31 = self.inner(Xm31, key_padding_mask=mask31)
+            Ym31 = self.inner(Xm31, key_padding_mask=mask31)  # [B,31,out_dim]
             out[:, day_ids, :] = Ym31[:, :L, :]
 
+            # --- prepare carry for NEXT month and inject (vectorised) ---
             if m < 11:
-                m_slice = Ym31[:, :L, :][:, :, out_m_idx]
-                prev_m_mean = m_slice.mean(dim=1)
+                m_slice = Ym31[:, :L, :][:, :, out_m_idx]  # [B, L, n_mstates]
+                prev_m_mean = m_slice.mean(dim=1)          # [B, n_mstates]
 
                 next_len = self.month_lengths[m + 1]
-                next_ids = self.month_day_idx[m + 1, :next_len].to(x_work.device)
-                inject_next = prev_m_mean.view(B, 1, -1).expand(B, next_len, -1)
-                rows = next_ids.view(-1, 1)
-                cols = in_m_idx.view(1, -1)
-                for b in range(B):
-                    x_work[b].index_put_((rows, cols), inject_next[b])
-        return out
-    
-    
-class YearProcessorOld(nn.Module):
-    """
-    Processes one "year" sequence of 365 daily timesteps by splitting it into
-    calendar months, running a shared transformer over each month (padded to 31),
-    and stitching the monthly outputs back into a 365-day sequence.
-
-    Input : x  of shape [B, 365, in_dim]
-    Output: out of shape [B, 365, out_dim]
-    """
-
-    def __init__(self,
-                 input_dim: int,
-                 output_dim: int,
-                 d: int = 128,
-                 h: int = 1024,
-                 g: int = 256,
-                 num_layers: int = 4,
-                 nhead: int = 8,
-                 dropout: float = 0.1,
-                 transformer_kwargs: dict | None = None):
-        super().__init__()
-
-        # We pad months to 31 days for batched processing. Feb (28), etc., get masks.
-        self.month_lengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        assert sum(self.month_lengths) == 365, "Month lengths must sum to 365 for noleap."
-
-        # Precompute (a) the global day indices each month maps to, padded with -1
-        # and (b) a boolean pad mask where True = padded (invalid) timesteps.
-        month_day_idx, month_pad_mask = self._build_month_index_and_mask(self.month_lengths)
-
-        # Buffers are moved with the module across devices, but aren't parameters.
-        self.register_buffer("month_day_idx", month_day_idx, persistent=False)  # [12, 31] in [0..364] or -1
-        self.register_buffer("month_pad_mask", month_pad_mask, persistent=False)  # [12, 31] (True = pad)
-
-        # Inner monthly model (max_len 31)
-        # One shared transformer handles all months; we pass a padding mask per month.
-        tfm_cfg = dict(d=d, h=h, g=g, num_layers=num_layers, nhead=nhead,
-                       dropout=dropout, max_len=31)
-        if transformer_kwargs:
-            tfm_cfg.update(transformer_kwargs)
-        tfm_cfg["max_len"] = max(31, tfm_cfg.get("max_len", 31))
-
-        self.inner = CustomTransformer(input_dim=input_dim,
-                                       output_dim=output_dim,
-                                       **tfm_cfg)
-
-    @staticmethod
-    def _build_month_index_and_mask(month_lengths: list[int]) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Build:
-          - month_day_idx: [12, 31] with day indices into the 365-day axis, padded with -1
-          - month_pad_mask: [12, 31] bool with True where padded
-        """
-        # Start offsets of each month within the 365-day axis
-        starts = []
-        s = 0
-        for L in month_lengths:
-            starts.append(s)
-            s += L
-
-        # Fill per-month day indices; unused slots are -1
-        day_idx = torch.full((12, 31), -1, dtype=torch.long)
-        for m, (st, L) in enumerate(zip(starts, month_lengths)):
-            day_idx[m, :L] = torch.arange(st, st + L, dtype=torch.long)
-        pad_mask = day_idx.eq(-1)  # True where there is no real day (padding)
-
-        return day_idx, pad_mask
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: [B, 365, in_dim]  ->  out: [B, 365, out_dim]
-        """
-        if x.dim() != 3 or x.size(1) != 365:
-            raise ValueError(f"YearProcessor expects [B, 365, in_dim], got {tuple(x.shape)}")
-
-        B, _, in_dim = x.shape
-
-        # 1) Gather all months at once from the 365-day axis, padding to 31 days
-        idx_months_31 = self.month_day_idx.clamp_min(0)                     # [12, 31]
-        idx_expanded  = idx_months_31.view(1, 12, 31, 1).expand(B, 12, 31, in_dim)  # [B,12,31,in_dim]
-
-        # Make x 4D so it matches index rank; non-gather dims must match sizes.
-        # Expand a dummy day-in-month axis (31) so gather can broadcast.
-        x_expanded = x.unsqueeze(2).expand(B, 365, 31, in_dim)              # [B,365,31,in_dim]
-
-        # Gather along the 365-day axis (dim=1). Result has shape of index => [B,12,31,in_dim]
-        Xm = torch.gather(x_expanded, dim=1, index=idx_expanded)
-
-        # Flatten months into batch
-        Xm = Xm.view(B * 12, 31, in_dim)  # [B*12, 31, in_dim]
-
-        # Build the padding mask (True = pad) for each month row: [B*12, 31]
-        month_mask = self.month_pad_mask.unsqueeze(0).expand(B, -1, -1)  # [B, 12, 31]
-        month_mask = month_mask.reshape(B * 12, 31)                      # [B*12, 31]
-
-        
-        # 2) Run the shared transformer once for all months (masked)
-        Ym = self.inner(Xm, key_padding_mask=month_mask)
-        Ym = Ym.view(B, 12, 31, -1) # Ym: [B*12, 31, out_dim]  -> reshape back to [B, 12, 31, out_dim]
-
-        
-        # 3) Stitch the per-month outputs back to a 365-day canvas
-        out = x.new_zeros(B, 365, Ym.size(-1))  # [B, 365, out_dim]
-
-        # Copy only the valid (unpadded) days back into their proper positions.
-        # Keeping this small loop (12 iters) is clear and negligible vs. transformer cost.
-        for m, L in enumerate(self.month_lengths):
-            day_ids = self.month_day_idx[m, :L]     # [L] valid day indices into the 365 axis
-            out[:, day_ids, :] = Ym[:, m, :L, :]    # write that month’s valid days
+                next_ids = self.month_day_idx[m + 1, :next_len].to(device)  # [next_len]
+                if in_m_idx.numel() > 0:
+                    inject_next = prev_m_mean.view(B, 1, -1).expand(B, next_len, -1)  # [B,next_len,n_mstates]
+                    b_idx   = torch.arange(B, device=device).view(B, 1, 1).expand(B, next_len, in_m_idx.numel())
+                    r_idx   = next_ids.view(1, next_len, 1).expand(B, next_len, in_m_idx.numel())
+                    c_idx   = in_m_idx.view(1, 1, -1).expand(B, next_len, in_m_idx.numel())
+                    x_work.index_put_((b_idx, r_idx, c_idx), inject_next, accumulate=False)
 
         return out
- 
- 
