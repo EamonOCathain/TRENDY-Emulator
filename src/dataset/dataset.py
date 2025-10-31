@@ -1,11 +1,7 @@
+# src/dataset/dataset_unified_block.py
 from __future__ import annotations
-
-# ---------------------------------------------------------------------------
-# Imports
-# ---------------------------------------------------------------------------
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
-
 import numpy as np
 import torch
 import xarray as xr
@@ -18,490 +14,432 @@ sys.path.append(str(project_root))
 from src.dataset.variables import var_names, luh2_deltas
 from src.training.varschema import VarSchema
 
-# ---------------------------------------------------------------------------
-# Dataset
-# ---------------------------------------------------------------------------
-
 class CustomDataset(Dataset):
     """
-    Dataset for loading and processing climate data from Zarr stores.
+    Block-partitioned dataset (floor division) with uniform t-1 shifting.
 
-    Produces tuples:
-      (inputs[C_in, 365*Y-365, L], monthly_labels[C_m, 12*Y-12, L], annual_labels[C_a, Y-1, L])
+    Each SAMPLE = (one zarr group, one scenario ∈ {0..3}, one contiguous location block):
+      inputs:   [C_in, 365*(Y-1),   L]
+      labels_m: [C_m,  12*(Y-1),    L]
+      labels_a: [C_a,  (Y-1),       L]
 
-    Notes on alignment:
-      - Inputs include monthly/annual states shifted by 1 step (t-1 context),
-        so we drop the first year from inputs and labels to remove the cold-start.
-      - Monthly/annual inputs are expanded to daily (by repetition) before concatenation.
+    where Y is the number of years available in the store (must be consistent across daily/monthly/annual).
+    This dataset prepares monthly/annual states with a global t-1 shift (fill with 0 at the first step),
+    then drops the first year so all timesteps have valid context. Works for both carry and non-carry models.
     """
 
     def __init__(
-            self,
-            data_dir: str,
-            std_dict: Dict,
-            tensor_type: str,        # "train" | "val" | "test"
-            chunk_size: int = 70,    # locations per sample
-            exclude_vars: Sequence[str] | None = None, 
-            delta_luh: bool = False  
-        ):
-            self.std_dict = std_dict
-            self.tensor_type = tensor_type
-            self.chunk_size = chunk_size
-            self.n_scenarios = 4
-            self.base_path = Path(data_dir) / tensor_type
-            self.unfiltered_var_names = var_names
-            self.delta_luh = delta_luh  
-            self.exclude_vars = set(exclude_vars or [])
+        self,
+        data_dir: str,
+        std_dict: Dict[str, Dict[str, float]],
+        tensor_type: str,                # "train" | "val" | "test"
+        block_locs: int = 70,
+        exclude_vars: Sequence[str] | None = None,
+        delta_luh: bool = False,
+    ):
+        self.std_dict = std_dict
+        self.tensor_type = tensor_type
+        self.block_locs = int(block_locs)
+        self.base_path = Path(data_dir) / tensor_type
+        self.delta_luh = bool(delta_luh)
+        self.exclude_set = set(exclude_vars or [])
+        self.unfiltered_var_names = var_names
+        self.n_scenarios = 4  # required
 
-            # Discover file layout and open datasets
-            self._get_paths()
-            self._open_datasets()
+        # ---- resolve split paths ----
+        self._get_paths()
 
-            # Select/validate variable names and build I/O orders
-            self._filter_var_names()
+        # ---- open stores ----
+        opts = dict(consolidated=True, decode_times=False, chunks={})
+        self.ds_daily   = [xr.open_zarr(p, **opts) for p in self.daily_paths]
+        self.ds_monthly = [xr.open_zarr(p, **opts) for p in self.monthly_paths]
+        self.ds_annual  = [xr.open_zarr(p, **opts) for p in self.annual_paths]
+        self._all = self.ds_daily + self.ds_monthly + self.ds_annual
+        
+        
+        # ---- calendar (must be defined before schema) ----
+        self._month_lengths = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], dtype=np.int32)
+        self._day_to_month  = np.repeat(np.arange(12, dtype=np.int64), self._month_lengths)
 
-            # Precompute sample plan for __len__/__getitem__
-            self._plan_samples() 
+        # ---- variable filtering + schema (strict) ----
+        self._filter_var_names()  # sets self.schema & per-group lists
 
-    # -----------------------------------------------------------------------
-    # Paths / opening
-    # -----------------------------------------------------------------------
+        # ---- build block meta with floor division ----
+        self._plan_samples()
+        
+        # sanity: all stores must have scenario=4
+        for ds in (self.ds_daily + self.ds_monthly + self.ds_annual):
+            if "scenario" not in ds.dims:
+                raise AssertionError("All Zarr datasets must have a 'scenario' dimension.")
+            if int(ds.sizes["scenario"]) != self.n_scenarios:
+                raise AssertionError(f"Expected scenario size {self.n_scenarios}, "
+                                     f"got {int(ds.sizes['scenario'])}")
 
+    # ---------------------------------------------------------------------
+    # Paths
+    # ---------------------------------------------------------------------
     def _get_paths(self) -> None:
-        """Fill lists of daily/monthly/annual Zarr paths based on tensor_type."""
         if self.tensor_type == "train":
-            self.daily_paths   = [self.base_path / "train_location_train_period/daily.zarr"]
-            self.monthly_paths = [self.base_path / "train_location_train_period/monthly.zarr"]
-            self.annual_paths  = [self.base_path / "train_location_train_period/annual.zarr"]
+            stem = "train_location_train_period"
+            self.daily_paths   = [self.base_path / f"{stem}/daily.zarr"]
+            self.monthly_paths = [self.base_path / f"{stem}/monthly.zarr"]
+            self.annual_paths  = [self.base_path / f"{stem}/annual.zarr"]
 
         elif self.tensor_type == "val":
-            self.daily_paths = [
-                self.base_path / "train_location_val_period_early/daily.zarr",
-                self.base_path / "train_location_val_period_late/daily.zarr",
-                self.base_path / "val_location_whole_period/daily.zarr",
+            stems = [
+                "train_location_val_period_early",
+                "train_location_val_period_late",
+                "val_location_whole_period",
             ]
-            self.monthly_paths = [
-                self.base_path / "train_location_val_period_early/monthly.zarr",
-                self.base_path / "train_location_val_period_late/monthly.zarr",
-                self.base_path / "val_location_whole_period/monthly.zarr",
-            ]
-            self.annual_paths = [
-                self.base_path / "train_location_val_period_early/annual.zarr",
-                self.base_path / "train_location_val_period_late/annual.zarr",
-                self.base_path / "val_location_whole_period/annual.zarr",
-            ]
+            self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
+            self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
+            self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
 
         elif self.tensor_type == "test":
-            self.daily_paths = [
-                self.base_path / "test_location_whole_period/daily.zarr",
-                self.base_path / "train_location_test_period_early/daily.zarr",
-                self.base_path / "train_location_test_period_late/daily.zarr",
+            stems = [
+                "test_location_whole_period",
+                "train_location_test_period_early",
+                "train_location_test_period_late",
             ]
-            self.monthly_paths = [
-                self.base_path / "test_location_whole_period/monthly.zarr",
-                self.base_path / "train_location_test_period_early/monthly.zarr",
-                self.base_path / "train_location_test_period_late/monthly.zarr",
-            ]
-            self.annual_paths = [
-                self.base_path / "test_location_whole_period/annual.zarr",
-                self.base_path / "train_location_test_period_early/annual.zarr",
-                self.base_path / "train_location_test_period_late/annual.zarr",
-            ]
+            self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
+            self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
+            self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
 
         else:
             raise ValueError(f"Unknown tensor_type: {self.tensor_type!r}")
 
-    def _open_datasets(self) -> None:
-        """Open all Zarr datasets and store in lists."""
-        opts = dict(consolidated=True, decode_times=False, chunks={})
-        self.daily_datasets   = [xr.open_zarr(p, **opts) for p in self.daily_paths]
-        self.monthly_datasets = [xr.open_zarr(p, **opts) for p in self.monthly_paths]
-        self.annual_datasets  = [xr.open_zarr(p, **opts) for p in self.annual_paths]
-        self.all_datasets     = self.daily_datasets + self.monthly_datasets + self.annual_datasets
+    # ---------------------------------------------------------------------
+    # Var filtering (strict) + schema
+    # ---------------------------------------------------------------------
+    def _present_in_any_zarr(self, name: str) -> bool:
+        return any(name in ds.data_vars for ds in self._all)
 
-    # -----------------------------------------------------------------------
-    # Variable filtering / ordering
-    # -----------------------------------------------------------------------
+    def _require_stats(self, name: str) -> None:
+        stats = self.std_dict.get(name)
+        if not stats:
+            raise AssertionError(f"Missing standardisation stats for '{name}'.")
+        std = stats.get("std", None)
+        if std is None or std <= 0:
+            raise AssertionError(f"Non-positive std for '{name}'.")
+        # (no NaN/finite probing by request)
 
     def _filter_var_names(self) -> None:
         """
         Build filtered var lists by:
-        - applying optional renames (e.g., "lai" -> "lai_avh15c1"),
-        - requiring valid std stats,
-        - requiring presence in the Zarr stores,
-        - applying exclude list.
-        Then build stable input/output orders and a VarSchema snapshot.
+        - respecting exclude list,
+        - requiring valid std stats (std > 0, finite),
+        - requiring presence in any Zarr (but softly skip LUH deltas if absent when delta_luh=True),
+        then freeze stable input/output orders and construct VarSchema.
         """
-        def present_in_any_zarr(name: str) -> bool:
-            return any(name in ds.data_vars for ds in self.all_datasets)
+        def _has_valid_stats(name: str) -> bool:
+            st = self.std_dict.get(name)
+            if not st:
+                return False
+            try:
+                mu = float(st.get("mean", np.nan))
+                sd = float(st.get("std", np.nan))
+                return np.isfinite(mu) and np.isfinite(sd) and sd > 0.0
+            except Exception:
+                return False
 
-        def add_unique(dst: List[str], name: str):
-            if name not in dst:
-                dst.append(name)
-                
-        # safe copy so we don't mutate the global var_names
-        base_vars = {k: list(v) for k, v in self.unfiltered_var_names.items()}
+        def _present_in_any_zarr(name: str) -> bool:
+            return any(name in ds.data_vars for ds in self._all)
 
-        # If requested, append LUH deltas into annual_forcing (dedup here)
+        # safe copy of groups
+        base = {k: list(v) for k, v in self.unfiltered_var_names.items()}
+
+        # optionally append LUH deltas to annual_forcing
         if self.delta_luh:
-            extra = [v for v in luh2_deltas if v not in base_vars["annual_forcing"]]
-            base_vars["annual_forcing"].extend(extra)
+            for v in luh2_deltas:
+                if v not in base["annual_forcing"]:
+                    base["annual_forcing"].append(v)
 
         filtered: Dict[str, List[str]] = {}
-        for group, var_list in base_vars.items():
+        for group, var_list in base.items():
             keep: List[str] = []
             for v in var_list:
-                actual = v
-
-                # respect excludes
-                if actual in self.exclude_vars:
+                if v in self.exclude_set:
                     continue
 
-                # require std stats
-                stats = self.std_dict.get(actual)
-                if not stats or float(stats.get("std", 0.0)) <= 0.0:
+                # 1) require valid stats; silently drop if std<=0 or missing
+                if not _has_valid_stats(v):
                     continue
 
-                # require presence in Zarr; for LUH deltas, skip quietly if absent
-                if not present_in_any_zarr(actual):
-                    if self.delta_luh and actual in luh2_deltas:
-                        # silently skip optional LUH deltas if not present in the data
-                        continue
-                    raise AssertionError(f"Zarr datasets are missing variable: {actual}")
+                # 2) require presence; softly skip LUH deltas if requested but not present
+                if not _present_in_any_zarr(v):
+                    if self.delta_luh and v in luh2_deltas:
+                        continue  # optional channel; skip quietly
+                    # hard error for everything else
+                    raise AssertionError(f"Zarr datasets are missing variable: {v}")
 
-                add_unique(keep, actual)
+                if v not in keep:
+                    keep.append(v)
 
             filtered[group] = keep
 
-        # Freeze final filtered lists (sorted for stable channel layout)
+        # expose filtered names for downstream snapshotting/debug
         self.var_names = filtered
 
-        self.input_order = (
-            sorted(self.var_names["daily_forcing"]) +
-            sorted(self.var_names["monthly_forcing"]) +
-            sorted(self.var_names["monthly_states"]) +
-            sorted(self.var_names["annual_forcing"]) +
-            sorted(self.var_names["annual_states"])
-        )
-        self.output_order = (
-            sorted(self.var_names["monthly_fluxes"]) +
-            sorted(self.var_names["monthly_states"]) +
-            sorted(self.var_names["annual_states"])
+        # persist sorted lists for stable channel layout
+        self.daily_forcing   = sorted(filtered["daily_forcing"])
+        self.monthly_forcing = sorted(filtered["monthly_forcing"])
+        self.monthly_states  = sorted(filtered["monthly_states"])
+        self.annual_forcing  = sorted(filtered["annual_forcing"])
+        self.annual_states   = sorted(filtered["annual_states"])
+        self.monthly_fluxes  = sorted(filtered["monthly_fluxes"])
+
+        # schema (unchanged)
+        self.schema = VarSchema(
+            daily_forcing   = list(self.daily_forcing),
+            monthly_forcing = list(self.monthly_forcing),
+            monthly_states  = list(self.monthly_states),
+            annual_forcing  = list(self.annual_forcing),
+            annual_states   = list(self.annual_states),
+            monthly_fluxes  = list(self.monthly_fluxes),
+            month_lengths   = self._month_lengths.tolist(),
         )
 
-        # Guardrails
+        # handy orders (unchanged)
+        self.input_order = (
+            self.daily_forcing + self.monthly_forcing + self.monthly_states + self.annual_forcing + self.annual_states
+        )
+        self.output_order = (
+            self.monthly_fluxes + self.monthly_states + self.annual_states
+        )
+
         if not self.input_order:
             raise RuntimeError("Empty input_order after filtering.")
         if not self.output_order:
             raise RuntimeError("Empty output_order after filtering.")
 
-        # Optional indices
-        self.input_index  = {v: i for i, v in enumerate(self.input_order)}
-        self.output_index = {v: i for i, v in enumerate(self.output_order)}
-
-        # EXPOSE a canonical schema so main can consume it (and checkpoints record it)
-        self.schema = VarSchema(
-            daily_forcing   = sorted(self.var_names["daily_forcing"]),
-            monthly_forcing = sorted(self.var_names["monthly_forcing"]),
-            monthly_states  = sorted(self.var_names["monthly_states"]),
-            annual_forcing  = sorted(self.var_names["annual_forcing"]),
-            annual_states   = sorted(self.var_names["annual_states"]),
-            monthly_fluxes  = sorted(self.var_names["monthly_fluxes"]),
-        )
-
-    # -----------------------------------------------------------------------
-    # Sampling plan
-    # -----------------------------------------------------------------------
-
+    # ---------------------------------------------------------------------
+    # Planning with block partitioning and floor division to exclude last block 
+    # ---------------------------------------------------------------------
     def _plan_samples(self) -> None:
         """
-        Compute per-dataset sample counts, cumulative thresholds, total samples,
-        and number of location-chunks per dataset.
-
-        Sets:
-          - n_location_chunks_list: List[int]
-          - sample_counts:          List[int]
-          - idx_thresholds:         np.ndarray[len = len(datasets)+1]
-          - n_samples:              int
+        meta[i] = (dataset_idx, scenario, loc0, loc1)
+        Floor-partitioning: drop any tail block with < block_locs locations.
         """
-        # sanity: matching location sizes across resolutions for each dataset index
-        for i in range(len(self.daily_datasets)):
-            Ld = int(self.daily_datasets[i].sizes["location"])
-            Lm = int(self.monthly_datasets[i].sizes["location"])
-            La = int(self.annual_datasets[i].sizes["location"])
+        self.meta: List[Tuple[int, int, int, int]] = []
+        self.tail_dropped: List[int] = []  # optional: track how many locations were dropped per store
+
+        for k in range(len(self.ds_daily)):
+            # location sizes must match across resolutions
+            Ld = int(self.ds_daily[k].sizes["location"])
+            Lm = int(self.ds_monthly[k].sizes["location"])
+            La = int(self.ds_annual[k].sizes["location"])
             if not (Ld == Lm == La):
-                raise ValueError(
-                    f"location size mismatch at ds[{i}]: daily={Ld}, monthly={Lm}, annual={La}"
-                )
+                raise AssertionError(f"location size mismatch at ds[{k}]: daily={Ld}, monthly={Lm}, annual={La}")
+            L = Ld
 
-        # number of location-chunks per dataset (floor division)
-        self.n_location_chunks_list = [
-            int(ds.sizes["location"]) // self.chunk_size for ds in self.daily_datasets
-        ]
+            # years must align (noleap: daily=365*Y, monthly=12*Y, annual=Y)
+            Td = int(self.ds_daily[k].sizes["time"])
+            Tm = int(self.ds_monthly[k].sizes["time"])
+            Ta = int(self.ds_annual[k].sizes["time"])
+            if not (Td % 365 == 0 and Tm % 12 == 0 and Ta == Td // 365 == Tm // 12):
+                raise AssertionError(f"time alignment mismatch at ds[{k}]: Td={Td}, Tm={Tm}, Ta={Ta}")
+            if Ta < 2:
+                raise AssertionError(f"Need at least 2 years (to drop first year) at ds[{k}], got {Ta}")
 
-        # samples per dataset = (#loc-chunks) * (#scenarios)
-        self.sample_counts = [
-            n_chunks * int(self.n_scenarios) for n_chunks in self.n_location_chunks_list
-        ]
+            # --- floor blocks (drop remainder) ---
+            n_blocks = L // self.block_locs
+            remainder = L % self.block_locs
+            self.tail_dropped.append(remainder)
 
-        # cumulative thresholds to map global idx -> dataset index
-        self.idx_thresholds = np.cumsum([0] + self.sample_counts)
-
-        # total across all datasets
-        self.n_samples = int(sum(self.sample_counts))
-
-    # -----------------------------------------------------------------------
-    # Basic dataset methods
-    # -----------------------------------------------------------------------
+            for s in range(self.n_scenarios):
+                for b in range(n_blocks):
+                    loc0 = b * self.block_locs
+                    loc1 = loc0 + self.block_locs  # exact block size
+                    self.meta.append((k, s, loc0, loc1))
 
     def __len__(self) -> int:
-        """Return total number of samples across all datasets."""
-        return self.n_samples
+        return len(self.meta)
 
-    # -----------------------------------------------------------------------
-    # Standardization helpers
-    # -----------------------------------------------------------------------
-
-    def _standardise(self, arr: np.ndarray, var_name: str, std_dict: Dict[str, Dict[str, float]]) -> np.ndarray:
-        """
-        Standardize array by (x - mean) / std using precomputed stats from std_dict.
-        """
-        stats = std_dict.get(var_name)
-        if not stats:
-            raise ValueError(f"No stats for '{var_name}'")
-        std = stats["std"]
-        if std <= 0:
-            raise ValueError(f"Non-positive std for '{var_name}'")
-        return (arr - stats["mean"]) / std
+    # ---------------------------------------------------------------------
+    # Standardisation (strict)
+    # ---------------------------------------------------------------------
+    def _standardise(self, arr: np.ndarray, name: str) -> np.ndarray:
+        stats = self.std_dict.get(name)
+        if stats is None:
+            raise AssertionError(f"Missing standardisation stats for '{name}'.")
+        std = stats.get("std", None)
+        mean = stats.get("mean", None)
+        if std is None or std <= 0 or mean is None:
+            raise AssertionError(f"Invalid stats for '{name}': mean={mean}, std={std}")
+        return ((arr - mean) / std).astype(np.float32, copy=False)
 
     def _standardise_dataset(self, ds: xr.Dataset, var_list: List[str]) -> xr.Dataset:
-        """
-        Return a new xr.Dataset where each variable in var_list is standardized.
-        Preserves (time, location) dims and original coords.
-
-        Iterates in var_list order so later stacking preserves INPUT/OUTPUT order.
-        """
         if len(var_list) == 0:
             raise RuntimeError("Variable list empty in dataloader standardisation")
-
         out = {}
-        for var in var_list:  # preserves caller’s order
-            arr = ds[var].transpose("time", "location", ...).values
-            arr_std = self._standardise(arr, var, self.std_dict)
-            out[var] = xr.DataArray(
-                arr_std,
+        for v in var_list:
+            arr = ds[v].transpose("time", "location", ...).values
+            out[v] = xr.DataArray(
+                self._standardise(arr, v),
                 dims=("time", "location"),
-                coords={"time": ds[var]["time"].values, "location": ds[var]["location"].values},
+                coords={"time": ds["time"].values, "location": ds["location"].values},
             )
         return xr.Dataset(out, coords={"time": ds["time"].values, "location": ds["location"].values})
 
-    # -----------------------------------------------------------------------
-    # Chunk extraction / time expansion
-    # -----------------------------------------------------------------------
-
-    def _extract_chunk_from_ds(
-        self,
-        dataset_idx: int,
-        local_idx: int,
-        ds: xr.Dataset,
-    ) -> xr.Dataset:
-        """
-        Extract a single chunk (location window, scenario slice) from a dataset.
-
-        Mapping:
-          local_idx ∈ [0, n_chunks*n_scenarios)
-          scenario = local_idx // n_chunks
-          chunk    = local_idx %  n_chunks
-        """
-        n_location_chunks = self.n_location_chunks_list[dataset_idx]
-
-        scenario = local_idx // n_location_chunks
-        chunk = local_idx % n_location_chunks
-
-        start_loc = chunk * self.chunk_size
-        end_loc = start_loc + self.chunk_size
-
-        return ds.isel(location=slice(start_loc, end_loc), scenario=scenario)
-
-    def _expand_monthly_to_daily(self, chunk: xr.Dataset) -> xr.Dataset:
-        """Repeat monthly values to daily using month lengths (31-28-31-...)."""
-        month_lengths = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], dtype=np.int32)
-        day_to_month = np.repeat(np.arange(12, dtype=np.int64), month_lengths)
-
-        months = int(chunk.sizes["time"])
+    # ---------------------------------------------------------------------
+    # Monthly/Annual → Daily expansion (shared)
+    # ---------------------------------------------------------------------
+    def _expand_monthly_to_daily(self, ds_m: xr.Dataset) -> xr.Dataset:
+        months = int(ds_m.sizes["time"])
         if months % 12 != 0:
-            raise ValueError(f"Monthly time length {months} is not divisible by 12.")
+            raise AssertionError(f"Monthly time length {months} not divisible by 12.")
         years = months // 12
-
-        locations = int(chunk.sizes["location"])
+        L = int(ds_m.sizes["location"])
         days = np.arange(years * 365)
-        loc = chunk["location"].values
+        loc = ds_m["location"].values
 
-        out_vars = {}
-        for name, da in chunk.data_vars.items():
-            # [months, L] → [Y, 12, L] → index to [Y, 365, L] → flatten days
-            arr = da.transpose("time", "location", ...).values
-            arr_reshaped = arr.reshape(years, 12, locations)
-            arr_indexed = arr_reshaped[:, day_to_month, :]
-            arr_daily = arr_indexed.reshape(years * 365, locations)
-            out_vars[name] = xr.DataArray(arr_daily, dims=("time", "location"),
-                                          coords={"time": days, "location": loc})
+        out = {}
+        for name, da in ds_m.data_vars.items():
+            arr = da.transpose("time", "location").values.reshape(years, 12, L)
+            arr_d = arr[:, self._day_to_month, :].reshape(years * 365, L)
+            out[name] = xr.DataArray(arr_d, dims=("time", "location"), coords={"time": days, "location": loc})
+        return xr.Dataset(out, coords={"time": days, "location": loc})
 
-        return xr.Dataset(out_vars, coords={"time": days, "location": loc})
-
-    def _expand_annual_to_daily(self, chunk: xr.Dataset) -> xr.Dataset:
-        """Repeat annual values to daily (each year repeated for 365 days)."""
-        years = int(chunk.sizes["time"])
-        locations = int(chunk.sizes["location"])
-
+    def _expand_annual_to_daily(self, ds_a: xr.Dataset) -> xr.Dataset:
+        years = int(ds_a.sizes["time"])
+        L = int(ds_a.sizes["location"])
         days = np.arange(years * 365)
-        loc = chunk["location"].values
+        loc = ds_a["location"].values
 
-        out_vars = {}
-        for name, da in chunk.data_vars.items():
-            arr = da.transpose("time", "location", ...).values  # [Y, L]
-            arr_rep = np.repeat(arr[:, None, :], 365, axis=1)   # [Y, 365, L]
-            arr_daily = arr_rep.reshape(years * 365, locations) # [365*Y, L]
-            out_vars[name] = xr.DataArray(arr_daily, dims=("time", "location"),
-                                          coords={"time": days, "location": loc})
-        return xr.Dataset(out_vars, coords={"time": days, "location": loc})
+        out = {}
+        for name, da in ds_a.data_vars.items():
+            arr = da.transpose("time", "location").values  # [Y, L]
+            arr_d = np.repeat(arr[:, None, :], 365, axis=1).reshape(years * 365, L)
+            out[name] = xr.DataArray(arr_d, dims=("time", "location"), coords={"time": days, "location": loc})
+        return xr.Dataset(out, coords={"time": days, "location": loc})
+    
+    def _shift_monthly_states_across_years(self, ds: xr.Dataset) -> xr.Dataset:
+        """t-1 month shift with January(t) = December(t-1). First year's Jan is a dummy (dropped later)."""
+        out = {}
+        T = int(ds.sizes["time"])
+        if T % 12 != 0:
+            raise AssertionError(f"Monthly time length {T} not divisible by 12.")
+        Y = T // 12
+        L = int(ds.sizes["location"])
 
-    # -----------------------------------------------------------------------
-    # Input / output tensor builders
-    # -----------------------------------------------------------------------
+        time_vals = ds["time"].values
+        loc_vals  = ds["location"].values
 
-    def _create_input_tensor(
-        self,
-        chunk_daily: xr.Dataset,
-        chunk_monthly: xr.Dataset,
-        chunk_annual: xr.Dataset,
-    ) -> torch.Tensor:
-        """
-        Build input tensor with:
-          - daily forcings (t),
-          - monthly forcings (t) + monthly states shifted by 1 month (t-1),
-          - annual  forcings (t) + annual  states shifted by 1 year  (t-1),
-        expanded to daily and concatenated along channel,
-        then drop the first year (remove shift cold-start).
-        """
-        # Variables (orders are sorted in _filter_var_names)
-        daily_forcing_vars   = sorted(self.var_names["daily_forcing"])
-        monthly_forcing_vars = sorted(self.var_names["monthly_forcing"])
-        monthly_state_vars   = sorted(self.var_names["monthly_states"])
-        annual_forcing_vars  = sorted(self.var_names["annual_forcing"])
-        annual_state_vars    = sorted(self.var_names["annual_states"])
+        for v, da in ds.data_vars.items():
+            arr = da.transpose("time", "location").values.reshape(Y, 12, L)  # [Y,12,L]
+            shifted = np.empty_like(arr, dtype=arr.dtype)
 
-        # Slice datasets into forcings/states
-        inputs_daily        = chunk_daily[daily_forcing_vars]
-        inputs_monthly_forc = chunk_monthly[monthly_forcing_vars]
-        inputs_annual_forc  = chunk_annual[annual_forcing_vars]
-        monthly_states_ds   = chunk_monthly[monthly_state_vars]
-        annual_states_ds    = chunk_annual[annual_state_vars]
+            # within-year shifts: Feb..Dec(t) ← Jan..Nov(t)
+            shifted[:, 1:, :] = arr[:, 0:11, :]
 
-        # Shift states by 1 step to provide t-1 context
-        monthly_states_shifted = monthly_states_ds.shift(time=1, fill_value=0)
-        annual_states_shifted  = annual_states_ds.shift(time=1, fill_value=0)
+            # across-year carry for January: Jan(t) ← Dec(t-1)
+            shifted[1:, 0, :] = arr[:-1, 11, :]
 
-        # Merge forcings (t) + shifted states (t-1)
-        monthly_merged = xr.merge([inputs_monthly_forc, monthly_states_shifted])
-        annual_merged  = xr.merge([inputs_annual_forc,  annual_states_shifted])
+            # first year's January (no previous year): any sentinel; it will be dropped
+            shifted[0, 0, :] = 0.0
 
-        # Standardize
-        daily_std   = self._standardise_dataset(inputs_daily,        daily_forcing_vars)
-        monthly_std = self._standardise_dataset(monthly_merged,      monthly_forcing_vars + monthly_state_vars)
-        annual_std  = self._standardise_dataset(annual_merged,       annual_forcing_vars  + annual_state_vars)
+            out[v] = xr.DataArray(
+                shifted.reshape(T, L), dims=("time", "location"),
+                coords={"time": time_vals, "location": loc_vals}
+            )
 
-        # Expand to daily
+        return xr.Dataset(out, coords={"time": time_vals, "location": loc_vals})
+    
+    def _shift_annual_states_tminus1(self, ds: xr.Dataset) -> xr.Dataset:
+        out = {}
+        Y = int(ds.sizes["time"])
+        L = int(ds.sizes["location"])
+        time_vals = ds["time"].values
+        loc_vals  = ds["location"].values
+
+        for v, da in ds.data_vars.items():
+            arr = da.transpose("time", "location").values  # [Y,L]
+            shf = np.zeros_like(arr)
+            shf[1:, :] = arr[:-1, :]
+            out[v] = xr.DataArray(shf, dims=("time", "location"),
+                                coords={"time": time_vals, "location": loc_vals})
+        return xr.Dataset(out, coords={"time": time_vals, "location": loc_vals})
+
+    # ---------------------------------------------------------------------
+    # Item
+    # ---------------------------------------------------------------------
+    def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        ds_idx, scenario, loc0, loc1 = self.meta[i]
+
+        # slice
+        Dd = self.ds_daily[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
+        Dm = self.ds_monthly[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
+        Da = self.ds_annual[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
+
+        # --- split into groups
+        inputs_daily        = Dd[self.daily_forcing]
+        monthly_forc_ds     = Dm[self.monthly_forcing]
+        monthly_states_ds   = Dm[self.monthly_states]
+        annual_forc_ds      = Da[self.annual_forcing]
+        annual_states_ds    = Da[self.annual_states]
+
+        # --- t-1 shift for states (global, uniform logic)
+        monthly_states_t1 = self._shift_monthly_states_across_years(monthly_states_ds)
+        annual_states_t1 = self._shift_annual_states_tminus1(annual_states_ds)
+
+        # --- standardise (strict)
+        daily_std   = self._standardise_dataset(inputs_daily,        self.daily_forcing)
+        monthly_std = self._standardise_dataset(
+            xr.merge([monthly_forc_ds, monthly_states_t1]),
+            self.monthly_forcing + self.monthly_states
+        )
+        annual_std  = self._standardise_dataset(
+            xr.merge([annual_forc_ds,  annual_states_t1]),
+            self.annual_forcing + self.annual_states
+        )
+
+        # --- expand month/annual to daily
         monthly_daily = self._expand_monthly_to_daily(monthly_std)
         annual_daily  = self._expand_annual_to_daily(annual_std)
 
-        # To [C, T, L] in explicit list order
-        arr_daily   = np.stack([daily_std[v]    .transpose("time", "location", ...).values
-                                for v in daily_forcing_vars])
-        arr_monthly = np.stack([monthly_daily[v].transpose("time", "location", ...).values
-                                for v in (monthly_forcing_vars + monthly_state_vars)])
-        arr_annual  = np.stack([annual_daily[v] .transpose("time", "location", ...).values
-                                for v in (annual_forcing_vars  + annual_state_vars)])
+        # --- assemble input channels in explicit order
+        arr_daily   = np.stack([daily_std[v]    .transpose("time", "location").values
+                                for v in self.daily_forcing])
+        arr_monthly = np.stack([monthly_daily[v].transpose("time", "location").values
+                                for v in (self.monthly_forcing + self.monthly_states)])
+        arr_annual  = np.stack([annual_daily[v] .transpose("time", "location").values
+                                for v in (self.annual_forcing  + self.annual_states)])
 
-        # Concatenate channels
-        input_tensor = np.concatenate([arr_daily, arr_monthly, arr_annual], axis=0)
+        inputs = np.concatenate([arr_daily, arr_monthly, arr_annual], axis=0)  # [C_in, 365*Y, L]
 
-        # Drop first year to remove cold-start from shifts
-        input_tensor = input_tensor[:, 365:, :]
+        # --- labels (no shift; drop first year for alignment)
+        out_m_std = self._standardise_dataset(
+            Dm[self.monthly_fluxes + self.monthly_states],
+            self.monthly_fluxes + self.monthly_states
+        )
+        out_a_std = self._standardise_dataset(
+            Da[self.annual_states],
+            self.annual_states
+        )
 
-        return torch.from_numpy(input_tensor.astype(np.float32, copy=False))
+        labels_m = np.stack([out_m_std[v].transpose("time", "location").values
+                             for v in (self.monthly_fluxes + self.monthly_states)])
+        labels_a = np.stack([out_a_std[v].transpose("time", "location").values
+                             for v in self.annual_states])
 
-    def _create_output_tensor(
-        self,
-        chunk_monthly: xr.Dataset,
-        chunk_annual: xr.Dataset,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Convert monthly & annual datasets into standardized label tensors.
+        # --- drop first year everywhere (carry & non-carry)
+        inputs    = inputs[:,    365:, :]   # [C_in, 365*(Y-1), L]
+        labels_m  = labels_m[:,   12:, :]   # [C_m,  12*(Y-1),  L]
+        labels_a  = labels_a[:,    1:, :]   # [C_a,  (Y-1),     L]
 
-        No repetition to daily is needed since the loss is computed on
-        monthly/annual aggregates. We drop the first year to align with inputs.
-        """
-        monthly_vars = sorted(self.var_names["monthly_fluxes"]) + sorted(self.var_names["monthly_states"])
-        annual_vars  = sorted(self.var_names["annual_states"])
+        # sanity
+        Y = int(Da.sizes["time"])
+        L = int(Dd.sizes["location"])
+        assert inputs.shape[1]   == 365*(Y-1) and inputs.shape[2]   == L
+        assert labels_m.shape[1] ==  12*(Y-1) and labels_m.shape[2] == L
+        assert labels_a.shape[1] ==      (Y-1) and labels_a.shape[2] == L
 
-        outputs_monthly = chunk_monthly[monthly_vars]
-        outputs_annual  = chunk_annual[annual_vars]
-
-        monthly_std = self._standardise_dataset(outputs_monthly, monthly_vars)
-        annual_std  = self._standardise_dataset(outputs_annual,  annual_vars)
-
-        monthly_arr = np.stack([monthly_std[v].transpose("time", "location", ...).values
-                                for v in monthly_vars])
-        annual_arr  = np.stack([annual_std[v] .transpose("time", "location", ...).values
-                                for v in annual_vars])
-
-        # Drop first year to align with inputs
-        monthly_arr = monthly_arr[:, 12:, :]
-        annual_arr  = annual_arr[:,  1:, :]
-
-        monthly_tensor = torch.from_numpy(monthly_arr.astype(np.float32, copy=False))
-        annual_tensor  = torch.from_numpy(annual_arr.astype(np.float32,  copy=False))
-        return monthly_tensor, annual_tensor
-
-    # -----------------------------------------------------------------------
-    # __getitem__
-    # -----------------------------------------------------------------------
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """
-        Return (inputs, labels_monthly, labels_annual) for a given sample index.
-
-        Maps global idx across multiple zarr stores to:
-          - dataset index (which store),
-          - local index   (scenario, location-chunk within the store),
-        then extracts chunks and builds tensors.
-        """
-        if idx >= self.n_samples:
-            raise IndexError("Index out of range")
-
-        # Which dataset (zarr store) does this sample fall into?
-        dataset_idx = np.searchsorted(self.idx_thresholds, idx, side="right") - 1
-        # Local index within that dataset
-        local_idx = idx - self.idx_thresholds[dataset_idx]
-
-        # Datasets at this index
-        ds_daily   = self.daily_datasets[dataset_idx]
-        ds_monthly = self.monthly_datasets[dataset_idx]
-        ds_annual  = self.annual_datasets[dataset_idx]
-
-        # Extract chunks (same location/scenario across daily/monthly/annual)
-        chunk_daily   = self._extract_chunk_from_ds(dataset_idx, local_idx, ds_daily)
-        chunk_monthly = self._extract_chunk_from_ds(dataset_idx, local_idx, ds_monthly)
-        chunk_annual  = self._extract_chunk_from_ds(dataset_idx, local_idx, ds_annual)
-
-        # Build tensors
-        input_tensor = self._create_input_tensor(chunk_daily, chunk_monthly, chunk_annual)
-        label_tensor_monthly, label_tensor_annual = self._create_output_tensor(chunk_monthly, chunk_annual)
-
-        return input_tensor, label_tensor_monthly, label_tensor_annual
-
-
+        return (
+            torch.from_numpy(inputs.astype(np.float32,   copy=False)),
+            torch.from_numpy(labels_m.astype(np.float32, copy=False)),
+            torch.from_numpy(labels_a.astype(np.float32, copy=False)),
+        )
+        
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------

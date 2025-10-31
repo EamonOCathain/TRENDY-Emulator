@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=lai_3
+#SBATCH --job-name=Training
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A100:8
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=200G
+#SBATCH --gres=gpu:A100:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=400G
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -16,7 +16,6 @@ mkdir -p logs
 export PYTHONUNBUFFERED=1
 
 # Microbatch size of 2940 is fine without carry in A40 and A100
-
 
 # threads per GPU worker (adjust to taste)
 export OMP_NUM_THREADS=4
@@ -45,29 +44,28 @@ echo "==== CPU RAM requested ===="
 echo "SLURM --mem = 200G (total on node)"
 free -h
 
-NPROC=${SLURM_GPUS_ON_NODE:-$(awk -F, '{print NF}' <<<"${CUDA_VISIBLE_DEVICES:-0}")}
+NPROC=${SLURM_GPUS_ON_NODE:-$(nvidia-smi -L | wc -l)}
 
 export CUDA_LAUNCH_BLOCKING=1
 export TORCH_SHOW_CPP_STACKTRACES=1 
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name tl_lai_3 \
-  --epochs 30 \
+  --job_name test_new_diff \
+  --epochs 1 \
+  --subset_frac 0.001 \
   --mb_size 2940 \
-  --num_workers 8 \
-  --val_frac 0.7 \
-  --test_frac 0.5 \
+  --num_workers 4 \
+  --val_frac 0.005 \
+  --test_frac 0.001 \
   --shuffle_windows \
   --early_stop \
-  --early_stop_patience 8 \
+  --early_stop_patience 10 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/saved_checkpoints/transfer_learning/avh15c1_lai/second_train_to_epoch_22/checkpoints/best.pt \
-  --transfer_learn \
-  --transfer_learn_years 1982-2018 \
-  --transfer_learn_vars lai_avh15c1 \
-  --var_weights "lai=3"
-
-
-
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt \
+  --block_locs 70 \
+  --prefetch_factor 1 \
+  --val_prefetch_factor 1 \
+  --carry_years 1 \
+  --eval_mb_size 1470 

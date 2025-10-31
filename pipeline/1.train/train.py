@@ -22,7 +22,7 @@ start_dt_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
 # -----------------------------------------------------------------------------#
 # Local imports (after sys.path updated)
 # -----------------------------------------------------------------------------#
-from src.paths.paths import *                      # noqa: F401,F403
+from src.paths.paths import *                     
 
 from src.models.custom_transformer import YearProcessor
 from src.training.checkpoints import save_cb, extract_state_dict_for_foundation
@@ -62,9 +62,52 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # --- Training loop ---
+    # Use Foundation Checkpoint
+    parser.add_argument("--use_foundation", type=str, default=None,
+                        help=("Path to checkpoint to initialize model weights from "
+                              "(optimizer/scheduler/history/epoch are ignored)"))
     parser.add_argument("--resume", type=str, default=None,
-                        help="Path to a checkpoint .pt (epoch*.pt or best.pt) to resume training")
+                    help="Path to a checkpoint .pt (epoch*.pt or best.pt) to resume training")
+    
+    # --- Misc / logging ---
+    parser.add_argument("--job_name", type=str, default="transformer_run")
+    parser.add_argument("--scan_finite", action="store_true",
+                    help="Scan datasets for non-finite values before training (warns if any found)")
+    
+    # Modes
+    parser.add_argument("--val_only", action="store_true",
+                    help="Run only the validation pass (skip training and testing).")
+    parser.add_argument("--train_only", action="store_true",
+                        help="Skip testing after training.")
+    parser.add_argument("--test_only", action="store_true",
+                        help="Run only the testing suite (skip training/validation).")
+    parser.add_argument("--delta_luh", action="store_true",
+                    help="If set, include luh2_deltas in the annual forcing list.")
+
+    # Subsetting
+    parser.add_argument("--subset_frac", type=float, default=None,
+                        help="Subsample fraction for train/val splits")  
+    parser.add_argument("--test_frac", type=float, default=None,
+                        help=("Subset the TEST set by a fraction RELATIVE to --subset_frac. "
+                              "Effective test fraction = (subset_frac if set else 1.0) * (test_frac if set else 1.0)."))  
+    parser.add_argument("--val_frac", type=float, default=1.0,
+                    help="Fraction of validation loader to use per validation pass")
+    
+    # Variables
+    parser.add_argument("--exclude_vars", nargs="*", default=[],
+                    help="Variable names to exclude from inputs")
+
+    # DataLoader 
+    parser.add_argument("--prefetch_factor", type=int, default=2,
+                        help="Batches prefetched per DataLoader worker (train/test).")
+    parser.add_argument("--val_prefetch_factor", type=int, default=2,
+                        help="Batches prefetched per DataLoader worker (validation).")
+    parser.add_argument("--block_locs", type=int, default=70, 
+                        help="Number of locations to be pulled out per sample.")
+    parser.add_argument("--batch_size", type=int, default=1,
+                        help="Number of samples to be pulled out per batch")
+    
+    # --- Training loop ---
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--mb_size", type=int, default=1470,  # windows per microbatch
                         help="Windows per microbatch")
@@ -76,24 +119,8 @@ def parse_args():
                         help="Gradient norm clip (None disables)")
     parser.add_argument("--shuffle_windows", action="store_true",
                         help="Shuffle windows in the dataloader")
-    parser.add_argument("--subset_frac", type=float, default=None,
-                        help="Subsample fraction for train/val splits")
-    parser.add_argument("--exclude_vars", nargs="*", default=[],
-                        help="Variable names to exclude from inputs")
-    parser.add_argument("--use_foundation", type=str, default=None,
-                        help=("Path to checkpoint to initialize model weights from "
-                              "(optimizer/scheduler/history/epoch are ignored)"))
-    parser.add_argument("--delta_luh", action="store_true",
-                        help="If set, include luh2_deltas in the annual forcing list.")
+    parser.add_argument("--num_workers", type=int, default=8)
     
-    # Modes
-    parser.add_argument("--val_only", action="store_true",
-                    help="Run only the validation pass (skip training and testing).")
-    parser.add_argument("--train_only", action="store_true",
-                        help="Skip testing after training.")
-    parser.add_argument("--test_only", action="store_true",
-                        help="Run only the testing suite (skip training/validation).")
-
     # --- Optimiser & scheduler ---
     parser.add_argument("--lr", type=float, default=9e-5)
     parser.add_argument("--scheduler", type=str, default="cosine_wr",
@@ -102,25 +129,7 @@ def parse_args():
                         help='Cosine WR T0. Use "epoch" to match steps/epoch, or provide an integer (steps).')
     parser.add_argument("--sched_tmult", type=int, default=2)
     parser.add_argument("--eta_min", type=float, default=9e-6)
-
-    # --- Validation ---
-    parser.add_argument("--val_freq", type=float, default=1.0,
-                        help="Validate every N epochs (can be fractional)")
-    parser.add_argument("--val_frac", type=float, default=1.0,
-                        help="Fraction of validation loader to use per validation pass")
-
-    # --- Testing ---
-    parser.add_argument("--test_frac", type=float, default=None,
-                        help=("Subset the TEST set by a fraction RELATIVE to --subset_frac. "
-                              "Effective test fraction = (subset_frac if set else 1.0) * (test_frac if set else 1.0)."))
-
-    # --- Data loading ---
-    parser.add_argument("--num_workers", type=int, default=8)
-
-    # --- Misc / logging ---
-    parser.add_argument("--job_name", type=str, default="transformer_run")
-    parser.add_argument("--log_batches_per_rank", action="store_true")
-
+    
     # --- Loss ---
     parser.add_argument("--loss_type", type=str, default="mse", choices=["mse", "mae"])
     parser.add_argument("--use_mass_balances", action="store_true",
@@ -130,6 +139,7 @@ def parse_args():
     parser.add_argument("--nbp_balance", type=float, default=0.0)
     parser.add_argument("--carbon_partition_balance", type=float, default=0.0)
     parser.add_argument("--nbp_d_ctotal_balance", type=float, default=0.0)
+    parser.add_argument("--var_weights", type=str, default=None, help='Comma list of "<var>=<weight>" to override per-variable loss weights, e.g. "lai=2,gpp=0.5". Names must match OUTPUT vars.',)
 
     # --- Early Stopping ---
     parser.add_argument("--early_stop", action="store_true",
@@ -143,6 +153,10 @@ def parse_args():
                         help="Save rolling checkpoint every N epochs (0=disable)")
     parser.add_argument("--keep_last", type=int, default=5,
                         help="Keep last K rolling checkpoints")
+
+    # --- Validation ---
+    parser.add_argument("--val_freq", type=float, default=1.0,
+                        help="Validate every N epochs (can be fractional)")
     
     # Transfer Learning
     parser.add_argument("--transfer_learn", action="store_true",
@@ -150,29 +164,12 @@ def parse_args():
     parser.add_argument("--transfer_learn_vars", type=str, nargs="+", default=["lai_avh15c1"], help="Variable names to use in transfer learning (space-separated list)")
     parser.add_argument("--transfer_learn_years", type=str, default="1981-2019", help="Year range for transfer learning, e.g. '1990-2005'")
 
-    # --- Other ---
-    parser.add_argument("--scan_finite", action="store_true",
-                        help="Scan datasets for non-finite values before training (warns if any found)")
-    parser.add_argument("--var_weights", type=str, default=None, help='Comma list of "<var>=<weight>" to override per-variable loss weights, e.g. "lai=2,gpp=0.5". Names must match OUTPUT vars.',)
-
-    # --- Microbatching / eval ---
-
-
-    # --- Carry controls ---
+    # Carry 
     parser.add_argument("--carry_years", type=str, default="0",
                         help='Carry horizon across years. Single numeric value: "0", a float ("2.5"), or fraction "3/12".')
     parser.add_argument("--carry_granularity", type=str, default="annual",
                         choices=["monthly", "annual"],
                         help="Carry coupling across years: monthly=last-month state→next Jan; annual=annual-mean→all days next year.")
-
-    # --- DataLoader prefetch ---
-    parser.add_argument("--prefetch_factor", type=int, default=2,
-                        help="Batches prefetched per DataLoader worker (train/test).")
-    parser.add_argument("--val_prefetch_factor", type=int, default=2,
-                        help="Batches prefetched per DataLoader worker (validation).")
-
-    # --- Modes ---
-
     
     return parser.parse_args()
 
@@ -356,17 +353,17 @@ def main():
     # Build Datasets from Dataloader
     ds_dict = get_train_val_test(
         std_dict,
-        block_locs=70,               
+        block_locs=args.block_locs,
         exclude_vars=exclude_vars,
         tl_activated=args.transfer_learn,
         tl_start=tl_start_year,
         tl_end=tl_end_year,
         replace_map=replace_map,
         delta_luh=args.delta_luh,
-        carry_years=carry_value,      
     )
 
     if is_main:
+        print(f"[INFO] block_locs={args.block_locs}")
         print("Number of location chunks in full dataset:",
               len(ds_dict["train"]), "val len:", len(ds_dict["val"]), "test len:", len(ds_dict["test"]))
 
@@ -396,10 +393,10 @@ def main():
     # -------------------------------------------------------------------------
     train_dl, valid_dl, test_dl = get_data(
         train_ds, val_ds, test_ds,
-        bs=1,
-        num_workers=(args.num_workers if args.num_workers is not None else workers_per_rank),
-        prefetch_factor=args.prefetch_factor,          
-        val_prefetch_factor=args.val_prefetch_factor, 
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        prefetch_factor=args.prefetch_factor,
+        val_prefetch_factor=args.val_prefetch_factor,
         ddp=ddp,
     )
 
@@ -423,7 +420,7 @@ def main():
                 log.info(f"[preflight/{name}] no non-finite in batches")
 
     # Per-rank dataloader stats (handy for debugging DDP)
-    if args.log_batches_per_rank and ddp and dist.is_initialized():
+    if ddp and dist.is_initialized():
         dist.barrier()
         log.info(f"[Rank {RANK}] train_ds={len(train_ds)}, val_ds={len(val_ds)}, test_ds={len(test_ds)}")
         log.info(f"[Rank {RANK}] train_batches={len(train_dl)}, val_batches={len(valid_dl)}, test_batches={len(test_dl)}")

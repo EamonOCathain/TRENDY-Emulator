@@ -50,10 +50,6 @@ class History:
         self.samples_seen: int = 0  # updated by training loop
         self.lr_values: List[float] = []
         self.lr_steps: List[int] = []
-        
-        # Per-epoch mass-balance (weighted) breakdowns
-        self.mb_train: dict[str, list[float]] = {}  # name -> [epoch values]
-        self.mb_val:   dict[str, list[float]] = {}
 
     # -----------------------------------------------------------------------
     # Recording helpers
@@ -85,24 +81,6 @@ class History:
     def close_epoch(self) -> None:
         """Mark the end of the current epoch (for vertical separators in the plot)."""
         self.epoch_edges.append(len(self.batch_loss))
-        
-    def add_mass_balance_epoch(self, train_avgs: dict[str, float], val_avgs: dict[str, float]) -> None:
-        """
-        Append epoch-level weighted MB averages. Missing keys are filled with NaN
-        so all series line up across epochs.
-        """
-        # union of keys so lengths stay aligned
-        keys = set(self.mb_train.keys()) | set(self.mb_val.keys()) | set(train_avgs.keys()) | set(val_avgs.keys())
-
-        for k in keys:
-            # train
-            if k not in self.mb_train:
-                self.mb_train[k] = []
-            self.mb_train[k].append(float(train_avgs.get(k, float("nan"))))
-            # val
-            if k not in self.mb_val:
-                self.mb_val[k] = []
-            self.mb_val[k].append(float(val_avgs.get(k, float("nan"))))
 
     # -----------------------------------------------------------------------
     # Serialization
@@ -122,8 +100,6 @@ class History:
             "samples_seen": getattr(self, "samples_seen", 0),
             "lr_values": getattr(self, "lr_values", []),
             "lr_steps": getattr(self, "lr_steps", []),
-            "mb_train": self.mb_train,
-            "mb_val":   self.mb_val,
         }
 
     def save_npz(self, path: Path) -> None:
@@ -147,9 +123,6 @@ class History:
             # (optional) LR traces
             lr_values=np.array(getattr(self, "lr_values", []), dtype=np.float64),
             lr_steps=np.array(getattr(self, "lr_steps", []), dtype=np.int64),
-            # mass-balance epoch series (store per-key arrays)
-            **{f"mb_train__{k}": np.array(v, dtype=np.float64) for k, v in self.mb_train.items()},
-            **{f"mb_val__{k}":   np.array(v, dtype=np.float64) for k, v in self.mb_val.items()},
         )
         with open(path.with_suffix(".model.txt"), "w") as f:
             f.write(self.model_info)
@@ -455,60 +428,6 @@ class History:
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
 
         plt.show() if show else plt.close(fig)
-        
-    def plot_mb_breakdown(
-        self,
-        *,
-        loss_type: str = "MSE",
-        figsize: tuple[int, int] = (12, 6),
-        save_dir: Optional[Path] = None,
-        filename: str = "loss_mb_breakdown",
-        show: bool = True,
-    ) -> None:
-        """
-        Overlay per-epoch Train/Val loss with each mass-balance (weighted) average.
-        Each MB gets its own color; legend distinguishes them.
-        Only draws if MB data exist.
-        """
-        if not self.train_loss:
-            return
-        if not (self.mb_train or self.mb_val):
-            return
-
-        epochs = np.arange(1, len(self.train_loss) + 1, dtype=int)
-
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=figsize)
-
-        # Main losses
-        ax.plot(epochs, self.train_loss, linewidth=2.0, marker="o", label="Train (epoch avg)")
-        if self.val_loss:
-            n = min(len(self.val_loss), len(epochs))
-            ax.plot(epochs[:n], np.asarray(self.val_loss[:n], dtype=float),
-                    linewidth=2.0, marker="o", label="Val (epoch)")
-
-        # MB series (weighted contributions)
-        # Use stable sorted key order for legend stability
-        keys = sorted(set(self.mb_train.keys()) | set(self.mb_val.keys()))
-        for k in keys:
-            y = self.mb_train.get(k, [])
-            if y:
-                ax.plot(epochs[:len(y)], np.asarray(y, dtype=float), linewidth=1.6, label=f"{k} (train)")
-            yv = self.mb_val.get(k, [])
-            if yv:
-                ax.plot(epochs[:len(yv)], np.asarray(yv, dtype=float), linewidth=1.6, linestyle="--", label=f"{k} (val)")
-
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel(f"Loss ({loss_type.upper()})")
-        ax.grid(True, alpha=0.2)
-        ax.legend(loc="upper right", ncol=1)
-
-        if save_dir is not None:
-            save_path = Path(save_dir) / f"{filename}.png"
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(save_path, dpi=300, bbox_inches="tight")
-
-        plt.show() if show else plt.close(fig)
 
     # -----------------------------------------------------------------------
     # Rolling per-epoch plot writer
@@ -555,18 +474,6 @@ class History:
             ),
             "plot_loss_with_info",
         )
-        
-        # 3) Mass-balance overlay (only if enabled and data present)
-        if getattr(args, "use_mass_balances", False) and (self.mb_train or self.mb_val):
-            _safe(
-                lambda: self.plot_mb_breakdown(
-                    loss_type=getattr(args, "loss_type", "mse"),
-                    save_dir=plots_dir,
-                    filename="loss_mb_breakdown",
-                    show=False,
-                ),
-                "plot_mb_breakdown",
-            )
 
     # -----------------------------------------------------------------------
     # Test results helper

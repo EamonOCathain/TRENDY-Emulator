@@ -21,6 +21,7 @@ _LOG = logging.getLogger("carry")
 # calendar, we'll use that instead.
 MONTH_LENGTHS_FALLBACK = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
+POPULATION_NORMALISE = True 
 
 # ---------------------------------------------------------------------------
 # Small utilities
@@ -660,11 +661,7 @@ def rollout_train_outer_batch(
 
     # Microbatch over windows — scale down with window length W = D+1
     base_mb = max(1, int(mb_size))
-    scale = 1.0 / float(max(1, W))  # ~ 1/(ceil(H)+1)
-    micro = max(1, int(base_mb * scale))
-    micro = min(micro, total_windows)
-
-    # Remember what we used (handy for logs)
+    micro = min(base_mb, total_windows)
     rollout_cfg["autotuned_mb_size_windows"] = int(micro)
 
     # DDP consistency: broadcast chosen micro from rank 0
@@ -682,6 +679,8 @@ def rollout_train_outer_batch(
     running_loss_sum = 0.0
     windows_done = 0
     microbatches_done = 0
+    
+    
 
     # Helper: pool monthly/annual from DAILY ABSOLUTES
     def _pool_from_daily_abs(y_daily_abs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -780,8 +779,9 @@ def rollout_train_outer_batch(
                     loss = loss_func(preds_abs_daily, ybm, yba)
                     (loss / eff_accum).backward()
                     microbatches_done += 1
-                    windows_done += B
-                    running_loss_sum += float(loss.detach().cpu()) * B  # <-- weight by batch size
+                    batch_weight = B if POPULATION_NORMALISE else 1
+                    windows_done     += batch_weight
+                    running_loss_sum += float(loss.detach().cpu()) * batch_weight
 
                     # Optimizer step (gradient accumulation aware)
                     if microbatches_done % eff_accum == 0:
@@ -885,9 +885,7 @@ def rollout_eval_outer_batch(
 
     # Choose microbatch size in *windows* (scale by window length to keep memory reasonable)
     base_mb = int(mb_size) if (mb_size is not None and mb_size > 0) else 2048
-    scale   = 1.0 / float(max(1, W))   # shorter micro when windows are longer
-    micro   = max(1, int(base_mb * scale))
-    micro   = min(micro, total_windows)
+    micro   = min(max(1, base_mb), total_windows)
 
     # DDP consistency (if active): broadcast chosen micro
     if torch.distributed.is_available() and torch.distributed.is_initialized():
@@ -989,8 +987,9 @@ def rollout_eval_outer_batch(
                         continue
 
                     loss = loss_func(preds_abs_daily, ybm, yba)
-                    total_loss   += float(loss.detach().cpu()) * B  # <-- weight by batch size
-                    windows_done += B
+                    batch_weight = B if POPULATION_NORMALISE else 1
+                    total_loss   += float(loss.detach().cpu()) * batch_weight
+                    windows_done += batch_weight
 
                 # free
                 del xb, preds_abs_daily, preds_m, preds_a
@@ -1225,9 +1224,7 @@ def gather_pred_label_pairs(
             continue
 
         base_mb = int(mb_size) if (mb_size is not None and mb_size > 0) else 2048
-        scale   = 1.0 / float(max(1, W))
-        micro   = max(1, int(base_mb * scale))
-        micro   = min(micro, len(windows))
+        micro   = min(max(1, base_mb), len(windows))
 
         if torch.distributed.is_available() and torch.distributed.is_initialized():
             t_mb = torch.tensor([micro], dtype=torch.int64, device=device)
