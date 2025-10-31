@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 # Project
 # ---------------------------------------------------------------------------
 from src.analysis.vis_modular import scatter_grid_from_pairs
-from src.training.carry import gather_pred_label_pairs, _rollout_core, rollout_eval_outer_batch
+from src.training.carry import gather_pred_label_pairs, rollout_outer_batch
 from src.dataset.variables import output_attributes
 # =============================================================================
 # Utilities: finite checks & small DDP helper
@@ -130,12 +130,12 @@ def _title_with_r2_base(
     return base
 
 # =============================================================================
-# Metrics (computed in NORMALIZED space)
+# Metrics (computed in physical space)
 # =============================================================================
 
 def metric_r2(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Coefficient of determination R^2 on NORMALIZED values:
+    Coefficient of determination R^2:
       R^2 = 1 - sum((y - yhat)^2) / sum((y - mean(y))^2)
     Returns NaN if variance(y) == 0 or there are no finite pairs.
     """
@@ -153,7 +153,7 @@ def metric_r2(y: np.ndarray, yhat: np.ndarray) -> float:
 
 def metric_nrmse(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Normalized RMSE on NORMALIZED values:
+    Normalized RMSE:
       nRMSE = RMSE / std(y)  (on normalized data, std≈1, so ~RMSE)
     Returns NaN if std(y) == 0 or no finite pairs.
     """
@@ -171,7 +171,7 @@ def metric_nrmse(y: np.ndarray, yhat: np.ndarray) -> float:
 
 def metric_acc(y: np.ndarray, yhat: np.ndarray) -> float:
     """
-    Anomaly Correlation Coefficient on NORMALIZED values:
+    Anomaly Correlation Coefficient:
       Pearson correlation of mean-removed series.
     Returns NaN if either centered variance is 0 or no finite pairs.
     """
@@ -199,7 +199,7 @@ def _compute_metrics_per_variable(
 ) -> tuple[list[dict], dict]:
     """
     Args:
-      pairs: {var_name: (y, yhat)} arrays in NORMALIZED units.
+      pairs: {var_name: (y, yhat)} arrays in physical units.
 
     Returns:
       rows: list of dicts, one per variable
@@ -455,77 +455,63 @@ def run_and_save_scatter_grids(
 # =============================================================================
 
 def test(
-    model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
-    test_dl: DataLoader,
-    device: torch.device,
+    model, loss_func, test_dl, device,
     logger: Optional[logging.Logger] = None,
     rollout_cfg: Optional[dict] = None,
+    test_mb_size: Optional[int] = None,   # << add
 ) -> Dict[str, Any]:
-    """
-    Run loss evaluation over a test dataloader. If rollout_cfg['carry_horizon'] > 0 → carry path,
-    else teacher-forced path. Skips non-finite batches; logs progress.
-    Returns:
-      dict(sum_loss, count, num_batches, skipped_batches, skipped_windows)
-    """
     if logger is None:
         logger = logging.getLogger("test")
 
-    carry_on = False
-    if rollout_cfg is not None:
-        try:
-            carry_on = float(rollout_cfg.get("carry_horizon", 0.0)) > 0.0
-        except Exception:
-            carry_on = False
+    H = int((rollout_cfg or {}).get("carry_horizon", 0) or 0)
 
     model.eval()
     sum_loss = 0.0
     n_windows = 0
     n_batches = 0
     t0 = time.time()
+    skipped_batches = 0
+    skipped_windows = 0
 
     with torch.no_grad():
         total_batches = len(test_dl)
         if total_batches == 0:
             logger.warning("Test dataloader is empty; returning zeros.")
-            return {
-                "sum_loss": 0.0, "count": 0, "num_batches": 0,
-                "skipped_batches": 0, "skipped_windows": 0
-            }
+            return {"sum_loss": 0.0, "count": 0, "num_batches": 0,
+                    "skipped_batches": 0, "skipped_windows": 0}
 
         every_n = max(1, total_batches // 10)
-        skipped_batches = 0
-        skipped_windows = 0
 
         for batch_inputs, batch_monthly, batch_annual in test_dl:
-            # Strict NaN/Inf guard: check again after float conversion and before rollout
-            batch_inputs   = batch_inputs.float()
-            batch_monthly  = batch_monthly.float()
-            batch_annual   = batch_annual.float()
+            inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
+            labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
+            labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
-            if (not torch.isfinite(batch_inputs).all() or
-                not torch.isfinite(batch_monthly).all() or
-                not torch.isfinite(batch_annual).all()):
+            if (not torch.isfinite(inputs).all() or
+                not torch.isfinite(labels_m).all() or
+                not torch.isfinite(labels_a).all()):
+                Y = int(labels_a.shape[1]) if labels_a.ndim >= 2 else 0
+                L = int(inputs.shape[2])    if inputs.ndim    >= 3 else 0
+                
+                expected_windows = max(0, (Y - H) * L)  # tail-only semantics; H=0 → Y*L
                 skipped_batches += 1
-                skipped_windows += int(batch_inputs.shape[0]) if batch_inputs.ndim > 0 else 0
-                logger.warning("[test] Skipping batch %d: found non-finite values", n_batches)
+                skipped_windows += expected_windows
+                logger.warning("[test] Skipping batch %d: non-finite values", n_batches)
                 continue
 
-            s, n = _rollout_core(
+            # Use the unified outer-batch (eval mode)
+            s, n, _ = rollout_outer_batch(
                 model=model,
-                inputs=batch_inputs.squeeze(0).float(),
-                labels_m=batch_monthly.squeeze(0).float(),
-                labels_a=batch_annual.squeeze(0).float(),
+                inputs=inputs,
+                labels_m=labels_m,
+                labels_a=labels_a,
                 device=device,
                 rollout_cfg=rollout_cfg or {},
                 training=False,
                 loss_func=loss_func,
-                carry_on=carry_on,
-                return_pairs=False,
-                logger=logger,
+                mb_size=test_mb_size,  # external control here
             )
 
-            # Guard against NaN/Inf loss or invalid window count
             if not (isinstance(s, (float, int)) and math.isfinite(float(s))) or int(n) <= 0:
                 skipped_batches += 1
                 skipped_windows += max(int(n), 0)
@@ -548,64 +534,44 @@ def test(
     }
 
 def test_with_and_without_carry(
-    model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
-    test_dl: DataLoader,
-    device: torch.device,
+    model, loss_func, test_dl, device,
     logger: Optional[logging.Logger] = None,
     rollout_cfg: Optional[dict] = None,
+    test_mb_size: Optional[int] = None,     
 ) -> Dict[str, Any]:
-    """
-    Run `test()` twice:
-      1) Teacher-forced (carry_horizon=0.0)
-      2) Carry with horizon=123y
-    Returns only loss summaries; scatter/metrics are handled elsewhere.
-    """
+    
+    """Runs the tests for carry = 0 and carry = 123"""
     if logger is None:
         logger = logging.getLogger("test_with_and_without_carry")
 
     logger.info("=== Starting test: teacher-forced (no carry) ===")
     tf_cfg = deepcopy(rollout_cfg) if rollout_cfg is not None else {}
-    tf_cfg["carry_horizon"] = 0.0
-    tf_out = test(model, loss_func, test_dl, device, logger, tf_cfg)
+    tf_cfg["carry_horizon"] = 0
+    tf_out = test(model, loss_func, test_dl, device, logger, tf_cfg, test_mb_size=test_mb_size)
     tf_out["carry_horizon_forced"] = 0.0
 
     logger.info("=== Starting test: full carry (123-year horizon) ===")
     carry_cfg = deepcopy(rollout_cfg) if rollout_cfg is not None else {}
-    carry_cfg["carry_horizon"] = 123.0
-    carry_out = test(model, loss_func, test_dl, device, logger, carry_cfg)
+    carry_cfg["carry_horizon"] = 123
+    carry_out = test(model, loss_func, test_dl, device, logger, carry_cfg, test_mb_size=test_mb_size)
     carry_out["carry_horizon_forced"] = 123.0
 
-    logger.info("=== Test complete: both teacher-forced and full-carry runs done ===")
-    logger.info(f"Teacher-forced avg loss: {tf_out['sum_loss']/max(1, tf_out['count']):.6f}")
-    logger.info(f"Carry(123y) avg loss:    {carry_out['sum_loss']/max(1, carry_out['count']):.6f}")
-
+    logger.info("=== Test complete ===")
+    logger.info("Teacher-forced avg loss: %.6f", tf_out["sum_loss"]/max(1, tf_out["count"]))
+    logger.info("Carry(123y)    avg loss: %.6f", carry_out["sum_loss"]/max(1, carry_out["count"]))
     return {"teacher_forced": tf_out, "carry_123y": carry_out}
 
 @torch.no_grad()
 def test_tail_only_carry(
-    *,
-    model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor],
-    test_dl: DataLoader,
-    device: torch.device,
-    rollout_cfg: dict,
+    *, model, loss_func, test_dl, device, rollout_cfg: dict,
     logger: Optional[logging.Logger] = None,
     eval_mb_size: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """
-    Tail-only carry evaluation that mirrors training semantics:
-      - windowed over (loc, target_year) with dependency D = ceil(H)
-      - loss computed ONLY on the tail year of each window
-      - vectorised and microbatched across windows
-
-    Returns a dict with local sums/counts; caller can DDP-reduce.
-    """
     if logger is None:
         logger = logging.getLogger("test_tail_only_carry")
 
-    H = float(rollout_cfg.get("carry_horizon", 0.0) or 0.0)
-    if H <= 0.0:
+    H = int(rollout_cfg.get("carry_horizon", 0) or 0)
+    if H <= 0:
         logger.info("[tail_only] carry_horizon <= 0; nothing to do.")
         return {"sum_loss": 0.0, "count": 0, "num_batches": 0}
 
@@ -613,31 +579,26 @@ def test_tail_only_carry(
     total_windows = 0
     batches = 0
 
-    for batch_inputs, batch_monthly, batch_annual in test_dl:
-        inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
-        labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
-        labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
-
-        loss_sum_b, n_win_b = rollout_eval_outer_batch(
+    for bi, bm, ba in test_dl:
+        s, n, _ = rollout_outer_batch(
             model=model,
-            loss_func=loss_func,
-            inputs=inputs,
-            labels_m=labels_m,
-            labels_a=labels_a,
+            inputs=bi.squeeze(0).float().to(device, non_blocking=True),
+            labels_m=bm.squeeze(0).float().to(device, non_blocking=True),
+            labels_a=ba.squeeze(0).float().to(device, non_blocking=True),
             device=device,
             rollout_cfg=rollout_cfg,
-            mb_size=eval_mb_size,
+            training=False,
+            loss_func=loss_func,
+            mb_size=eval_mb_size,        # << full external control here (tail-only)
+            logger=logger,
         )
-        if math.isfinite(loss_sum_b) and n_win_b > 0:
-            total_loss    += float(loss_sum_b)
-            total_windows += int(n_win_b)
+        if math.isfinite(s) and n > 0:
+            total_loss    += float(s)
+            total_windows += int(n)
             batches       += 1
 
-    return {
-        "sum_loss": total_loss,
-        "count": total_windows,
-        "num_batches": batches,
-    }
+    return {"sum_loss": total_loss, "count": total_windows, "num_batches": batches}
+
 def run_and_save_scatter_tail_only(
     *,
     model: torch.nn.Module,
@@ -712,6 +673,7 @@ def run_and_save_test_suite(
     is_main: bool,
     ddp: bool,
     world_size: int,  # kept for API parity (not directly used)
+    eval_mb_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Execute the evaluation suite:
@@ -733,6 +695,7 @@ def run_and_save_test_suite(
         device=device,
         logger=logger,
         rollout_cfg=rollout_cfg,
+        test_mb_size=eval_mb_size,
     )
 
     # ------------- helpers for DDP reduction -------------
@@ -810,7 +773,7 @@ def run_and_save_test_suite(
             device=device,
             rollout_cfg=rollout_cfg or {},
             logger=logger,
-            eval_mb_size=None,  # set to args.eval_mb_size if you want to pass it through
+            eval_mb_size=eval_mb_size,
         )
         t_sum, t_cnt, t_avg = _reduce_sum_count(tail_local)
 

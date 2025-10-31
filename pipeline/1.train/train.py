@@ -83,6 +83,10 @@ def parse_args():
                         help="Run only the testing suite (skip training/validation).")
     parser.add_argument("--delta_luh", action="store_true",
                     help="If set, include luh2_deltas in the annual forcing list.")
+    parser.add_argument( "--model_monthly_mode", type=str, default="batch_months", choices=["batch_months", "sequential_months"],
+                    help=("How the model processes a year: "
+                        "'batch_months' = process all months simulataneously, each as a seperate forward through the transformer; "
+                        "'sequential_months' = step month-by-month and carry monthly states within the year."))
 
     # Subsetting
     parser.add_argument("--subset_frac", type=float, default=None,
@@ -109,7 +113,7 @@ def parse_args():
     
     # --- Training loop ---
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--mb_size", type=int, default=1470,  # windows per microbatch
+    parser.add_argument("--train_mb_size", type=int, default=1470,  # windows per microbatch
                         help="Windows per microbatch")
     parser.add_argument("--eval_mb_size", type=int, default=2940,
                     help="Microbatch size for validation/testing carry rollout. Defaults to --mb_size if unset.")
@@ -165,11 +169,8 @@ def parse_args():
     parser.add_argument("--transfer_learn_years", type=str, default="1981-2019", help="Year range for transfer learning, e.g. '1990-2005'")
 
     # Carry 
-    parser.add_argument("--carry_years", type=str, default="0",
-                        help='Carry horizon across years. Single numeric value: "0", a float ("2.5"), or fraction "3/12".')
-    parser.add_argument("--carry_granularity", type=str, default="annual",
-                        choices=["monthly", "annual"],
-                        help="Carry coupling across years: monthly=last-month state→next Jan; annual=annual-mean→all days next year.")
+    parser.add_argument("--carry_years", type=int, default=0,
+                        help='Carry horizon across years. Single positive integer value.')
     
     return parser.parse_args()
 
@@ -196,28 +197,10 @@ def _check_frac(name, val):
 _check_frac("subset_frac", args.subset_frac)
 _check_frac("test_frac", args.test_frac)
 
-# ===== Carry-years parsing (single value) =====
-def _to_float(token: str) -> float:
-    token = token.strip().lower()
-    if "/" in token:
-        num, den = token.split("/", 1)
-        return float(num) / float(den)
-    return float(token)
-
-try:
-    carry_value = _to_float(args.carry_years)
-except Exception as e:
-    raise SystemExit(f"Invalid --carry_years value '{args.carry_years}': {e}")
-
+# Store carry length
+carry_value = int(args.carry_years)
 if carry_value < 0:
     raise SystemExit("--carry_years must be >= 0")
-
-# In annual mode: clamp 0 < carry < 1 to 1.0 (keep exact 0.0)
-if args.carry_granularity == "annual" and 0.0 < carry_value < 1.0:
-    logging.getLogger(args.job_name).warning(
-        f"[carry] annual granularity: clamped carry years {carry_value} -> 1.0 (no fractional carry)"
-    )
-    carry_value = 1.0
 
 # Turn off shuffling if carry > 0
 if carry_value > 0 and args.shuffle_windows:
@@ -225,6 +208,13 @@ if carry_value > 0 and args.shuffle_windows:
         "[carry] Disabling window shuffling because carry_horizon>0."
     )
     args.shuffle_windows = False
+
+# Raise error if carry years not 0 and model mode isnt sequential
+if args.carry_years > 0 and args.model_monthly_mode != "sequential_months":
+    raise SystemExit(
+        "[config] carry_years > 0 requires --model_monthly_mode=sequential_months "
+        f"(got {args.model_monthly_mode!r})"
+    )
 
 def _parse_var_weights(s: str | None) -> dict[str, float]:
     if not s:
@@ -319,6 +309,7 @@ def main():
         args.nbp_d_ctotal_balance = 0.0
 
     if is_main:
+        log.info("Model mode: %s", args.model_monthly_mode)
         log.info(f"Early stopping: {'ON' if args.early_stop else 'OFF'}")
         log.info(f"Mass balances: {'ON' if args.use_mass_balances else 'OFF'}")
         log.info(f"Using device: {DEVICE} | world_size={WORLD_SIZE} rank={RANK} local_rank={LOCAL_RANK}")
@@ -546,8 +537,8 @@ def main():
         "output_order": OUTPUT_ORDER,
         "input_order": INPUT_ORDER, 
         "schema_sig": schema_sig,
-        "carry_horizon": float(carry_value),   
-        "carry_granularity": str(args.carry_granularity),   
+        "carry_horizon": int(carry_value),  
+        "model_monthly_mode": str(args.model_monthly_mode) 
     }
 
     if is_main:
@@ -639,7 +630,7 @@ def main():
         month_lengths=rollout_cfg["month_lengths"],
         d=128, h=1024, g=256, num_layers=4, nhead=8, dropout=0.1,
         transformer_kwargs={"max_len": 31},
-        mode="batch_months",
+        mode=args.model_monthly_mode,
     ).float().to(DEVICE)
 
     def _ckpt_io_dims(ckpt: dict) -> tuple[int, int]:
@@ -822,7 +813,8 @@ def main():
                     grad_clip=args.grad_clip,
                     scheduler=None,
                     val_plan=val_plan,
-                    mb_size=args.mb_size,
+                    train_mb_size=args.mb_size,
+                    eval_mb_size=args.eval_mb_size,
                     ddp=ddp,
                     early_stop_patience=None,
                     early_stop_min_delta=0.0,
@@ -835,7 +827,7 @@ def main():
                     history_seed=None,
                     samples_seen_seed=0,
                     rollout_cfg=rollout_cfg,
-                    validate_only=True,              # <— key switch
+                    validate_only=True,
                 )
 
                 if is_main:
@@ -862,7 +854,8 @@ def main():
                 grad_clip=args.grad_clip,
                 scheduler=scheduler,
                 val_plan=val_plan,
-                mb_size=args.mb_size,
+                train_mb_size=args.mb_size,
+                eval_mb_size=args.eval_mb_size,
                 ddp=ddp,
                 early_stop_patience=args.early_stop_patience if args.early_stop else None,
                 early_stop_min_delta=args.early_stop_min_delta,
@@ -930,6 +923,7 @@ def main():
                 is_main=is_main,
                 ddp=ddp,
                 world_size=WORLD_SIZE,
+                eval_mb_size=args.eval_mb_size,   # <<< ensure test uses eval_mb_size
             )
 
             if is_main:

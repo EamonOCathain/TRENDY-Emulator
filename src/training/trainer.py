@@ -27,10 +27,7 @@ from src.training.distributed import ddp_mean_scalar
 from src.training.history import History
 
 # --- Carry rollout helpers (from carry branch) ------------------------------
-from src.training.carry import (
-    rollout_train_outer_batch,
-    rollout_eval_outer_batch,
-)
+from src.training.carry import rollout_outer_batch
 
 # --- Mass-balance logging helpers -------------------------------------------
 def _accum_bd_sums(acc: Dict[str, float], bd: Optional[dict], mult: float) -> None:
@@ -103,6 +100,7 @@ def unwrap(model):
     return model.module if isinstance(model, DDP) else model
 
 
+
 # ---------------------------------------------------------------------------
 # Core training loop
 # ---------------------------------------------------------------------------
@@ -110,17 +108,18 @@ def unwrap(model):
 def fit(
     epochs: int,
     model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor, Optional[Dict[str, torch.Tensor]]], torch.Tensor],
-    opt: Optimizer,
-    train_dl: DataLoader,
-    valid_dl: DataLoader,
-    log: Optional[logging.Logger] = None,
-    save_cb: Optional[Callable[[int, bool, float, "History"], None]] = None,
+    loss_func,
+    opt,
+    train_dl,
+    valid_dl,
+    log=None,
+    save_cb=None,
     accum_steps: Optional[int] = None,
     grad_clip: Optional[float] = None,
     scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     val_plan: Optional[dict] = None,
-    mb_size: Optional[int] = None,
+    train_mb_size: Optional[int] = 1470,
+    eval_mb_size: Optional[int] = 1470,
     ddp: bool = False,
     early_stop_patience: Optional[int] = None,
     early_stop_min_delta: float = 0.0,
@@ -144,6 +143,9 @@ def fit(
     """
     history = History(model)
     stopped_early_flag = False
+    
+    train_mb  = 1470 if (train_mb_size is None or train_mb_size <= 0) else int(train_mb_size)
+    eval_mb   = 1470 if (eval_mb_size  is None or eval_mb_size  <= 0) else int(eval_mb_size)
 
     # --- Rehydrate history (resume) ---
     if history_seed:
@@ -164,7 +166,6 @@ def fit(
     # --- Effective knobs ---
     eff_accum = 1 if (accum_steps is None or accum_steps <= 1) else int(accum_steps)
     eff_clip  = grad_clip if (grad_clip is not None and grad_clip > 0) else None
-    mb_size   = 512 if (mb_size is None or mb_size <= 0) else int(mb_size)
 
     # Helper flags
     is_main_fit = (not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0)
@@ -191,20 +192,19 @@ def fit(
         if val_plan is not None and "fixed_val_batch_ids" in val_plan:
             batch_indices = list(val_plan["fixed_val_batch_ids"])
 
-        eval_mb = (getattr(args, "eval_mb_size", None) or mb_size)
-        avg_val_loss, val_cnt, mb_avgs = validate(
+        avg_val_loss, val_cnt, val_mb_avgs = validate(
             model, loss_func, valid_dl,
             device=model_device,
             batch_indices=batch_indices,
             rollout_cfg=rollout_cfg,
-            eval_mb_size=eval_mb,
+            eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
         )
         history.update(train_loss=float("nan"), val_loss=avg_val_loss)
         if log and is_main_fit:
             log.info("Validation-only: val_loss=%.6f (windows=%d)", avg_val_loss, val_cnt)
-            if getattr(args, "use_mass_balances", False) and mb_avgs:
+            if getattr(args, "use_mass_balances", False) and val_mb_avgs:
                 log.info("Val-only MB (weighted avg per-window): %s",
-                         " | ".join(f"{k}={v:.6f}" for k, v in sorted(mb_avgs.items())))
+                         " | ".join(f"{k}={v:.6f}" for k, v in sorted(val_mb_avgs.items())))
         return history, avg_val_loss, False
 
     # --- Early stopping state (rehydrate if provided) ---
@@ -244,8 +244,8 @@ def fit(
                 valid_dl.sampler.set_epoch(epoch)
 
         if log and is_main_fit:
-            log.info("Starting Training - [Epoch %d/%d] accum_steps=%s, mb_size=%s (carry=%s)",
-                     epoch + 1, epochs, eff_accum, mb_size, carry_enabled)
+            log.info("Starting Training - [Epoch %d/%d] accum_steps=%s, train_mb_size=%s (carry=%s)",
+                     epoch + 1, epochs, eff_accum, train_mb, carry_enabled)
 
         every_n = max(1, len(train_dl) // 20)
 
@@ -280,10 +280,7 @@ def fit(
 
             # -------------------------- carry rollout path --------------------------
             if carry_enabled:
-                # NOTE: expect rollout_train_outer_batch to return at least
-                #   (avg_batch_loss, global_opt_step)
-                # It may also (optionally) return (avg_batch_loss, global_opt_step, mb_sums, n_windows)
-                rt = rollout_train_outer_batch(
+                rt = rollout_outer_batch(
                     model=model,
                     loss_func=loss_func,
                     opt=opt,
@@ -291,26 +288,24 @@ def fit(
                     inputs=inputs,
                     labels_m=labels_m,
                     labels_a=labels_a,
-                    mb_size=mb_size,
+                    mb_size=train_mb,
                     eff_accum=eff_accum,
                     eff_clip=eff_clip,
                     history=history,
                     global_opt_step=global_opt_step,
                     device=model_device,
                     rollout_cfg=rollout_cfg,
+                    training=True,
                 )
-                # Unpack with backward compatibility
-                if isinstance(rt, tuple) and len(rt) >= 2:
-                    avg_batch_loss, global_opt_step = rt[0], rt[1]
-                    # Optional MB fold-in from rollout, if provided
-                    if len(rt) >= 4:
-                        mb_sums_batch, n_win_batch = rt[2], int(rt[3])
-                        if isinstance(mb_sums_batch, dict) and n_win_batch > 0:
-                            for k, v in mb_sums_batch.items():
-                                epoch_train_mb_sums[k] = epoch_train_mb_sums.get(k, 0.0) + float(v)
-                            epoch_train_windows += int(n_win_batch)
-                else:
-                    raise RuntimeError("rollout_train_outer_batch returned unexpected shape.")
+                # Returns (sum_loss, n_windows, global_opt_step, optional_mb_sums)
+                batch_sum_loss, n_windows, global_opt_step = float(rt[0]), int(rt[1]), int(rt[2])
+                avg_batch_loss = (batch_sum_loss / max(1, n_windows)) if n_windows > 0 else float("inf")
+
+                # If you track mass-balance breakdowns:
+                if len(rt) >= 4 and isinstance(rt[3], dict) and n_windows > 0:
+                    for k, v in rt[3].items():
+                        epoch_train_mb_sums[k] = epoch_train_mb_sums.get(k, 0.0) + float(v)
+                    epoch_train_windows += int(n_windows)
 
                 train_losses.append(float(avg_batch_loss))
                 history.add_batch(float(avg_batch_loss), global_batch_idx)
@@ -338,7 +333,7 @@ def fit(
                     perm = torch.randperm(Nw, device=Xw.device)
                     Xw, YMw, YAw = Xw[perm], YMw[perm], YAw[perm]
 
-                micro_size = min(mb_size, Nw)
+                micro_size = min(train_mb, Nw)
                 num_micro  = (Nw + micro_size - 1) // micro_size
                 microbatches_done = 0
                 running_sum_loss  = 0.0
@@ -457,9 +452,9 @@ def fit(
                     interim_avg, interim_cnt, _ = validate(
                         model, loss_func, valid_dl, device=model_device, batch_indices=batch_ids,
                         rollout_cfg=rollout_cfg,
-                        eval_mb_size=(getattr(args, "eval_mb_size", None) or mb_size),
+                        eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
                     )
-
+                    
                     # Mid-epoch early stopping check
                     if early is not None:
                         early.step_on_check(interim_avg, epoch)
@@ -546,8 +541,9 @@ def fit(
             model, loss_func, valid_dl, device=model_device,
             batch_indices=epoch_end_batch_indices,
             rollout_cfg=rollout_cfg,
-            eval_mb_size=(getattr(args, "eval_mb_size", None) or mb_size),
+            eval_mb_size=(getattr(args, "eval_mb_size", None) or eval_mb),
         )
+        
         if val_cnt == 0:
             if log and is_main_fit:
                 log.warning("Validation produced 0 windows — check batch_indices/filters.")
@@ -685,20 +681,14 @@ def _sample_validation_batch_indices(total_batches: int, k: int) -> List[int]:
 
 def validate(
     model: torch.nn.Module,
-    loss_func: Callable[[torch.Tensor, torch.Tensor, torch.Tensor, Optional[Dict[str, torch.Tensor]]], torch.Tensor],
-    valid_dl: Iterable,
+    loss_func,
+    valid_dl,
     device: Optional[torch.device] = None,
     max_batches: Optional[int] = None,
     batch_indices: Optional[Iterable[int]] = None,
     rollout_cfg: Optional[dict] = None,
-    eval_mb_size: Optional[int] = None,
+    eval_mb_size: Optional[int] = 1470,
 ) -> Tuple[float, int, Dict[str, float]]:
-    """
-    Evaluate on a validation dataloader.
-      - carry_horizon > 0.0 → windowed carry evaluation (via rollout_eval_outer_batch)
-      - carry_horizon = 0.0 → teacher-forced per-(year,location) windows
-    Returns (avg_loss, num_windows, mb_avgs_dict).
-    """
     model.eval()
     if device is None:
         device = next(model.parameters()).device
@@ -732,8 +722,7 @@ def validate(
             labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
             if carry_enabled:
-                # Prefer rollout_eval_outer_batch; allow optional MB return for logging
-                result = rollout_eval_outer_batch(
+                result = rollout_outer_batch(
                     model=model,
                     loss_func=loss_func,
                     inputs=inputs,
@@ -742,22 +731,17 @@ def validate(
                     device=device,
                     rollout_cfg=rollout_cfg,
                     mb_size=(int(eval_mb_size) if eval_mb_size else 1470),
+                    training=False,
                 )
-                # Expected legacy: (batch_sum_loss, n_windows)
-                # Optional extended: (batch_sum_loss, n_windows, mb_sums_dict)
-                if isinstance(result, tuple) and len(result) >= 2:
-                    batch_sum_loss = float(result[0])
-                    n_windows      = int(result[1])
-                    total_loss += batch_sum_loss
-                    total_cnt  += n_windows
-                    if len(result) >= 3 and isinstance(result[2], dict):
-                        # Already window-weighted sums from rollout; just add
-                        for k, v in result[2].items():
-                            mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
-                else:
-                    raise RuntimeError("rollout_eval_outer_batch returned unexpected shape.")
+                batch_sum_loss, n_windows = float(result[0]), int(result[1])
+                total_loss += batch_sum_loss
+                total_cnt  += n_windows
+                if len(result) >= 4 and isinstance(result[3], dict):
+                    for k, v in result[3].items():
+                        mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+
             else:
-                # Teacher-forced evaluation per (year, location) window
+                # Teacher-forced: iterate per (year, location) window
                 n_locations = int(inputs.shape[2])
                 n_years     = int(labels_a.shape[1])
 
@@ -765,13 +749,13 @@ def validate(
                     for year_idx in range(1, n_years):
                         x_win   = inputs[:, year_idx*365:(year_idx+1)*365, loc]   # [nin,365]
                         yM_win  = labels_m[:, year_idx*12:(year_idx+1)*12, loc]   # [nm,12]
-                        yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]   # [na,1]
+                        yA_win  = labels_a[:, year_idx:(year_idx+1),        loc]  # [na,1]
 
                         xb   = x_win.T.unsqueeze(0)  # [1,365,nin]
                         yb_m = yM_win.T.unsqueeze(0) # [1,12,nm]
                         yb_a = yA_win.T.unsqueeze(0) # [1,1,na]
 
-                        # Build extra_daily for water-balance (physical Pre)
+                        # Optional: extra_daily (physical Pre) if you use it
                         extra_daily = None
                         try:
                             in_order = (rollout_cfg or {}).get("input_order", [])
@@ -786,14 +770,18 @@ def validate(
                         except Exception:
                             extra_daily = None
 
-                        preds_daily = model(xb)      # [1,365,out]
+                        preds_daily = model(xb)
                         val_loss = loss_func(preds_daily, yb_m, yb_a, extra_daily=extra_daily)
                         total_loss += float(val_loss.item())
                         total_cnt  += 1
 
-                        # Accumulate MB breakdown
+                        # If your loss exposes a breakdown:
                         bd = getattr(loss_func, "last_breakdown", None)
-                        _accum_bd_sums(mb_sums, bd, mult=1.0)
+                        if isinstance(bd, dict) and ("weighted" in bd):
+                            for k, v in bd["weighted"].items():
+                                if v is None:
+                                    continue
+                                mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -803,7 +791,7 @@ def validate(
                 if seen_selected >= need_selected:
                     break
 
-    # DDP reduce across ranks
+    # DDP reduce if needed
     if dist.is_available() and dist.is_initialized():
         dev = device
         t_sum = torch.tensor([total_loss], device=dev, dtype=torch.float64)
@@ -811,7 +799,6 @@ def validate(
         dist.all_reduce(t_sum, op=dist.ReduceOp.SUM)
         dist.all_reduce(t_cnt, op=dist.ReduceOp.SUM)
 
-        # Reduce MB sums as well (if any collected)
         if mb_sums:
             keys = sorted(mb_sums.keys())
             buf  = torch.tensor([mb_sums[k] for k in keys], device=dev, dtype=torch.float64)
@@ -822,5 +809,7 @@ def validate(
         total_cnt  = int(t_cnt.item())
 
     avg = (total_loss / total_cnt) if total_cnt > 0 else float("inf")
-    mb_avgs = _normalize_bd_sums(mb_sums, max(1, total_cnt))
+
+    # Convert MB sums to per-window averages
+    mb_avgs = {k: (v / max(1, total_cnt)) for k, v in mb_sums.items()}
     return avg, total_cnt, mb_avgs

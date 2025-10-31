@@ -68,4 +68,5 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
   --carry_years 1 \
-  --eval_mb_size 1470 
+  --eval_mb_size 1470 \
+  --model_monthly_mode sequential_months
