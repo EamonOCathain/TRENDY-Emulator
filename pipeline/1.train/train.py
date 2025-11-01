@@ -883,6 +883,29 @@ def main():
             final_path = run_dir / "saves" / "model_final_state_dict.pt"
             torch.save(real_model.state_dict(), final_path)
             log.info(f"Model weights saved to {final_path}")
+            
+            # save a full final checkpoint (model+opt+sched+history) ----
+            try:
+                # Work out epoch count and best val safely from history
+                epoch_done = len(history.train_loss) if history and history.train_loss else 0
+                best_val_num = (
+                    min(history.val_loss) if history and history.val_loss else float("inf")
+                )
+
+                save_checkpoint(
+                    path=run_dir / "checkpoints" / "final.pt",
+                    model=real_model,
+                    opt=opt,
+                    epoch_1based=max(1, int(epoch_done)),
+                    best_val=float(best_val_num),
+                    history=history if history is not None else History(real_model),
+                    extra_cfg=None,
+                    scheduler=scheduler,
+                )
+                log.info("Final checkpoint saved to %s", run_dir / "checkpoints" / "final.pt")
+            except Exception as e:
+                log.warning("Failed to write final checkpoint: %s", e)
+                
 
         if ddp and dist.is_initialized():
             dist.barrier(device_ids=[LOCAL_RANK])

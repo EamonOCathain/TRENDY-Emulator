@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 import torch
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
-
+import json, os
 
 # ---------------------------------------------------------------------------
 # Single-file checkpoint (minimal payload)
@@ -78,6 +78,62 @@ def _prune_checkpoints(ckpt_dir: Path, keep: int = 3) -> None:
             # best-effort cleanup
             pass
 
+def _safe_link(src: Path, dst: Path) -> None:
+    """Create/refresh a symlink (fallback to copy if symlinks not supported)."""
+    try:
+        if dst.exists() or dst.is_symlink():
+            dst.unlink()
+        dst.symlink_to(src.name)  # relative symlink within same dir
+    except Exception:
+        # Fallback: copy full file if symlink not available
+        import shutil
+        shutil.copy2(src, dst)
+
+def _load_topk_index(ckpt_dir: Path) -> list[dict]:
+    idx_path = ckpt_dir / "topk_best.json"
+    if idx_path.exists():
+        try:
+            return json.loads(idx_path.read_text())
+        except Exception:
+            return []
+    return []
+
+def _save_topk_index(ckpt_dir: Path, items: list[dict]) -> None:
+    idx_path = ckpt_dir / "topk_best.json"
+    idx_path.write_text(json.dumps(items, indent=2))
+
+def _update_topk_best(ckpt_dir: Path, new_file: Path, epoch_1based: int, val: float, k: int = 4) -> None:
+    """
+    Keep K best checkpoints by val (lower is better).
+    Creates/refreshes best1.pt..bestK.pt and best.pt -> best1.pt symlink.
+    """
+    items = _load_topk_index(ckpt_dir)
+    # Insert/update this epoch (dedupe by epoch)
+    items = [it for it in items if int(it.get("epoch", -1)) != int(epoch_1based)]
+    items.append({"epoch": int(epoch_1based), "val": float(val), "file": new_file.name})
+    # Sort ascending by val and trim
+    items.sort(key=lambda d: float(d["val"]))
+    pruned = items[:k]
+    # Delete any files no longer present in top-k
+    keep_names = {d["file"] for d in pruned}
+    for p in ckpt_dir.glob("best_e*.pt"):
+        if p.name not in keep_names:
+            try:
+                p.unlink()
+            except Exception:
+                pass
+    # Persist index
+    _save_topk_index(ckpt_dir, pruned)
+
+    # Refresh bestN.pt symlinks
+    for i, rec in enumerate(pruned, start=1):
+        src = ckpt_dir / rec["file"]
+        dst = ckpt_dir / f"best{i}.pt"
+        _safe_link(src, dst)
+
+    # Backward-compat: best.pt == best1.pt (if exists)
+    if pruned:
+        _safe_link(ckpt_dir / pruned[0]["file"], ckpt_dir / "best.pt")
 
 # ---------------------------------------------------------------------------
 # Trainer callback: rich checkpoint + rolling + weights dumps
@@ -184,9 +240,14 @@ def save_cb(
 
     # Save "best" payload and a copy of weights
     if best:
-        torch.save(payload, ckpt_dir / "best.pt")
-        torch.save(model.state_dict(), saves_dir / "best_weights.pt")
+        # write epoch-stamped best file, update top-k index & symlinks
+        best_path = ckpt_dir / f"best_e{epoch_1based:04d}.pt"
+        torch.save(payload, best_path)
+        _update_topk_best(ckpt_dir, best_path, epoch_1based, float(val), k=4)
 
+        # also keep the convenience weights file for the current #1
+        torch.save(model.state_dict(), saves_dir / "best_weights.pt")
+        
     # Rolling checkpoints every N epochs (and prune)
     keep_last  = int(getattr(args, "keep_last", 3) or 0)
     ckpt_every = int(getattr(args, "ckpt_every_epochs", 0) or 0)

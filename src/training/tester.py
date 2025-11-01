@@ -195,16 +195,17 @@ def gather_pred_label_pairs(
     test_dl,
     device: torch.device,
     rollout_cfg: dict,
-    eval_mode: str,  # {"teacher_forced","full_sequence","tail_only"}
+    eval_mode: str,  # {"teacher_forced","full_sequence","tail_only","sequential_no_carry"}
     max_points_per_var: int | None = 2_000_000,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
     Returns {var: (y_norm, yhat_norm)} in NORMALISED units, matching runtime semantics.
-    - teacher_forced: H=0, evaluate all years independently; monthly_mode = user.
-    - full_sequence:  warm-up y=0, score 1..Y-1; monthly_mode = 'sequential_months'.
-    - tail_only:      windowed with H=rollout_cfg['carry_horizon']; score tail year; monthly_mode forced sequential if H>0 else user.
+    - teacher_forced:     H=0, evaluate all years independently; monthly_mode = 'batch_months' (pass via rollout_cfg)
+    - sequential_no_carry:H=0, evaluate all years independently; monthly_mode = 'sequential_months' (pass via rollout_cfg)
+    - full_sequence:      warm-up y=0, score 1..Y-1; monthly_mode = 'sequential_months'.
+    - tail_only:          windowed with H=rollout_cfg['carry_horizon']; score tail year; monthly_mode forced sequential if H>0 else user.
     """
-    assert eval_mode in {"teacher_forced", "full_sequence", "tail_only"}
+    assert eval_mode in {"teacher_forced", "full_sequence", "tail_only", "sequential_no_carry"}
     model.eval()
 
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
@@ -278,14 +279,14 @@ def gather_pred_label_pairs(
         out_m_idx = _san_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm)
         out_a_idx = _san_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na)
 
-        # ----------- MODE A: teacher-forced (H=0, user monthly mode) -----------
-        if eval_mode == "teacher_forced":
-            user_mode = rollout_cfg.get("monthly_mode", "batch_months")
-            with model_mode(model, user_mode):
+        # ----------- MODE A: teacher-forced (H=0, forced monthly mode from cfg) -----------
+        if eval_mode in {"teacher_forced", "sequential_no_carry"}:
+            forced_mode = rollout_cfg.get("monthly_mode", "batch_months")
+            with model_mode(model, forced_mode):
                 for y in range(Y):
                     ds, de = _year_bounds(y, y + 1)
                     xb = torch.stack([inputs[:, ds:de, loc].T for loc in range(L)], dim=0)  # [L,365,nin]
-                    if not torch.isfinite(xb).all():  # strict finiteness in TF
+                    if not torch.isfinite(xb).all():  # strict finiteness
                         continue
                     preds_abs = model(xb)  # [L,365,nm+na]
                     if not torch.isfinite(preds_abs).all():
@@ -304,7 +305,7 @@ def gather_pred_label_pairs(
                         buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
             continue
 
-        # ----------- MODE B: full-sequence (warm-up + carry, forced sequential) -----------
+        # ----------- MODE B: full-sequence (warm-up + carry, forced sequential) ----------
         if eval_mode == "full_sequence":
             with model_mode(model, "sequential_months"):
                 for loc in range(L):
@@ -355,7 +356,7 @@ def gather_pred_label_pairs(
             continue
 
         with model_mode(model, target_mode):
-            # Simple streaming loop over windows (no microbatching here; dataset batches already chunk)
+            # Simple streaming loop over windows
             for loc, t in windows:
                 prev_m = None
                 prev_a = None
@@ -404,15 +405,21 @@ def gather_pred_label_pairs(
         out[k] = (y, p)
     return out
 
-
 # =============================================================================
 # Wrappers around trainer.test()
 # =============================================================================
 
-def _merge_monthly_mode(cfg: dict, args, carry_horizon: int) -> dict:
-    """Respect rule: if H=0 → user mode; if H>0 → sequential."""
+def _merge_monthly_mode(cfg: dict, args, carry_horizon: int, *, force_monthly_mode: str | None = None) -> dict:
+    """
+    Decide monthly_mode for a given carry_horizon, with optional override.
+    Default rule: if H==0 ⇒ use user mode; if H>0 ⇒ force 'sequential_months'.
+    If force_monthly_mode is provided, it takes precedence.
+    """
     out = dict(cfg or {})
     out["carry_horizon"] = int(carry_horizon)
+    if force_monthly_mode is not None:
+        out["monthly_mode"] = str(force_monthly_mode)
+        return out
     user_mode = getattr(args, "model_monthly_mode", "batch_months")
     out["monthly_mode"] = ("sequential_months" if carry_horizon > 0 else user_mode)
     return out
@@ -432,9 +439,9 @@ def evaluate_all_modes(
 ) -> Dict[str, dict]:
     """
     Runs the loss-only tests via trainer.test() in the requested modes:
-      - Teacher-forced (H=0, monthly_mode=user)
-      - Full sequence (H=Y-1 per batch, monthly_mode='sequential_months')
-      - Tail-only (ONLY if rollout_cfg.carry_horizon > 0) with that user-provided H
+      - Teacher-forced (H=0, monthly_mode=FORCED 'batch_months')
+      - Sequential, no-carry (H=0, monthly_mode=FORCED 'sequential_months')
+      - Full sequence (H=Y-1 per batch, monthly_mode=FORCED 'sequential_months')
 
     Returns a dict with the raw trainer.test() outputs for each mode and writes JSONs.
     """
@@ -442,11 +449,13 @@ def evaluate_all_modes(
     test_root = run_dir / "test"
     test_root.mkdir(parents=True, exist_ok=True)
 
-    # -------------------- Teacher-forced (H=0) --------------------
-    tf_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=0)
+    # -------------------- Teacher-forced (H=0, FORCE batch_months) --------------------
+    tf_cfg = _merge_monthly_mode(
+        rollout_cfg or {}, args, carry_horizon=0, force_monthly_mode="batch_months"
+    )
     log.info(
-        "[eval] teacher_forced: cfg.monthly_mode=%s | model.mode(now)=%s",
-        tf_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+        "[eval] teacher_forced: cfg.monthly_mode=%s",
+        tf_cfg.get("monthly_mode")
     )
     tf_out = test_once(
         model=model, loss_func=loss_func, test_dl=test_dl, device=device,
@@ -460,13 +469,34 @@ def evaluate_all_modes(
     if log:
         log.info("[Test] Teacher-forced avg=%.6f", tf_out["sum_loss"] / max(1, tf_out["count"]))
 
-    # ---------------- Full-sequence (H = Y-1 per batch) ----------------
-    # Note: test_once(..., carry_mode="full_sequence") sets cfg["carry_horizon"] = Y-1 per outer batch.
-    # We still pass a cfg with monthly_mode forced to sequential for clarity/consistency.
-    fs_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=int(full_sequence_horizon))
+    # ---------------- Sequential, no-carry (H=0, FORCE sequential_months) -------------
+    seq0_cfg = _merge_monthly_mode(
+        rollout_cfg or {}, args, carry_horizon=0, force_monthly_mode="sequential_months"
+    )
     log.info(
-        "[eval] full_sequence: cfg.monthly_mode=%s | model.mode(now)=%s",
-        fs_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+        "[eval] sequential_no_carry(H=0): cfg.monthly_mode=%s",
+        seq0_cfg.get("monthly_mode")
+    )
+    seq0_out = test_once(
+        model=model, loss_func=loss_func, test_dl=test_dl, device=device,
+        base_cfg=seq0_cfg,
+        loss_policy="tail_only",
+        carry_mode="fixed",          # H=0
+        args=args,
+        logger=log,
+    )
+    (test_root / "test_sequential_no_carry.json").write_text(json.dumps(seq0_out, indent=2))
+    if log:
+        log.info("[Test] Sequential-no-carry avg=%.6f", seq0_out["sum_loss"] / max(1, seq0_out["count"]))
+
+    # ---------------- Full-sequence (H = Y-1 per batch, FORCE sequential) -------------
+    fs_cfg = _merge_monthly_mode(
+        rollout_cfg or {}, args, carry_horizon=int(full_sequence_horizon),
+        force_monthly_mode="sequential_months"
+    )
+    log.info(
+        "[eval] full_sequence: cfg.monthly_mode=%s",
+        fs_cfg.get("monthly_mode")
     )
     fs_out = test_once(
         model=model, loss_func=loss_func, test_dl=test_dl, device=device,
@@ -480,14 +510,18 @@ def evaluate_all_modes(
     if log:
         log.info("[Test] Carry-%dy avg=%.6f", int(full_sequence_horizon), fs_out["sum_loss"] / max(1, fs_out["count"]))
 
-    out = {"teacher_forced": tf_out, "carry_full_sequence": fs_out}
+    out = {
+        "teacher_forced": tf_out,
+        "sequential_no_carry": seq0_out,
+        "carry_full_sequence": fs_out,
+    }
 
-    # ---------------- Tail-only (user H>0) ----------------
+    # ---------------- Tail-only (user H>0) (forced sequential by carry) ----------------
     H_user = int((rollout_cfg or {}).get("carry_horizon", 0) or 0)
     tail_cfg = _merge_monthly_mode(rollout_cfg or {}, args, carry_horizon=H_user)
     log.info(
-        "[eval] tail_only(H=%d): cfg.monthly_mode=%s | model.mode(now)=%s",
-        H_user, tail_cfg.get("monthly_mode"), getattr(unwrap(model), "mode", None)
+        "[eval] tail_only(H=%d): cfg.monthly_mode=%s",
+        H_user, tail_cfg.get("monthly_mode")
     )
     if H_user > 0:
         tail_out = test_once(
@@ -504,7 +538,6 @@ def evaluate_all_modes(
         out["carry_tail_only"] = tail_out
 
     return out
-
 
 # =============================================================================
 # optional diagnostics (pairs → CSV/NPZ; scatter plots)
@@ -523,6 +556,7 @@ def run_diagnostics(
     do_teacher_forced: bool = True,
     do_full_sequence: bool = True,
     do_tail_only: bool = True,
+    do_sequential_no_carry: bool = True,
 ) -> None:
     """
     Produces metrics CSVs and scatter grids in PHYSICAL units for selected modes.
@@ -578,20 +612,32 @@ def run_diagnostics(
         )
         if log: log.info("[Plots] Saved → %s", out_img)
 
-    # Teacher-forced
+    # Teacher-forced (force batch)
     if do_teacher_forced:
         tf_pairs = gather_pred_label_pairs(
             model=model, test_dl=test_dl, device=device,
-            rollout_cfg=rollout_cfg, eval_mode="teacher_forced",
+            rollout_cfg={**rollout_cfg, "monthly_mode": "batch_months"},
+            eval_mode="teacher_forced",
             max_points_per_var=subsample_points_pairs,
         )
         _prep_and_write("teacher_forced", tf_pairs)
+
+    # Sequential but H=0
+    if do_sequential_no_carry:
+        seq0_pairs = gather_pred_label_pairs(
+            model=model, test_dl=test_dl, device=device,
+            rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
+            eval_mode="sequential_no_carry",
+            max_points_per_var=subsample_points_pairs,
+        )
+        _prep_and_write("sequential_no_carry", seq0_pairs)
 
     # Full sequence
     if do_full_sequence:
         fs_pairs = gather_pred_label_pairs(
             model=model, test_dl=test_dl, device=device,
-            rollout_cfg=rollout_cfg, eval_mode="full_sequence",
+            rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
+            eval_mode="full_sequence",
             max_points_per_var=subsample_points_pairs,
         )
         _prep_and_write("carry_full_sequence", fs_pairs)
@@ -601,7 +647,8 @@ def run_diagnostics(
     if do_tail_only and H > 0:
         tail_pairs = gather_pred_label_pairs(
             model=model, test_dl=test_dl, device=device,
-            rollout_cfg=rollout_cfg, eval_mode="tail_only",
+            rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
+            eval_mode="tail_only",
             max_points_per_var=subsample_points_pairs,
         )
         _prep_and_write(f"carry_tail_only_H{H}", tail_pairs)

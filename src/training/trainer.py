@@ -1177,16 +1177,16 @@ def test_once(
     cfg = dict(base_cfg or {})
     cfg["loss_policy"] = loss_policy
     cfg["min_target_year"] = int(cfg.get("min_target_year", 1) or 1)
-    user_mode = getattr(args, "model_monthly_mode", "batch_months")
-    # If doing full-sequence or any nonzero carry horizon, force sequential:
-    if (carry_mode == "full_sequence") or (int(cfg.get("carry_horizon", 0) or 0) > 0):
-        cfg["monthly_mode"] = "sequential_months"
-    else:
-        cfg["monthly_mode"] = user_mode
-    if loss_policy == "all_years":
-        cfg["weighting_policy"] = "per_target"
 
-    mb_size_eval = int(args.eval_mb_size)
+    # If caller already set monthly_mode in cfg, keep it; otherwise apply default rule.
+    user_mode = getattr(args, "model_monthly_mode", "batch_months")
+    if "monthly_mode" not in cfg:
+        if (carry_mode == "full_sequence") or (int(cfg.get("carry_horizon", 0) or 0) > 0):
+            cfg["monthly_mode"] = "sequential_months"
+        else:
+            cfg["monthly_mode"] = user_mode
+
+    mb_size_eval = int(args.eval_mb_size) if args is not None else 2048
     
     sum_loss = 0.0
     count    = 0

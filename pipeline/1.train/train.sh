@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:A100:8
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=6
 #SBATCH --mem=400G
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%j.out
@@ -51,20 +51,27 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name batch_months_test \
-  --epochs 20 \
-  --num_workers 4 \
-  --subset_frac 0.01 \
+  --job_name test_carry_2 \
+  --epochs 40 \
+  --num_workers 6 \
   --val_frac 0.5 \
   --test_frac 0.1 \
   --early_stop \
-  --early_stop_patience 5 \
+  --early_stop_patience 10 \
   --early_stop_min_delta 0 \
   --early_stop_warmup_epochs 0 \
-  --block_locs 70 \
+  --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 0 \
-  --eval_mb_size 1470 \
-  --train_mb_size 5880 \
-  --model_monthly_mode sequential_months
+  --carry_years 2 \
+  --eval_mb_size 1960 \
+  --train_mb_size 1960 \
+  --model_monthly_mode sequential_months \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/2025-11-01/3678019_train_carry_1/checkpoints/best.pt \
+  --test_only 
+
+
+# With block_loc 140:
+# 0 carry sequential mode = 3920
+# 1 carry = 3920/2 = 1960 
+# 2 carry = 3920/3 = 1960

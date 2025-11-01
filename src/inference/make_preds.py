@@ -19,7 +19,7 @@ import numpy as np
 import torch
 import xarray as xr
 import zarr
-
+import pandas as pd
 
 # =============================================================================
 # Spec describing variable layout
@@ -61,6 +61,38 @@ def years_in_range(start: str, end: str) -> List[int]:
     sY = int(start[:4])
     eY = int(end[:4])
     return list(range(sY, eY + 1))
+
+def flatten_tile_time_to_batch(X: np.ndarray) -> np.ndarray:
+    """
+    (T, Y, X, C) -> (B, T, C) with B = Y*X, row-major [y,x] order.
+    """
+    T, Y, X, C = X.shape
+    return X.reshape(T, Y * X, C).transpose(1, 0, 2).copy()
+
+def unflatten_batch_to_tile(BTC: np.ndarray, Y: int, X: int) -> np.ndarray:
+    """
+    (B, T, C) -> (T, Y, X, C) where B = Y*X, row-major.
+    """
+    B, T, C = BTC.shape
+    assert B == Y * X, f"B={B} must equal Y*X={Y*X}"
+    return BTC.transpose(1, 0, 2).reshape(T, Y, X, C).copy()
+
+def _expand_monthly_to_daily(m12_y_x_c: np.ndarray) -> np.ndarray:
+    """
+    (12, Y, X, C) -> (365, Y, X, C) by repeating each month over its noleap day-count.
+    """
+    mslices = _month_slices()
+    Y, X, C = m12_y_x_c.shape[1], m12_y_x_c.shape[2], m12_y_x_c.shape[3]
+    out = np.empty((365, Y, X, C), dtype=np.float32)
+    for m, (a, b) in enumerate(mslices):
+        out[a:b, ...] = m12_y_x_c[m][None, ...]
+    return out
+
+def annual_mean_from_daily_year(daily_365_y_x_csub: np.ndarray) -> np.ndarray:
+    """(365, Y, X, C) -> (1, Y, X, C) annual mean."""
+    with np.errstate(invalid="ignore"):
+        m = np.nanmean(daily_365_y_x_csub, axis=0, dtype=np.float32)
+    return m[None, ...].astype("float32")
 
 
 # =============================================================================
@@ -244,6 +276,11 @@ def _extract_dims_and_cfg(ckpt: dict) -> tuple[int, int, dict]:
 
     return int(in_dim), int(out_dim), base_cfg
 
+
+# =============================================================================
+# Forcing offsets (counterfactuals)
+# =============================================================================
+
 def _apply_forcing_offsets_to_sliced(
     dsd_yx: xr.Dataset,
     dsm_yx: xr.Dataset,
@@ -292,6 +329,7 @@ def _apply_forcing_offsets_to_sliced(
     dsm_yx = _apply(dsm_yx, forcing_offsets.get("monthly", {}))
     dsa_yx = _apply(dsa_yx, forcing_offsets.get("annual", {}))
     return dsd_yx, dsm_yx, dsa_yx
+
 
 def _check_dims_or_die(
     *,
@@ -374,32 +412,88 @@ def _build_january_seed_from_prev_year(
 # Input assembly helpers
 # =============================================================================
 
-def _expand_monthly_to_daily(arr_m: np.ndarray) -> np.ndarray:
-    """Expand monthly (12, Y, X, C) → daily (365, Y, X, C) using a no-leap calendar."""
-    days_per_month = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], dtype=int)
-    pieces = [np.repeat(arr_m[m:m + 1, ...], days_per_month[m], axis=0) for m in range(12)]
-    return np.concatenate(pieces, axis=0)
+def _expand_monthly_vars_to_daily(
+    ds_monthly: xr.Dataset,
+    year: int,
+    ys: slice,
+    xs: slice,
+    var_names: List[str],
+) -> Optional[np.ndarray]:
+    """
+    Expand selected monthly vars (12, Y, X, C) to daily (365, Y, X, C) by
+    repeating each month over its day count. Returns None if nothing found.
+    """
+    if not var_names:
+        return None
+    mslices = _month_slices()
+    cols = []
+    for v in var_names:
+        if v not in ds_monthly:
+            continue
+        arr = (
+            ds_monthly[v]
+            .sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
+            .isel(lat=ys, lon=xs)
+            .values
+            .astype("float32")
+        )  # (12, Y, X)
+        cols.append(arr[..., None])  # (12, Y, X, 1)
+    if not cols:
+        return None
+    monthly_12_y_x_c = np.concatenate(cols, axis=-1)  # (12, Y, X, C)
+    Y, X, C = monthly_12_y_x_c.shape[1], monthly_12_y_x_c.shape[2], monthly_12_y_x_c.shape[3]
+    daily = np.empty((365, Y, X, C), dtype=np.float32)
+    for m, (a, b) in enumerate(mslices):
+        daily[a:b, ...] = monthly_12_y_x_c[m, ...][None, ...]
+    return daily
 
 
-def _expand_annual_to_daily(arr_a: np.ndarray) -> np.ndarray:
-    """Expand annual (1, Y, X, C) → daily (365, Y, X, C) by repetition."""
-    return np.repeat(arr_a, 365, axis=0)
+def _expand_annual_vars_to_daily(
+    ds_annual: xr.Dataset,
+    year: int,
+    ys: slice,
+    xs: slice,
+    var_names: List[str],
+) -> Optional[np.ndarray]:
+    """
+    Broadcast selected annual vars (1, Y, X, C) to daily (365, Y, X, C).
+    Returns None if nothing found.
+    """
+    if not var_names:
+        return None
+    cols = []
+    for v in var_names:
+        if v not in ds_annual:
+            continue
+        arr = (
+            ds_annual[v]
+            .sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
+            .isel(lat=ys, lon=xs)
+            .values
+            .astype("float32")
+        )  # (1, Y, X)
+        cols.append(arr[0, ...][..., None])  # (Y, X, 1)
+    if not cols:
+        return None
+    a_1_y_x_c = np.concatenate(cols, axis=-1)  # (Y, X, C)
+    return np.broadcast_to(a_1_y_x_c[None, ...], (365,) + a_1_y_x_c.shape).copy()
 
 
-# =============================================================================
-# Batch reshape utilities
-# =============================================================================
-
-def flatten_tile_time_to_batch(X: np.ndarray) -> np.ndarray:
-    """(365, Y, X, C) → (B, 365, C), where B = Y * X."""
-    T, Y, X_, C = X.shape
-    return X.reshape(T, Y * X_, C).transpose(1, 0, 2).copy()
-
-
-def unflatten_batch_to_tile(pred: np.ndarray, Y: int, X: int) -> np.ndarray:
-    """(B, 365, C) → (365, Y, X, C)."""
-    B, T, C = pred.shape
-    return pred.transpose(1, 0, 2).reshape(T, Y, X, C)
+def _preslice_forcing_for_year_and_tile(
+    forc: Dict[str, xr.Dataset],
+    year: int,
+    ys: slice,
+    xs: slice,
+) -> Tuple[xr.Dataset, xr.Dataset, xr.Dataset]:
+    """
+    Return daily/monthly/annual datasets sliced to this year and tile for faster
+    per-day `.isel(time=...)` operations downstream.
+    """
+    y0, y1 = f"{year}-01-01", f"{year}-12-31"
+    dsd_yx = forc["daily"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
+    dsm_yx = forc["monthly"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
+    dsa_yx = forc["annual"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
+    return dsd_yx, dsm_yx, dsa_yx
 
 
 # =============================================================================
@@ -467,30 +561,6 @@ def write_year_daily(
 
 
 # =============================================================================
-# Stats helpers
-# =============================================================================
-
-def _vector_from_std_dict(names: List[str], std_dict: dict, key_mean="mean", key_std="std") -> tuple[np.ndarray, np.ndarray]:
-    """
-    Build per-channel mean/std vectors matching `names` order from std_dict.
-    Falls back to mean=0, std=1 if missing.
-    """
-    mu: List[float] = []
-    sd: List[float] = []
-    for v in names:
-        stats = std_dict.get(v, {}) or {}
-        m = stats.get(key_mean, 0.0)
-        s = stats.get(key_std, 1.0)
-        if not np.isfinite(s) or s == 0:
-            s = 1.0
-        if not np.isfinite(m):
-            m = 0.0
-        mu.append(float(m))
-        sd.append(float(s))
-    return np.array(mu, dtype=np.float32), np.array(sd, dtype=np.float32)
-
-
-# =============================================================================
 # Aggregation (monthly/annual)
 # =============================================================================
 
@@ -511,12 +581,6 @@ def monthly_mean_from_daily_year(daily_365_y_x_csub: np.ndarray) -> np.ndarray:
         for s, e in _month_slices():
             out.append(np.nanmean(daily_365_y_x_csub[s:e, ...], axis=0, dtype=np.float32))
     return np.stack(out, axis=0).astype("float32")
-
-
-def annual_mean_from_daily_year(daily_365_y_x_csub: np.ndarray) -> np.ndarray:
-    """Compute annual mean of daily series (returns shape (1, Y, X, C))."""
-    with np.errstate(invalid="ignore"):
-        return np.nanmean(daily_365_y_x_csub, axis=0, dtype=np.float32)[None, ...].astype("float32")
 
 
 def write_months_one_year(
@@ -615,297 +679,20 @@ def clear_tile_done(run_root: Path, tile_index: int) -> None:
     if p.exists():
         p.unlink()
 
-
-# =============================================================================
-# Tile window + forcing helpers
-# =============================================================================
-
-def _get_tile_window(tiles_json: dict, tile_index: int) -> Tuple[slice, slice, int, int]:
-    """Return (ys, xs, Y, X) for a tile index from the tiles JSON layout."""
-    y0, y1, x0, x1 = map(int, tiles_json["tiles"][tile_index])
-    ys, xs = slice(y0, y1), slice(x0, x1)
-    Y, X = y1 - y0, x1 - x0
-    return ys, xs, Y, X
-
-
-def _expand_monthly_vars_to_daily(
-    ds_monthly: xr.Dataset,
-    year: int,
-    ys: slice,
-    xs: slice,
-    var_names: List[str],
-) -> Optional[np.ndarray]:
+def _slice_year_range(ds: xr.Dataset, y0: int, y1: int) -> xr.Dataset:
     """
-    Expand selected monthly vars (12, Y, X, C) to daily (365, Y, X, C) by
-    repeating each month over its day count. Returns None if nothing found.
+    Slice a Dataset with MultiIndex time(year, month) by year range.
+    Falls back to datetime slice if no 'year' coord.
     """
-    if not var_names:
-        return None
-    mslices = _month_slices()
-    cols = []
-    for v in var_names:
-        if v not in ds_monthly:
-            continue
-        arr = (
-            ds_monthly[v]
-            .sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
-            .isel(lat=ys, lon=xs)
-            .values
-            .astype("float32")
-        )  # (12, Y, X)
-        cols.append(arr[..., None])  # (12, Y, X, 1)
-    if not cols:
-        return None
-    monthly_12_y_x_c = np.concatenate(cols, axis=-1)  # (12, Y, X, C)
-    Y, X, C = monthly_12_y_x_c.shape[1], monthly_12_y_x_c.shape[2], monthly_12_y_x_c.shape[3]
-    daily = np.empty((365, Y, X, C), dtype=np.float32)
-    for m, (a, b) in enumerate(mslices):
-        daily[a:b, ...] = monthly_12_y_x_c[m, ...][None, ...]
-    return daily
-
-
-def _expand_annual_vars_to_daily(
-    ds_annual: xr.Dataset,
-    year: int,
-    ys: slice,
-    xs: slice,
-    var_names: List[str],
-) -> Optional[np.ndarray]:
-    """
-    Broadcast selected annual vars (1, Y, X, C) to daily (365, Y, X, C).
-    Returns None if nothing found.
-    """
-    if not var_names:
-        return None
-    cols = []
-    for v in var_names:
-        if v not in ds_annual:
-            continue
-        arr = (
-            ds_annual[v]
-            .sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
-            .isel(lat=ys, lon=xs)
-            .values
-            .astype("float32")
-        )  # (1, Y, X)
-        cols.append(arr[0, ...][..., None])  # (Y, X, 1)
-    if not cols:
-        return None
-    a_1_y_x_c = np.concatenate(cols, axis=-1)  # (Y, X, C)
-    return np.broadcast_to(a_1_y_x_c[None, ...], (365,) + a_1_y_x_c.shape).copy()
-
-
-def _compose_pinned_states_year0(
-    spec: InferenceSpec,
-    forc: Dict[str, xr.Dataset],
-    year: int,
-    ys: slice,
-    xs: slice,
-) -> Optional[np.ndarray]:
-    """
-    Build (365, Y, X, Ns) pinned states for Year 0 in STATE_VARS order:
-      - monthly states: expand to daily (12→365)
-      - annual states: broadcast to daily (1→365)
-    Returns None if there are no state vars.
-    """
-    state_names = list(getattr(spec, "STATE_VARS", []))
-    if not state_names:
-        return None
-
-    mon_state_names = [v for v in state_names if v in getattr(spec, "MONTHLY_STATES", [])]
-    ann_state_names = [v for v in state_names if v in getattr(spec, "ANNUAL_STATES", [])]
-
-    parts = []
-    dsm = forc.get("monthly")
-    dsa = forc.get("annual")
-    
-    if mon_state_names and dsm is not None:
-        mon_present = _present_names(dsm, mon_state_names)
-        if mon_present:
-            m_daily = _expand_monthly_vars_to_daily(dsm, year, ys, xs, mon_present)  # (365,Y,X,Cm)
-            if m_daily is not None:
-                parts.append((mon_present, m_daily))
-                
-    if ann_state_names and dsa is not None:
-        ann_present = _present_names(dsa, ann_state_names)
-        if ann_present:
-            a_daily = _expand_annual_vars_to_daily(dsa, year, ys, xs, ann_present)   # (365,Y,X,Ca)
-            if a_daily is not None:
-                parts.append((ann_present, a_daily))
-
-    if not parts:
-        return None
-
-    Y, X = parts[0][1].shape[1], parts[0][1].shape[2]
-    Ns = len(state_names)
-    out = np.empty((365, Y, X, Ns), dtype=np.float32)
-
-    for si, name in enumerate(state_names):
-        src_block = None
-        src_idx = None
-        for names, arr in parts:
-            if name in names:
-                src_block = arr
-                src_idx = names.index(name)
-                break
-        out[..., si] = 0.0 if src_block is None else src_block[..., src_idx]
-
-    return out
-
-
-def _preslice_forcing_for_year_and_tile(
-    forc: Dict[str, xr.Dataset],
-    year: int,
-    ys: slice,
-    xs: slice,
-) -> Tuple[xr.Dataset, xr.Dataset, xr.Dataset]:
-    """
-    Return daily/monthly/annual datasets sliced to this year and tile for faster
-    per-day `.isel(time=...)` operations downstream.
-    """
-    y0, y1 = f"{year}-01-01", f"{year}-12-31"
-    dsd_yx = forc["daily"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
-    dsm_yx = forc["monthly"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
-    dsa_yx = forc["annual"].sel(time=slice(y0, y1)).isel(lat=ys, lon=xs)
-    return dsd_yx, dsm_yx, dsa_yx
-
-
-# =============================================================================
-# Nudging (applied in physical space)
-# =============================================================================
-
-def _apply_nudge_states_in_phys(
-    day_outputs_phys: np.ndarray,   # (Y, X, Cout)
-    spec: InferenceSpec,
-    std_dict: dict,
-    nudge_lambda: float,
-    nudge_mode: str,                # "none" | "original" | "z_shrink" | "z_mirror" | "z_adaptive"
-) -> np.ndarray:
-    """
-    Apply nudging to STATE channels only, in physical units. Returns a modified copy.
-    """
-    if (
-        nudge_mode == "none"
-        or nudge_lambda is None
-        or float(nudge_lambda) == 0.0
-        or not getattr(spec, "STATE_VARS", [])
-    ):
-        return day_outputs_phys
-
-    out = day_outputs_phys.copy()
-    for v in spec.STATE_VARS:
-        k = spec.OUTPUT_ORDER.index(v)
-        stats = std_dict.get(v, {}) or {}
-        mu = float(stats.get("mean", 0.0))
-        sigma = float(stats.get("std", 1.0)) or 1.0
-        if not np.isfinite(sigma) or sigma <= 0:
-            sigma = 1.0
-
-        S = out[..., k]
-
-        if nudge_mode == "original":
-            out[..., k] = nudge_lambda * sigma - (S - mu) / sigma
-
-        elif nudge_mode == "z_shrink":
-            z = (S - mu) / sigma
-            out[..., k] = mu + (1.0 - float(nudge_lambda)) * z * sigma
-
-        elif nudge_mode == "z_mirror":
-            z = (S - mu) / sigma
-            out[..., k] = mu + (float(nudge_lambda) - z) * sigma
-
-        elif nudge_mode == "z_adaptive":
-            z = (S - mu) / sigma
-            abs_z = np.abs(z)
-            lam = float(max(0.0, min(1.0, nudge_lambda)))
-            alpha = (lam * (abs_z / (1.0 + abs_z))).astype(np.float32)  # alpha(|z|)
-            out[..., k] = mu + (1.0 - alpha) * z * sigma
-
-        else:
-            raise ValueError("nudge_mode must be one of: 'none', 'original', 'z_shrink', 'z_mirror', 'z_adaptive'")
-
-    return out
+    if "year" in ds.coords:
+        return ds.sel(year=slice(int(y0), int(y1)))
+    # fallback for datetime monthly
+    return ds.sel(time=slice(f"{int(y0)}-01-01", f"{int(y1)}-12-31"))
 
 
 # =============================================================================
 # Misc helpers
 # =============================================================================
-
-def _compute_nfert_fill_indices(input_names: List[str], nfert: Optional[List[str]]) -> List[int]:
-    """
-    Given the model's input_names (in channel order) and a list of variable names `nfert`,
-    return the column indices to zero-fill. Returns [] if nothing matches.
-    """
-    if not nfert:
-        return []
-    name_to_idx = {name: i for i, name in enumerate(input_names)}
-    return [name_to_idx[n] for n in nfert if n in name_to_idx]
-
-
-def _compose_states_from_forcing_prev_year(
-    spec: InferenceSpec,
-    forc: Dict[str, xr.Dataset],
-    year: int,
-    ys: slice,
-    xs: slice,
-) -> Optional[np.ndarray]:
-    """
-    Build (365, Y, X, Ns) state inputs for year=t using forcing from year=t-1:
-      - Monthly state vars: read 12 months from t-1, expand to daily.
-      - Annual  state vars: read 1 value from t-1, repeat to 365 days.
-    Returns None if there are no state vars.
-    """
-    state_names = list(getattr(spec, "STATE_VARS", []))
-    if not state_names:
-        return None
-
-    y_prev = year - 1
-    mon_state_names = [v for v in state_names if v in getattr(spec, "MONTHLY_STATES", [])]
-    ann_state_names = [v for v in state_names if v in getattr(spec, "ANNUAL_STATES", [])]
-
-    parts = {}
-
-    if mon_state_names:
-        dsm = forc.get("monthly")
-        if dsm is None:
-            raise RuntimeError("Monthly forcing dataset missing but monthly states requested.")
-        mon_present = _present_names(dsm, mon_state_names)
-        if mon_present:
-            m_daily = _expand_monthly_vars_to_daily(dsm, y_prev, ys, xs, mon_present)  # (365,Y,X,Cm)
-            if m_daily is not None:
-                parts["monthly"] = (mon_present, m_daily)
-
-    if ann_state_names:
-        dsa = forc.get("annual")
-        if dsa is None:
-            raise RuntimeError("Annual forcing dataset missing but annual states requested.")
-        ann_present = _present_names(dsa, ann_state_names)
-        if ann_present:
-            a_daily = _expand_annual_vars_to_daily(dsa, y_prev, ys, xs, ann_present)   # (365,Y,X,Ca)
-            if a_daily is not None:
-                parts["annual"] = (ann_present, a_daily)
-
-    if not parts:
-        return None
-
-    Y, X = next(iter(parts.values()))[1].shape[1:3]
-    Ns = len(state_names)
-    out = np.empty((365, Y, X, Ns), dtype=np.float32)
-
-    for si, name in enumerate(state_names):
-        if "monthly" in parts and name in parts["monthly"][0]:
-            arr = parts["monthly"][1]
-            idx = parts["monthly"][0].index(name)
-            out[..., si] = arr[..., idx]
-        elif "annual" in parts and name in parts["annual"][0]:
-            arr = parts["annual"][1]
-            idx = parts["annual"][0].index(name)
-            out[..., si] = arr[..., idx]
-        else:
-            out[..., si] = 0.0
-
-    return out
-
 
 def _build_tl_seed_daily_from_year(
     *,
@@ -942,6 +729,204 @@ def _build_tl_seed_daily_from_year(
 
 
 # =============================================================================
+# State template composers  (Y/X fix applied here)
+# =============================================================================
+
+def _compose_pinned_states_year0(
+    spec: InferenceSpec,
+    forc: Dict[str, xr.Dataset],
+    year: int,
+    ys: slice,
+    xs: slice,
+) -> Optional[np.ndarray]:
+    """
+    Build (365, Y, X, Ns) in STATE_VARS order for the *current* year by pinning
+    states to the forcing:
+      - MONTHLY_STATES: take this year's monthly series (12,Y,X) and expand to daily
+      - ANNUAL_STATES : take this year's annual value (1,Y,X) and broadcast daily
+    Missing variables are zero-filled.
+    """
+    Ns = len(spec.STATE_VARS)
+    if Ns == 0:
+        return None
+
+    # FIX: Y from ys, X from xs (previously swapped)
+    Y = ys.stop - ys.start
+    X = xs.stop - xs.start
+
+    out = np.zeros((365, Y, X, Ns), dtype=np.float32)
+
+    # Monthly piece
+    if spec.MONTHLY_STATES:
+        keep_m = [v for v in spec.MONTHLY_STATES if v in forc["monthly"].data_vars]
+        if keep_m:
+            m_daily = _expand_monthly_vars_to_daily(
+                forc["monthly"], year, ys, xs, keep_m
+            )  # (365, Y, X, Cm)
+            if m_daily is not None:
+                for j, name in enumerate(keep_m):
+                    si = spec.STATE_VARS.index(name)
+                    out[..., si] = m_daily[..., j]
+
+    # Annual piece
+    if spec.ANNUAL_STATES:
+        keep_a = [v for v in spec.ANNUAL_STATES if v in forc["annual"].data_vars]
+        if keep_a:
+            a_daily = _expand_annual_vars_to_daily(
+                forc["annual"], year, ys, xs, keep_a
+            )  # (365, Y, X, Ca)
+            if a_daily is not None:
+                for j, name in enumerate(keep_a):
+                    si = spec.STATE_VARS.index(name)
+                    out[..., si] = a_daily[..., j]
+
+    return out
+
+
+def _compose_states_from_forcing_prev_year(
+    spec: InferenceSpec,
+    forc: Dict[str, xr.Dataset],
+    year: int,
+    ys: slice,
+    xs: slice,
+) -> Optional[np.ndarray]:
+    """
+    As above, but uses year-1 forcing to seed the new year.
+      - MONTHLY_STATES: expand monthly series from (t-1) to daily
+      - ANNUAL_STATES: broadcast the (t-1) annual value.
+    """
+    if not getattr(spec, "STATE_VARS", []):
+        return None
+
+    y_prev = int(year) - 1
+    if y_prev < 0:
+        return None
+
+    Ns = len(spec.STATE_VARS)
+    # FIX: Y from ys, X from xs (previously swapped)
+    Y = ys.stop - ys.start
+    X = xs.stop - xs.start
+
+    out = np.zeros((365, Y, X, Ns), dtype=np.float32)
+
+    # Monthly prev-year
+    if spec.MONTHLY_STATES:
+        keep_m = [v for v in spec.MONTHLY_STATES if v in forc["monthly"].data_vars]
+        if keep_m:
+            m_daily = _expand_monthly_vars_to_daily(
+                forc["monthly"], y_prev, ys, xs, keep_m
+            )
+            if m_daily is not None:
+                for j, name in enumerate(keep_m):
+                    si = spec.STATE_VARS.index(name)
+                    out[..., si] = m_daily[..., j]
+
+    # Annual prev-year
+    if spec.ANNUAL_STATES:
+        keep_a = [v for v in spec.ANNUAL_STATES if v in forc["annual"].data_vars]
+        if keep_a:
+            a_daily = _expand_annual_vars_to_daily(
+                forc["annual"], y_prev, ys, xs, keep_a
+            )
+            if a_daily is not None:
+                for j, name in enumerate(keep_a):
+                    si = spec.STATE_VARS.index(name)
+                    out[..., si] = a_daily[..., j]
+
+    return out
+
+
+# =============================================================================
+# Nudging (PHYSICAL space) — restored original semantics, STATES ONLY
+# =============================================================================
+
+def _apply_nudge_states_in_phys(
+    day_outputs_phys: np.ndarray,   # (Y, X, Cout)
+    spec: InferenceSpec,
+    std_dict: dict,
+    nudge_lambda: float,
+    nudge_mode: str,                # "none" | "original" | "z_shrink" | "z_mirror" | "z_adaptive"
+) -> np.ndarray:
+    """
+    Apply nudging to STATE channels only, in physical units. Returns a modified copy.
+
+    Modes (exactly as in your original):
+      - "original": out[..., k] = mu + (nudge_lambda * sigma - (S - mu) / sigma) * sigma
+      - "z_shrink": z -> (1 - λ) * z
+      - "z_mirror": z -> λ * clip(z,[-3,3]) + (1-λ) * (sign(z)*3)   (reflect toward ±3 then shrink)
+      - "z_adaptive": shrink inside ±3; mirror outside
+    """
+    if (
+        nudge_mode == "none"
+        or nudge_lambda is None
+        or float(nudge_lambda) == 0.0
+        or not getattr(spec, "STATE_VARS", [])
+    ):
+        return day_outputs_phys
+
+    out = day_outputs_phys.copy()
+
+    for v in spec.STATE_VARS:
+        # output channel index for this state
+        k = spec.OUTPUT_ORDER.index(v)
+        stats = std_dict.get(v, {}) or {}
+        mu = float(stats.get("mean", 0.0))
+        sigma = float(stats.get("std", 1.0)) or 1.0
+        if not np.isfinite(sigma) or sigma <= 0:
+            sigma = 1.0
+
+        S = out[..., k]
+
+        if nudge_mode == "original":
+            # Restore the original formula exactly
+            out[..., k] = mu + (float(nudge_lambda) * sigma - (S - mu) / sigma) * sigma
+
+        elif nudge_mode == "z_shrink":
+            z = (S - mu) / sigma
+            out[..., k] = mu + (1.0 - float(nudge_lambda)) * z * sigma
+
+        elif nudge_mode == "z_mirror":
+            z = (S - mu) / sigma
+            z_clip = np.clip(z, -3.0, 3.0)
+            z_ref = np.where(np.abs(z) > 3.0, 3.0 * np.sign(z), z)
+            z_new = float(nudge_lambda) * z_clip + (1.0 - float(nudge_lambda)) * z_ref
+            out[..., k] = mu + z_new * sigma
+
+        elif nudge_mode == "z_adaptive":
+            z = (S - mu) / sigma
+            abs_z = np.abs(z)
+            lam = float(max(0.0, min(1.0, nudge_lambda)))
+            inside = abs_z <= 3.0
+            z_new = np.where(inside, (1.0 - lam) * z, np.sign(z) * (3.0 - (3.0 - abs_z) * (1.0 - lam)))
+            out[..., k] = mu + z_new * sigma
+
+        else:
+            raise ValueError("nudge_mode must be one of: 'none', 'original', 'z_shrink', 'z_mirror', 'z_adaptive'")
+
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Tiny local replacement for _vector_from_std_dict (exported)
+# ---------------------------------------------------------------------------
+def mu_sd_from_std(names: List[str], std_dict: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Build mean/std vectors in `names` order from std_dict; fall back to 0/1."""
+    mu = []
+    sd = []
+    for v in names:
+        s = std_dict.get(v, {}) or {}
+        m = s.get("mean", 0.0)
+        st = s.get("std", 1.0)
+        if not np.isfinite(m):
+            m = 0.0
+        if not np.isfinite(st) or float(st) == 0.0:
+            st = 1.0
+        mu.append(float(m))
+        sd.append(float(st))
+    return np.asarray(mu, dtype=np.float32), np.asarray(sd, dtype=np.float32)
+
+
+# =============================================================================
 # Main per-tile processing
 # =============================================================================
 
@@ -973,7 +958,7 @@ def process_one_tile(
     carry_forward_states: bool = True,
     sequential_months: bool = False,
     tl_seed_cfg: Optional[dict] = None,
-    forcing_offsets: Optional[Dict[str, Dict[str, float]]] = None,  
+    forcing_offsets: Optional[Dict[str, Dict[str, dict]]] = None, 
 ) -> None:
     """
     Tile-wise rollout (no land masking), vectorized per year:
@@ -1022,7 +1007,7 @@ def process_one_tile(
         # Pre-slice forcing to this year & tile (fast indexed reads)
         dsd_yx, dsm_yx, dsa_yx = _preslice_forcing_for_year_and_tile(forc, year, ys, xs)
         
-        # Apply any physical offsets to the forcing (e.g., co2 += 100) <<<
+        # Apply any physical offsets to the forcing (e.g., co2 += 100)
         dsd_yx, dsm_yx, dsa_yx = _apply_forcing_offsets_to_sliced(
             dsd_yx, dsm_yx, dsa_yx, forcing_offsets
         )
@@ -1316,16 +1301,49 @@ def _export_one_var_nc(ds: xr.Dataset, var_in: str, var_out: str, out_path: Path
     sub.to_netcdf(out_path)
 
 
-def _iter_vars_to_export(ds: xr.Dataset, only_vars: Optional[List[str]]) -> List[str]:
+# ---- Monthly export policy helpers ----
+
+def _annual_mean_then_repeat_monthly(ds: xr.Dataset) -> xr.Dataset:
     """
-    Decide which variables to export:
-      - if only_vars is None: all ds.data_vars
-      - else: intersection (and keep order from only_vars)
+    Convert a monthly Dataset to a monthly-like series that is flat within each year:
+      - MultiIndex (year, month): groupby('year').mean → expand month → stack back.
+      - Datetime monthly: resample to annual mean, then forward-fill to monthly stamps.
     """
-    if only_vars is None:
-        return list(ds.data_vars)
-    present = set(ds.data_vars)
-    return [v for v in only_vars if v in present]
+    if "time" not in ds.dims:
+        raise ValueError("Dataset must have a 'time' dimension")
+
+    idx = ds.indexes.get("time", None)
+    has_year = ("year" in ds.coords)
+    has_month = ("month" in ds.coords)
+    is_multi = isinstance(idx, pd.MultiIndex) and has_year and has_month
+
+    var_names = list(ds.data_vars)
+
+    if is_multi:
+        annual = ds.groupby("year").mean(dim="time", skipna=True)
+        months = xr.DataArray(np.arange(1, 13, dtype=int), dims=("month",), name="month")
+        repeated = annual.expand_dims(month=months)  # dims: year, month, ...
+        out = repeated.stack(time=("year", "month")).transpose("time", ...)
+        out = out.set_index(time=["year", "month"])
+        return out[var_names]
+
+    # Fallback: datetime-like monthly
+    if np.issubdtype(ds.indexes["time"].dtype, np.datetime64):
+        annual = ds.resample(time="AS").mean(skipna=True)
+        return annual.reindex(time=ds.time, method="ffill")[var_names]
+
+    raise ValueError("Unsupported time coordinate for export; expected MultiIndex(year,month) or datetime monthly.")
+
+
+def _should_treat_as_annual(var_name: str, annual_vars: Optional[List[str]]) -> bool:
+    """
+    Decide if a variable should be exported as 'annual mean then repeated'.
+    If `annual_vars` is None, use a conservative default set of common annual states.
+    """
+    default_annual = {"cVeg", "cSoil", "cLitter", "cTotal"}
+    if annual_vars is None:
+        return var_name in default_annual
+    return var_name in set(annual_vars)
 
 
 def export_monthly_netcdf_for_scenario(
@@ -1334,14 +1352,35 @@ def export_monthly_netcdf_for_scenario(
     nc_root: Path,
     monthly_zarr: Path,
     overwrite: bool = False,
+    annual_vars: Optional[List[str]] = None,
 ) -> None:
+    """
+    Export monthly NetCDFs from monthly_zarr for a scenario.
+
+    Policy:
+      - For variables listed in `annual_vars`, compute the annual mean per year and
+        repeat 12× (flat within year).
+      - For all other variables, export the stored monthly means directly.
+
+    If `annual_vars` is None, a conservative default set is used: {"cVeg","cSoil","cLitter","cTotal"}.
+
+    Output layout:
+      <nc_root>/full/<var>.nc
+      <nc_root>/test/early/<var>.nc   (1901-01-01..1918-12-31 if available)
+      <nc_root>/test/late/<var>.nc    (2018-01-01..2023-12-31 if available)
+
+    Aliases:
+      lai_avh15c1 -> lai
+      lai_modis   -> lai
+      cTotal_monthly -> cTotal
+    """
     print(f"[EXPORT] Opening monthly.zarr for scenario {scenario}: {monthly_zarr}")
     ds = xr.open_zarr(monthly_zarr, consolidated=True)
 
     # Output dirs
-    full_dir = nc_root / "full"
+    full_dir  = nc_root / "full"
     early_dir = nc_root / "test" / "early"
-    late_dir = nc_root / "test" / "late"
+    late_dir  = nc_root / "test" / "late"
     for d in (full_dir, early_dir, late_dir):
         _ensure_dir(d)
 
@@ -1354,18 +1393,15 @@ def export_monthly_netcdf_for_scenario(
         "lai": "lai",
         "lai_avh15c1": "lai",
         "lai_modis": "lai",
-        # keep your special cTotal rename too:
         "cTotal_monthly": "cTotal",
     }
 
-    # Keep track so we don’t export 'lai' twice if multiple sources exist
     written_as: set[str] = set()
 
-    # Iterate variables in the monthly Zarr in a stable order
     for var in sorted(ds.data_vars):
         var_out = alias.get(var, var)
 
-        # Skip duplicate target names (e.g., if lai_avh15c1 and lai both present)
+        # Avoid duplicate targets (e.g., multiple LAI sources)
         if var_out in written_as and var_out == "lai":
             print(f"[EXPORT] Skipping '{var}' → 'lai' (already written from another source)")
             continue
@@ -1379,22 +1415,31 @@ def export_monthly_netcdf_for_scenario(
             written_as.add(var_out)
             continue
 
-        # Full series
-        _export_one_var_nc(ds, var, var_out, p_full)
+        def _maybe_transform(ds_sel: xr.Dataset) -> xr.Dataset:
+            return _annual_mean_then_repeat_monthly(ds_sel) if _should_treat_as_annual(var_out, annual_vars) else ds_sel
 
-        # Early subset
+        # -------- Full series --------
+        try:
+            sub_full = _maybe_transform(ds[[var]].rename({var: var_out}))
+            _export_one_var_nc(sub_full, var_out, var_out, p_full)
+        except Exception as e:
+            print(f"[EXPORT][WARN] Full export failed for {var}: {e}")
+
+        # -------- Early subset --------
         try:
             ds_early = ds.sel(time=early_slice)
             if ds_early.time.size:
-                _export_one_var_nc(ds_early, var, var_out, p_early)
+                sub_early = _maybe_transform(ds_early[[var]].rename({var: var_out}))
+                _export_one_var_nc(sub_early, var_out, var_out, p_early)
         except Exception as e:
             print(f"[EXPORT][WARN] Early subset failed for {var}: {e}")
 
-        # Late subset
+        # -------- Late subset --------
         try:
             ds_late = ds.sel(time=late_slice)
             if ds_late.time.size:
-                _export_one_var_nc(ds_late, var, var_out, p_late)
+                sub_late = _maybe_transform(ds_late[[var]].rename({var: var_out}))
+                _export_one_var_nc(sub_late, var_out, var_out, p_late)
         except Exception as e:
             print(f"[EXPORT][WARN] Late subset failed for {var}: {e}")
 
@@ -1411,14 +1456,22 @@ def export_netcdf_sharded(
     shard_id: int,
     overwrite: bool = False,
     var_order: Optional[list[str]] = None,
+    annual_vars: Optional[List[str]] = None,
 ):
     """
     Export per-variable NetCDFs from monthly.zarr, splitting work across shards.
 
-    Rules:
-      - Alias lai_* -> 'lai'; cTotal_monthly -> 'cTotal'
-      - Deduplicate by final *target* name (first occurrence wins)
-      - Deterministic sharding by index in the final ordered target list
+    Policy:
+      - For each source variable:
+          * if in `annual_vars`: compute annual means and repeat 12× (flat within year)
+          * else: export monthly means as stored.
+      - Apply aliases:
+          lai_avh15c1 -> lai
+          lai_modis   -> lai
+          cTotal_monthly -> cTotal
+      - Deduplicate by final *target* name (first occurrence wins).
+      - Deterministic sharding by index in the final target list:
+          (index % shards) == shard_id
       - Write to:
           <nc_root>/full/<var>.nc
           <nc_root>/test/early/<var>.nc   (1901-01-01..1918-12-31, if present)
@@ -1442,18 +1495,15 @@ def export_netcdf_sharded(
     print(f"[EXPORT][{shard_id}/{shards}] Opening {monthly_zarr}")
     ds = xr.open_zarr(monthly_zarr, consolidated=True)
 
-    # Discover variables present in store
     present = set(ds.data_vars)
 
-    # Build an ordered list of source variables to consider:
-    # - If var_order provided: keep that order, filtered to those actually present
-    # - Else: use store vars in sorted order (stable)
+    # Preserve caller-provided order if given, else sorted store vars
     if var_order is not None:
         sources_ordered = [v for v in var_order if v in present]
     else:
         sources_ordered = sorted(present)
 
-    # Map source -> target with de-duplication on target (first source wins)
+    # Map source->target with de-duplication on target name (first wins)
     pairs: list[tuple[str, str]] = []
     seen_targets: set[str] = set()
     for src in sources_ordered:
@@ -1463,13 +1513,9 @@ def export_netcdf_sharded(
         seen_targets.add(tgt)
         pairs.append((src, tgt))
 
-    # Shard deterministically by *index* (not hash) in this final target list
-    # Each shard gets targets where (index % shards) == shard_id
+    # Deterministic sharding by target index
     my_pairs = [(src, tgt) for i, (src, tgt) in enumerate(pairs) if (i % shards) == shard_id]
     print(f"[EXPORT][{shard_id}/{shards}] Assigned {len(my_pairs)} targets: {[t for _, t in my_pairs]}")
-
-    early_slice = slice("1901-01-01", "1918-12-31")
-    late_slice  = slice("2018-01-01", "2023-12-31")
 
     def _maybe_write(path: Path, subset: xr.Dataset) -> bool:
         if path.exists() and not overwrite:
@@ -1477,26 +1523,41 @@ def export_netcdf_sharded(
         subset.to_netcdf(path)
         return True
 
+    early_slice = slice("1901-01-01", "1918-12-31")
+    late_slice  = slice("2018-01-01", "2023-12-31")
+
     n_written = 0
     for v_in, v_out in my_pairs:
         print(f"[EXPORT][{shard_id}/{shards}] {v_in} -> {v_out}")
 
+        # Select and rename
         sel = ds[[v_in]].rename({v_in: v_out})
 
+        # Optional: attach attrs if provided
+        if "ATTRS" in globals() and isinstance(ATTRS, dict) and v_out in ATTRS:
+            try:
+                sel[v_out].attrs.update(ATTRS[v_out])
+            except Exception:
+                pass
+
+        # Transform only for annual vars
+        if _should_treat_as_annual(v_out, annual_vars):
+            sel = _annual_mean_then_repeat_monthly(sel)
+
+        # write full series (skip if exists unless overwrite=True)
         wrote_any = False
         wrote_any |= _maybe_write(nc_root / "full" / f"{v_out}.nc", sel)
 
-        # early split
+        # early / late ranges by YEAR (handles MultiIndex cleanly)
         try:
-            se = sel.sel(time=early_slice)
+            se = _slice_year_range(sel, 1901, 1918)
             if getattr(se, "time", None) is not None and se.time.size:
                 wrote_any |= _maybe_write(nc_root / "test" / "early" / f"{v_out}.nc", se)
         except Exception as e:
             print(f"[EXPORT][WARN] early subset failed for {v_in}: {e}")
 
-        # late split
         try:
-            sl = sel.sel(time=late_slice)
+            sl = _slice_year_range(sel, 2018, 2023)
             if getattr(sl, "time", None) is not None and sl.time.size:
                 wrote_any |= _maybe_write(nc_root / "test" / "late" / f"{v_out}.nc", sl)
         except Exception as e:
@@ -1527,7 +1588,7 @@ __all__ = [
     # writing & carry
     "write_year_daily",
     # stats
-    "_vector_from_std_dict",
+    "mu_sd_from_std",
     # aggregation
     "monthly_mean_from_daily_year",
     "write_months_one_year",
@@ -1538,4 +1599,5 @@ __all__ = [
     "process_one_tile",
     # exporter
     "export_monthly_netcdf_for_scenario",
+    "export_netcdf_sharded",
 ]
