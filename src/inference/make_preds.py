@@ -1306,19 +1306,20 @@ def _export_one_var_nc(ds: xr.Dataset, var_in: str, var_out: str, out_path: Path
 def _annual_mean_then_repeat_monthly(ds: xr.Dataset) -> xr.Dataset:
     """
     Convert a monthly Dataset to a monthly-like series that is flat within each year:
-      - MultiIndex (year, month): groupby('year').mean → expand month → stack back.
-      - Datetime monthly: resample to annual mean, then forward-fill to monthly stamps.
+      - If MultiIndex (year, month): groupby('year').mean → expand months → restack.
+      - Otherwise (datetime64 or CFTimeIndex monthly): group by time.year, take the annual
+        mean, then select per-original time.year and realign to the original monthly index.
     """
     if "time" not in ds.dims:
         raise ValueError("Dataset must have a 'time' dimension")
 
+    var_names = list(ds.data_vars)
+
+    # Case 1: MultiIndex (year, month)
     idx = ds.indexes.get("time", None)
     has_year = ("year" in ds.coords)
     has_month = ("month" in ds.coords)
-    is_multi = isinstance(idx, pd.MultiIndex) and has_year and has_month
-
-    var_names = list(ds.data_vars)
-
+    is_multi = (idx is not None) and isinstance(idx, pd.MultiIndex) and has_year and has_month
     if is_multi:
         annual = ds.groupby("year").mean(dim="time", skipna=True)
         months = xr.DataArray(np.arange(1, 13, dtype=int), dims=("month",), name="month")
@@ -1327,12 +1328,28 @@ def _annual_mean_then_repeat_monthly(ds: xr.Dataset) -> xr.Dataset:
         out = out.set_index(time=["year", "month"])
         return out[var_names]
 
-    # Fallback: datetime-like monthly
-    if np.issubdtype(ds.indexes["time"].dtype, np.datetime64):
-        annual = ds.resample(time="AS").mean(skipna=True)
-        return annual.reindex(time=ds.time, method="ffill")[var_names]
+    # Case 2: datetime64 or CFTimeIndex monthly
+    # Use groupby('time.year') which works for both numpy datetime64 and cftime indices.
+    try:
+        years = ds["time"].dt.year  # DataArray of per-timestamp years
+        annual = ds.groupby("time.year").mean(skipna=True)  # dims: year, ...
+        # Re-expand to the original monthly stamps by selecting each row's year
+        repeated = annual.sel(year=years)
+        # Align dims/coords back to the original "time"
+        repeated = repeated.rename({"year": "time"}).assign_coords(time=ds["time"])
+        return repeated[var_names]
+    except Exception as e:
+        # As a last resort, try resample which also supports CFTimeIndex in modern xarray
+        try:
+            annual = ds.resample(time="AS").mean(skipna=True)
+            return annual.reindex(time=ds.time, method="ffill")[var_names]
+        except Exception:
+            pass
 
-    raise ValueError("Unsupported time coordinate for export; expected MultiIndex(year,month) or datetime monthly.")
+    raise ValueError(
+        "Unsupported time coordinate for export; expected MultiIndex(year,month), "
+        "datetime64 monthly, or cftime monthly."
+    )
 
 
 def _should_treat_as_annual(var_name: str, annual_vars: Optional[List[str]]) -> bool:

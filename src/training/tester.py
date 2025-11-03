@@ -622,8 +622,12 @@ def run_diagnostics(
         )
         _prep_and_write("teacher_forced", tf_pairs)
 
-    # Sequential but H=0
-    if do_sequential_no_carry:
+    # Decide based on user carry horizon and user monthly_mode
+    H = int((rollout_cfg or {}).get("carry_horizon", 0) or 0)
+    user_mode = str((rollout_cfg or {}).get("monthly_mode", "batch_months"))
+
+    # Sequential but H=0 — only if the USER selected sequential mode
+    if do_sequential_no_carry and H == 0 and user_mode == "sequential_months":
         seq0_pairs = gather_pred_label_pairs(
             model=model, test_dl=test_dl, device=device,
             rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
@@ -631,6 +635,21 @@ def run_diagnostics(
             max_points_per_var=subsample_points_pairs,
         )
         _prep_and_write("sequential_no_carry", seq0_pairs)
+    elif do_sequential_no_carry and H == 0 and user_mode != "sequential_months":
+        if log: log.info("[Diagnostics] Skipping sequential_no_carry: user monthly_mode is %s", user_mode)
+        
+    
+    # Tail-only (only if H>0)
+    if do_tail_only and H > 0:
+        tail_pairs = gather_pred_label_pairs(
+            model=model, test_dl=test_dl, device=device,
+            rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
+            eval_mode="tail_only",
+            max_points_per_var=subsample_points_pairs,
+        )
+        _prep_and_write(f"carry_tail_only_H{H}", tail_pairs)
+    elif do_tail_only and H == 0:
+        if log: log.info("[Diagnostics] Skipping tail_only: carry_horizon (H) is 0")
 
     # Full sequence
     if do_full_sequence:
@@ -641,14 +660,3 @@ def run_diagnostics(
             max_points_per_var=subsample_points_pairs,
         )
         _prep_and_write("carry_full_sequence", fs_pairs)
-
-    # Tail-only (only meaningful if H>0)
-    H = int(rollout_cfg.get("carry_horizon", 0) or 0)
-    if do_tail_only and H > 0:
-        tail_pairs = gather_pred_label_pairs(
-            model=model, test_dl=test_dl, device=device,
-            rollout_cfg={**rollout_cfg, "monthly_mode": "sequential_months"},
-            eval_mode="tail_only",
-            max_points_per_var=subsample_points_pairs,
-        )
-        _prep_and_write(f"carry_tail_only_H{H}", tail_pairs)

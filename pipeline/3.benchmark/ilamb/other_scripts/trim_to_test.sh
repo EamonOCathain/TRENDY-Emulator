@@ -27,6 +27,6 @@ conda activate base
 # test_subset and time_slice cannot both be activated
 
 python -u trim_to_test.py \
-  --in_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/emulators_vs_ensmean/global/MODELS \
-  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/a_pipeline/3.benchmark/ilamb/emulators_vs_ensmean/test/MODELS \
+  --in_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ensmean_files/S3 \
+  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ensmean_files/S3_trends \
 

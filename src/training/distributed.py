@@ -77,3 +77,61 @@ def ddp_mean_scalar(x: float, device: torch.device) -> float:
     t = torch.tensor([x], dtype=torch.float64, device=device)
     dist.all_reduce(t, op=dist.ReduceOp.SUM)
     return t.item() / dist.get_world_size()
+  
+def cleanup_distrib_and_cuda(ddp: bool):
+    """
+    Best-effort shutdown to avoid rank hangs at script end.
+    Must be called by *every* rank (not just rank 0).
+    """
+    # Drain CUDA work (safe even on CPU-only)
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+    except Exception:
+        pass
+
+    # Try to close any dl workers (best-effort; they may be already gone)
+    try:
+        for dl in ("train_dl", "valid_dl", "test_dl"):
+            if dl in globals():
+                obj = globals()[dl]
+                # Torch DataLoader cleanup knobs (no-op if not available)
+                try:
+                    if hasattr(obj, "_iterator") and obj._iterator is not None:
+                        obj._iterator._shutdown_workers()  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # Last barrier so all ranks reach the same point
+    try:
+        if ddp and dist.is_available() and dist.is_initialized():
+            # Using a barrier without device_ids is safer across backends
+            dist.barrier()
+    except Exception:
+        pass
+
+    # Destroy process group
+    try:
+        if ddp and dist.is_available() and dist.is_initialized():
+            dist.destroy_process_group()
+    except Exception:
+        pass
+
+    # Free big tensors/models and empty CUDA cache
+    try:
+        if "model" in globals():
+            del globals()["model"]
+        if "real_model" in globals():
+            del globals()["real_model"]
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+    # Force GC to break ref cycles from workers/queues
+    try:
+        gc.collect()
+    except Exception:
+        pass

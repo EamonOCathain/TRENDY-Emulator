@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=predict
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=work
+#SBATCH --partition=big
 #SBATCH --mem=24G
-#SBATCH --array=0-14
+#SBATCH --array=0-5
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
@@ -11,9 +11,9 @@
 # #SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=base_model/no_carry_S3}"
+: "${JOB_NAME:=base_model/no_carry_S0}"
 : "${CARRY_FORWARD_STATES=False}"
-: "${SCENARIO:=S3}"
+: "${SCENARIO:=S0}"
 # Device
 : "${DEVICE:=cpu}"
 

@@ -8,6 +8,8 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+import atexit
+import gc
 
 # -----------------------------------------------------------------------------#
 # Project paths and environment bootstrap
@@ -30,7 +32,7 @@ from src.dataset.dataset import base, get_subset
 from src.training.checkpoints import save_cb, extract_state_dict_for_foundation
 from src.training.history import History
 from src.training.loss import build_loss_fn
-from src.training.distributed import init_distributed
+from src.training.distributed import init_distributed, cleanup_distrib_and_cuda
 from src.training.logging import save_args, setup_logging
 from src.training.scheduler import build_cosine_wr_scheduler
 from src.training.stats import get_split_stats, set_seed, load_standardisation_only
@@ -40,7 +42,7 @@ from src.training.tester import (
     run_diagnostics,
 )
 from src.training.varschema import VarSchema
-
+from src.training.checkpoints import save_cb, extract_state_dict_for_foundation, save_checkpoint
 # -----------------------------------------------------------------------------#
 # Global run configuration
 # -----------------------------------------------------------------------------#
@@ -179,6 +181,9 @@ if args.resume and args.use_foundation:
 
 if args.train_only and args.test_only:
     raise SystemExit("Cannot use --train_only and --test_only together.")
+
+# ensure cleanup runs even if something sys.exit()'s later
+atexit.register(lambda: cleanup_distrib_and_cuda(ddp=dist.is_available() and dist.is_initialized()))
 
 
 def _check_frac(name, val):
@@ -827,6 +832,7 @@ def main():
                     with open(run_dir / "info" / "val_only_metrics.txt", "w") as f:
                         f.write(f"val_loss={val_loss}\n")
                     log.info(f"Validation-only complete — val_loss={val_loss:.6f}")
+                    cleanup_distrib_and_cuda(ddp=ddp)  # Clean up the ddp
                 return
 
             if resume_pending:
@@ -961,6 +967,9 @@ def main():
                     do_full_sequence=True,
                     do_tail_only=True,
                 ), "run_diagnostics")
+                
+        # Cleanup ddp
+        _cleanup_distrib_and_cuda(ddp=ddp)
 
     if is_main:
         log.info("Succesfully completed training: %s", run_dir)
