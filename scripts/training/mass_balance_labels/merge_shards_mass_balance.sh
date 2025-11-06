@@ -15,6 +15,6 @@ source /User/homes/ecathain/miniconda3/etc/profile.d/conda.sh
 conda activate base
 
 python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/merge_shards_mass_balance.py \
-  --in_dir  /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/shards \
-  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/plots \
+  --in_dir  /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/MAE_results/shards \
+  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/MAE_results/plots \
   --splits train

@@ -296,8 +296,11 @@ def main(argv=None):
     p.add_argument("--daily_files_mode", choices=["annual", "decade", "twenty"],
                    default=os.getenv("DAILY_FILES_MODE", "annual"),
                    help="Which daily source layout to read (or set env DAILY_FILES_MODE).")
+    # --- Optional subset filter (train / val / test) ---
+    p.add_argument("--subset", choices=["train", "val", "test"], help="Limit tasks to a single subset")
     args = p.parse_args(argv)
-
+    subset = args.subset
+    
     INIT_ONLY = os.getenv("INIT_ONLY") == "1"
     FINALIZE  = os.getenv("FINALIZE") == "1"
 
@@ -307,9 +310,11 @@ def main(argv=None):
         for code in (0, 1, 2)
     }
     
-    # --- Build ALL task combos (these were "the 21") ---
+    # --- Build ALL task combos (the original 21, optionally filtered) ---
     all_tasks: List[Tuple[str, int, str, str]] = []
     for tensor_type, mask_code, period_keys in SET_SPECS:
+        if subset and tensor_type != subset:
+            continue
         for period_key in period_keys:
             for time_res in TIME_RESES:
                 all_tasks.append((tensor_type, mask_code, period_key, time_res))

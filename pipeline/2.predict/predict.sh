@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=predict
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=big
+#SBATCH --partition=work
 #SBATCH --mem=24G
-#SBATCH --array=0-5
+#SBATCH --array=0-49
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
@@ -11,29 +11,27 @@
 # #SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=base_model/no_carry_S0}"
-: "${CARRY_FORWARD_STATES=False}"
-: "${SCENARIO:=S0}"
+: "${JOB_NAME:=carry_months_in_}"
+: "${CARRY_FORWARD_STATES=True}"
+: "${SEQUENTIAL_MONTHS=True}"
+: "${SCENARIO:=S3}"
 # Device
 : "${DEVICE:=cpu}"
+: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/carry_distances/MODELS}"
 
 # Weights
-: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt}"
+: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/sequential_months/checkpoints/best.pt}"
 
 # Carrying and Nudging
-: "${SEQUENTIAL_MONTHS=False}"
 : "${NUDGE_LAMBDA:=0}" 
 : "${NUDGE_MODE=none}"
 
 # Params You Rarely Change
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/carry}"
 
 : "${STORE_PERIOD:=1901-01-01:2023-12-31}"
 : "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
-
-# Scenario
-
 
 # ---- Env ----
 module purge
@@ -60,8 +58,9 @@ python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipel
   --nudge_mode "${NUDGE_MODE}" \
   --carry_forward_states "${CARRY_FORWARD_STATES}" \
   --sequential_months "${SEQUENTIAL_MONTHS}" \
-  --export_nc_only \
   --exclude_vars "${EXCLUDE_VARS}" \
-  --device "${DEVICE}" 
+  --device "${DEVICE}" \
+  --ilamb_dir_global "${ILAMB_DIR_GLOBAL}"
+
 # --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
 #   --overwrite_data

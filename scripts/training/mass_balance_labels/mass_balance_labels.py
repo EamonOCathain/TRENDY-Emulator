@@ -239,7 +239,7 @@ def main():
     if args.split == "all":
         train_dl, val_dl, test_dl = get_data(
             ds_dict["train"], ds_dict["val"], ds_dict["test"],
-            bs=args.batch_size, num_workers=args.num_workers, ddp=False
+            batch_size=args.batch_size, num_workers=args.num_workers, ddp=False
         )
         split_loaders = [("train", train_dl), ("val", val_dl), ("test", test_dl)]
     else:
@@ -254,7 +254,7 @@ def main():
             print(f"[{args.split}] shard {args.shard_id}/{args.n_shards}: indices [{lo}:{hi}) -> {len(base_ds)} samples")
 
         dl, _, _ = get_data(base_ds, base_ds, base_ds,
-                            bs=args.batch_size, num_workers=args.num_workers, ddp=False)
+                            batch_size=args.batch_size, num_workers=args.num_workers, ddp=False)
         split_loaders = [(args.split, dl)]
 
     # 4) Recover OUTPUT_ORDER and daily forcing order from the dataset schema
@@ -292,7 +292,7 @@ def main():
             idx_monthly=list(range(idx_m)),
             idx_annual=list(range(idx_m, idx_m + idx_a)),
             use_mass_balances=True,               
-            loss_type="mse",
+            loss_type="mae",
             monthly_weights=monthly_zero,
             annual_weights=annual_zero,
             mb_var_idx=mb_var_idx,

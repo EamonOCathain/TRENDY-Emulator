@@ -36,6 +36,7 @@ _LOG = logging.getLogger("carry")
 
 MONTH_LENGTHS_FALLBACK = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 POPULATION_NORMALISE = True
+FULL_SEQUENCE_TEST_MB_SIZE = 35
 # ---------------------------------------------------------------------------
 # Helpers for rollout 
 # ---------------------------------------------------------------------------
@@ -59,6 +60,12 @@ def _sanitize_idx(idx_list, size, name, logger=None):
         logger.warning(f"[carry] Dropping invalid {name} indices {bad} for size={size}")
     return good
 
+def _is_main_process() -> bool:
+    return (not dist.is_available()) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+
+def _log_main(log, level: str, msg: str, *args):
+    if _is_main_process():
+        getattr(log, level)(msg, *args)
 
 def _safe_index_copy(x, dim, idx_list, values, where_len=None, logger=None, name=""):
     """
@@ -159,6 +166,23 @@ def _isfinite_except_monthly_carry_mask(
     ok = finite | allowed
     return ok.all().item()
 
+def _mask_ignored_nans(
+    tensor: torch.Tensor,
+    name_list: list[str],
+    ignore_vars: set[str] | None = None
+) -> torch.Tensor:
+    """Return tensor with NaNs in ignored variables replaced by finite dummy (0)."""
+    if tensor is None or not name_list:
+        return tensor
+    n_chan = tensor.shape[1] if tensor.ndim >= 2 else tensor.shape[0]
+    if len(name_list) != n_chan or not ignore_vars:
+        return tensor
+    mask = torch.tensor([v in ignore_vars for v in name_list], dtype=torch.bool)
+    if not mask.any():
+        return tensor
+    t_copy = tensor.clone()
+    t_copy[:, mask, ...] = torch.nan_to_num(t_copy[:, mask, ...], nan=0.0)
+    return t_copy
 
 # ---------------------------------------------------------------------------
 # Early stopping helper
@@ -440,8 +464,8 @@ def rollout(
     micro = min(micro, len(windows))
     rollout_cfg["autotuned_mb_size_windows"] = int(micro)
 
-    # DDP: broadcast micro so all ranks use same
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
+    # DDP: broadcast micro so all ranks use same (only while training)
+    if training and torch.distributed.is_available() and torch.distributed.is_initialized():
         t_mb = torch.tensor([micro], dtype=torch.int64, device=device)
         torch.distributed.broadcast(t_mb, src=0)
         micro = int(t_mb.item())
@@ -970,7 +994,10 @@ def train(
         avg_train_loss = float(np.mean(train_losses)) if len(train_losses) else float("nan")
         avg_train_loss = ddp_mean_scalar(avg_train_loss, model_device)
 
+        # Broadcast validation plan so DDP all use the same set
         batch_indices = val_plan.get("fixed_val_batch_ids") if val_plan else None
+        if ddp and dist.is_available() and dist.is_initialized() and batch_indices is not None:
+            batch_indices = broadcast_indices_for_ddp(batch_indices, device=model_device)
 
         avg_val_loss, val_cnt, val_mb_avgs = validate(
             model, loss_func, valid_dl,
@@ -1154,8 +1181,6 @@ def validate(
     mb_avgs = {k: (v / max(1, total_cnt)) for k, v in mb_sums.items()}
     return avg, total_cnt, mb_avgs
 
-# In tester module
-
 def test_once(
     *,
     model: torch.nn.Module,
@@ -1165,20 +1190,33 @@ def test_once(
     base_cfg: Optional[dict],
     loss_policy: str,                    # "tail_only" | "all_years"
     carry_mode: str,                     # "fixed" | "full_sequence"
-    args: Optional[object] = None,   
+    args: Optional[object] = None,
     logger: Optional[logging.Logger] = None,
 ) -> Dict[str, float]:
     """
     Generic test pass. Returns dict with sum_loss, count, num_batches, and avg.
+
     carry_mode:
-      - "fixed"         → use base_cfg["carry_horizon"] as H
-      - "full_sequence" → derive H = Y-1 per outer batch (123-year style)
+      - "fixed"         → use base_cfg["carry_horizon"] as H (teacher-forced or tail-only)
+      - "full_sequence" → derive H = Y-1 per outer batch (long-history sequential test)
+
+    Short-series skipping is applied **only** for full_sequence mode.
     """
+    log = logger or _LOG
+
+    # ---- main-rank guard for logging ----
+    is_main = True
+    if dist.is_available() and dist.is_initialized():
+        try:
+            is_main = (dist.get_rank() == 0)
+        except Exception:
+            is_main = True
+
     cfg = dict(base_cfg or {})
     cfg["loss_policy"] = loss_policy
     cfg["min_target_year"] = int(cfg.get("min_target_year", 1) or 1)
 
-    # If caller already set monthly_mode in cfg, keep it; otherwise apply default rule.
+    # Monthly mode rule (keep caller override if present)
     user_mode = getattr(args, "model_monthly_mode", "batch_months")
     if "monthly_mode" not in cfg:
         if (carry_mode == "full_sequence") or (int(cfg.get("carry_horizon", 0) or 0) > 0):
@@ -1186,42 +1224,168 @@ def test_once(
         else:
             cfg["monthly_mode"] = user_mode
 
-    mb_size_eval = int(args.eval_mb_size) if args is not None else 2048
-    
+    # Eval microbatch size
+    if carry_mode == "full_sequence":
+        mb_size_eval = int(globals().get("FULL_SEQUENCE_TEST_MB_SIZE", 2048))
+    else:
+        mb_size_eval = int(getattr(args, "eval_mb_size", 2048))
+
+    # ---- short-series policy (only for full_sequence) ----
+    # Use args.min_full_sequence_years if present; else default 120 (after dataset drop).
+    min_years_full = int(getattr(args, "min_full_sequence_years", 120))
+    enforce_short_series = (carry_mode == "full_sequence" and min_years_full > 0)
+
     sum_loss = 0.0
-    count    = 0
+    count = 0
     num_batches = 0
 
+    skipped_batches = 0
+    skipped_reason_counts = {"x": 0, "m": 0, "a": 0, "short": 0}
+
+    def _report_nonfinite(tensor, label: str):
+        if tensor is None:
+            return []
+        mask = ~torch.isfinite(tensor)
+        if not mask.any():
+            return []
+        bad_vars = mask.any(dim=tuple(range(mask.ndim - 1))).nonzero(as_tuple=False).flatten()
+        bad_vars = bad_vars.tolist()[:10]
+        if is_main:
+            log.info(
+                "[test] %s non-finite in %d elements (showing first 10 var idx): %s",
+                label, mask.sum().item(), bad_vars,
+            )
+        return bad_vars
+
     with torch.no_grad():
-        for bi, bm, ba in test_dl:
-            inputs   = bi.squeeze(0).float().to(device, non_blocking=True)
-            labels_m = bm.squeeze(0).float().to(device, non_blocking=True)
-            labels_a = ba.squeeze(0).float().to(device, non_blocking=True)
+        for batch_idx, (x_cpu, m_cpu, a_cpu) in enumerate(test_dl):
+            # --- Short-series guard (ONLY for full_sequence) ---
+            if enforce_short_series:
+                Y_cpu = None
+                try:
+                    if a_cpu is not None:
+                        Y_cpu = int(a_cpu.shape[2])      # labels_a is [1, na, Y_postdrop, L]
+                    elif x_cpu is not None:
+                        T = int(x_cpu.shape[2])          # inputs is [1, nin, 365*Y_postdrop, L]
+                        Y_cpu = T // 365
+                except Exception:
+                    Y_cpu = None
+
+                if (Y_cpu is not None) and (Y_cpu < min_years_full):
+                    skipped_batches += 1
+                    skipped_reason_counts["short"] += 1
+                    if is_main:
+                        log.info(
+                            "[test] Skipping batch %d due to short series (Y=%d < %d)",
+                            batch_idx, Y_cpu, min_years_full
+                        )
+                    continue
+            # ---------------------------------------------------
+
+            # --- Batch-level finiteness guard (CPU, before .to(device)) ---
+            IGNORE_VARS = {"lai_avh15c1", "lai_modis"}
+
+            names_x = list(cfg.get("in_names", []))
+            names_m = list(cfg.get("out_monthly_names", []))
+            names_a = list(cfg.get("out_annual_names", []))
+
+            x_cpu_masked = _mask_ignored_nans(x_cpu, names_x, IGNORE_VARS)
+            m_cpu_masked = _mask_ignored_nans(m_cpu, names_m, IGNORE_VARS)
+            a_cpu_masked = _mask_ignored_nans(a_cpu, names_a, IGNORE_VARS)
+
+            fx = bool(torch.isfinite(x_cpu_masked).all().item()) if x_cpu_masked is not None else True
+            fm = bool(torch.isfinite(m_cpu_masked).all().item()) if m_cpu_masked is not None else True
+            fa = bool(torch.isfinite(a_cpu_masked).all().item()) if a_cpu_masked is not None else True
+
+            if not (fx and fm and fa):
+                skipped_batches += 1
+                if not fx:
+                    skipped_reason_counts["x"] += 1
+                    _report_nonfinite(x_cpu, "inputs (x)")
+                if not fm:
+                    skipped_reason_counts["m"] += 1
+                    _report_nonfinite(m_cpu, "monthly labels (m)")
+                if not fa:
+                    skipped_reason_counts["a"] += 1
+                    _report_nonfinite(a_cpu, "annual labels (a)")
+                if is_main:
+                    log.info(
+                        "[test] Skipping batch %d due to non-finite tensors "
+                        "(ignoring %s): finite(x)=%s finite(m)=%s finite(a)=%s",
+                        batch_idx, ", ".join(sorted(IGNORE_VARS)),
+                        fx, fm, fa,
+                    )
+                continue
+            # ------------------------------------------------------------------------
+
+            inputs   = x_cpu.squeeze(0).float().to(device, non_blocking=True)
+            labels_m = m_cpu.squeeze(0).float().to(device, non_blocking=True)
+            labels_a = a_cpu.squeeze(0).float().to(device, non_blocking=True)
 
             if carry_mode == "full_sequence":
                 Y = int(labels_a.shape[1])
-                cfg["carry_horizon"] = max(0, Y - 1)  # span whole sequence
-            # else keep cfg["carry_horizon"] as provided (e.g., 0 or args.carry_years)
+                cfg["carry_horizon"] = max(0, Y - 1)
 
             s, n, _step, _mb = rollout(
-                model=model, loss_func=loss_func,
-                inputs=inputs, labels_m=labels_m, labels_a=labels_a,
-                device=device, rollout_cfg=cfg, training=False,
+                model=model,
+                loss_func=loss_func,
+                inputs=inputs,
+                labels_m=labels_m,
+                labels_a=labels_a,
+                device=device,
+                rollout_cfg=cfg,
+                training=False,
                 mb_size=mb_size_eval,
             )
 
             if n > 0 and np.isfinite(s):
                 sum_loss += float(s)
-                count    += int(n)
+                count += int(n)
                 num_batches += 1
 
-    # DDP reduce (optional, mirror your existing tester reduction)
+    # --- DDP reduction for skip counters and aggregates ---
     if dist.is_available() and dist.is_initialized():
-        t = torch.tensor([sum_loss, float(count), float(num_batches)],
-                         device=device, dtype=torch.float64)
-        dist.all_reduce(t, op=dist.ReduceOp.SUM)
-        sum_loss, count, num_batches = t.tolist()
-        count = int(count); num_batches = int(num_batches)
+        t_main = torch.tensor(
+            [
+                sum_loss,
+                float(count),
+                float(num_batches),
+                float(skipped_batches),
+                float(skipped_reason_counts["x"]),
+                float(skipped_reason_counts["m"]),
+                float(skipped_reason_counts["a"]),
+                float(skipped_reason_counts["short"]),
+            ],
+            device=device,
+            dtype=torch.float64,
+        )
+        dist.all_reduce(t_main, op=dist.ReduceOp.SUM)
+        (
+            sum_loss,
+            count_f,
+            num_batches_f,
+            sk_b_f,
+            sk_x_f,
+            sk_m_f,
+            sk_a_f,
+            sk_short_f,
+        ) = t_main.tolist()
+        count = int(count_f)
+        num_batches = int(num_batches_f)
+        skipped_batches = int(sk_b_f)
+        skipped_reason_counts = {
+            "x": int(sk_x_f),
+            "m": int(sk_m_f),
+            "a": int(sk_a_f),
+            "short": int(sk_short_f),
+        }
 
     avg = sum_loss / max(1.0, float(count))
-    return {"sum_loss": float(sum_loss), "count": int(count), "num_batches": int(num_batches), "avg_loss": float(avg)}
+    return {
+        "sum_loss": float(sum_loss),
+        "count": int(count),
+        "num_batches": int(num_batches),
+        "avg_loss": float(avg),
+        "skipped_batches": int(skipped_batches),
+        "skipped_reason_counts": dict(skipped_reason_counts),
+    }

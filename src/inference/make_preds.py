@@ -689,6 +689,99 @@ def _slice_year_range(ds: xr.Dataset, y0: int, y1: int) -> xr.Dataset:
     # fallback for datetime monthly
     return ds.sel(time=slice(f"{int(y0)}-01-01", f"{int(y1)}-12-31"))
 
+# =============================================================================
+# Tile window + misc input helpers
+# =============================================================================
+
+def _get_tile_window(tiles_json: dict, tile_index: int) -> tuple[slice, slice, int, int]:
+    """
+    Resolve (ys, xs) slices for a tile and return (ys, xs, Y, X).
+
+    Supports several common tile JSON schemas:
+      1) Explicit pixel spans per tile:
+         tiles[i] has any of:
+           - {'ys':..., 'ye':..., 'xs':..., 'xe':...}
+           - {'y0':..., 'y1':..., 'x0':..., 'x1':...}
+           - {'row_start':..., 'row_end':..., 'col_start':..., 'col_end':...}
+
+      2) Grid index + tile size:
+         tiles[i] has {'row': r, 'col': c} and either per-root or per-tile sizes:
+           - tiles_json has {'tile_h': H, 'tile_w': W} (preferred)
+           - or tiles[i] has {'tile_h': H, 'tile_w': W}
+         Optionally provide full image size:
+           - tiles_json may have {'nlat': NLAT, 'nlon': NLON} or {'height':..., 'width':...}
+           - or {'shape': [NLAT, NLON]}.
+
+    We clamp the end indices to the full image size if provided.
+    """
+    t = tiles_json.get("tiles", [])[int(tile_index)]
+    # --- case 1: explicit pixel bounds on the tile dict
+    def _pick(d, *keys):
+        for k in keys:
+            if k in d and d[k] is not None:
+                return int(d[k])
+        return None
+
+    ys = _pick(t, "ys", "y0", "row_start")
+    ye = _pick(t, "ye", "y1", "row_end")
+    xs = _pick(t, "xs", "x0", "col_start")
+    xe = _pick(t, "xe", "x1", "col_end")
+
+    if None not in (ys, ye, xs, xe):
+        Y = int(ye - ys); X = int(xe - xs)
+        return slice(ys, ye), slice(xs, xe), Y, X
+
+    # --- case 2: grid (row, col) with sizes
+    row = _pick(t, "row", "iy", "tile_row", "r")
+    col = _pick(t, "col", "ix", "tile_col", "c")
+    if row is None or col is None:
+        raise RuntimeError(
+            "tiles_json does not provide explicit spans or (row,col) indices for tiles. "
+            f"Tile keys seen: {sorted(t.keys())}"
+        )
+
+    tile_h = _pick(tiles_json, "tile_h", "tileH", "tile_height")
+    tile_w = _pick(tiles_json, "tile_w", "tileW", "tile_width")
+    if tile_h is None: tile_h = _pick(t, "tile_h", "tileH", "tile_height")
+    if tile_w is None: tile_w = _pick(t, "tile_w", "tileW", "tile_width")
+    if tile_h is None or tile_w is None:
+        raise RuntimeError("Missing tile_h/tile_w in tiles_json or per-tile entry.")
+
+    ys = int(row) * int(tile_h)
+    xs = int(col) * int(tile_w)
+    ye = ys + int(tile_h)
+    xe = xs + int(tile_w)
+
+    # Optional clamping to full grid size
+    nlat = _pick(tiles_json, "nlat", "height")
+    nlon = _pick(tiles_json, "nlon", "width")
+    if nlat is None or nlon is None:
+        shape = tiles_json.get("shape")
+        if isinstance(shape, (list, tuple)) and len(shape) >= 2:
+            nlat, nlon = int(shape[0]), int(shape[1])
+
+    if nlat is not None:
+        ye = min(ye, int(nlat))
+    if nlon is not None:
+        xe = min(xe, int(nlon))
+
+    Y = int(ye - ys); X = int(xe - xs)
+    if Y <= 0 or X <= 0:
+        raise RuntimeError(f"Computed empty tile window: (ys,ye,xs,xe)=({ys},{ye},{xs},{xe})")
+
+    return slice(ys, ye), slice(xs, xe), Y, X
+
+
+def _compute_nfert_fill_indices(input_names: list[str], nfert: Optional[list[str]]) -> list[int]:
+    """
+    Return indices in `input_names` that should be zero-filled (e.g. fertilizer channels).
+    If `nfert` is None/empty, returns [].
+    """
+    if not nfert:
+        return []
+    s = set(nfert)
+    return [i for i, name in enumerate(input_names) if name in s]
+
 
 # =============================================================================
 # Misc helpers

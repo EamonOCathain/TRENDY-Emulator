@@ -45,4 +45,6 @@ conda activate base
 
 # SELECT_TASK_IDX is passed via --export above
 unset INIT_ONLY
-python -u make_training_tiles.py --daily_files_mode twenty
+python -u make_training_tiles.py \
+    --subset test \
+    --validate \

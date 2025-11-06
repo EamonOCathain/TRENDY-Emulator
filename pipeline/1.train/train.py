@@ -80,12 +80,15 @@ def parse_args():
                         help="Skip testing after training.")
     parser.add_argument("--test_only", action="store_true",
                         help="Run only the testing suite (skip training/validation).")
+    parser.add_argument("--skip_diagnostics", action="store_true",
+                        help="Skip the diagnostic plots part of the testing routine")
     parser.add_argument("--delta_luh", action="store_true",
                     help="If set, include luh2_deltas in the annual forcing list.")
     parser.add_argument( "--model_monthly_mode", type=str, default="batch_months", choices=["batch_months", "sequential_months"],
                     help=("How the model processes a year: "
                         "'batch_months' = process all months simulataneously, each as a seperate forward through the transformer; "
                         "'sequential_months' = step month-by-month and carry monthly states within the year."))
+    
 
     # Subsetting
     parser.add_argument("--subset_frac", type=float, default=None,
@@ -951,7 +954,14 @@ def main():
                 full_sequence_horizon=123,
             )
 
-            if is_main:
+            # --- synchronize all ranks before diagnostics ---
+            if ddp and dist.is_initialized():
+                dist.barrier()
+
+            # Only rank 0 runs diagnostics; others idle behind a barrier
+            is_main_rank = (not ddp) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+
+            if is_main_rank and not args.skip_diagnostics:
                 # Metrics CSVs, NPZs, and scatter plots (teacher-forced, full-sequence, and tail-only if H>0)
                 log.info("[diagnostics] starting metrics/plots (subsample pairs=2M, plots=200k)")
                 _safe(lambda: run_diagnostics(
@@ -967,9 +977,21 @@ def main():
                     do_full_sequence=True,
                     do_tail_only=True,
                 ), "run_diagnostics")
+
+                # Let non-main ranks leave their wait
+                if ddp and dist.is_initialized():
+                    dist.barrier()
+            else:
+                # Free GPU memory while waiting for rank 0 to finish diagnostics
+                try:
+                    torch.cuda.empty_cache()
+                except Exception:
+                    pass
+                if ddp and dist.is_initialized():
+                    dist.barrier()
                 
         # Cleanup ddp
-        _cleanup_distrib_and_cuda(ddp=ddp)
+        cleanup_distrib_and_cuda(ddp=ddp)
 
     if is_main:
         log.info("Succesfully completed training: %s", run_dir)

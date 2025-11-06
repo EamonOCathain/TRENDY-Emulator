@@ -49,7 +49,7 @@ from src.inference.make_preds import (
     clear_tile_done,
     process_one_tile,
     export_netcdf_sharded,
-    mu_sd_from_std,  # mean/std vectors from std_dict in given variable order
+    mu_sd_from_std,
 )
 
 
@@ -186,7 +186,8 @@ def main():
         torch.set_num_threads(1)
     except Exception:
         pass
-
+    
+    
     # -----------------------------------------------------------------------
     # Run metadata
     # -----------------------------------------------------------------------
@@ -624,6 +625,7 @@ def main():
 
             # Optional ILAMB copies (leader only, after all shards exported)
             if args.ilamb_dir_global or args.ilamb_dir_test:
+
                 def _wait_for_all_exports(root: Path, shards: Optional[int], timeout_s: int = 36000) -> None:
                     if not shards:
                         return
@@ -659,10 +661,15 @@ def main():
                     except TimeoutError as e:
                         print(f"[FINALIZE][WARN] ILAMB copy barrier timed out: {e}. Proceeding may yield partial copies.")
                     overwrite_copy = bool(args.overwrite_data)
+
+                    # Global copy: <ilamb_dir>/<job>/<scenario>/
                     if args.ilamb_dir_global:
-                        _copy_nc_dir(nc_root / "full", Path(args.ilamb_dir_global), overwrite=overwrite_copy)
+                        dst_global = Path(args.ilamb_dir_global) / args.job_name / scenario
+                        _copy_nc_dir(nc_root / "full", dst_global, overwrite=overwrite_copy)
+
+                    # Test copy: <ilamb_dir_test>/<job>/<scenario>/early and /late
                     if args.ilamb_dir_test:
-                        test_root = Path(args.ilamb_dir_test)
+                        test_root = Path(args.ilamb_dir_test) / args.job_name / scenario
                         _copy_nc_dir(nc_root / "test" / "early", test_root / "early", overwrite=overwrite_copy)
                         _copy_nc_dir(nc_root / "test" / "late",  test_root / "late",  overwrite=overwrite_copy)
                 else:

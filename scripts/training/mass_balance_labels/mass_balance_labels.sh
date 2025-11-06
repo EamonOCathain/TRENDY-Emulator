@@ -25,4 +25,4 @@ python /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/
   --shard_id "${SLURM_ARRAY_TASK_ID}" \
   --num_workers 8 \
   --batch_size 1 \
-  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/shards
+  --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/training/mass_balance_labels/MAE_results/shards

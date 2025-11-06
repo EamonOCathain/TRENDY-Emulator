@@ -188,6 +188,39 @@ def _year_bounds(y0: int, y1: int) -> tuple[int, int]:
 def _slice_last_year_bounds(t: int) -> tuple[tuple[int, int], tuple[int, int]]:
     return (t * 12, (t + 1) * 12), (t, t + 1)
 
+# Class to prevent gathering more pairs than the subsample amount
+class Reservoir:
+    def __init__(self, k, seed=123):
+        self.k = int(k); self.n = 0
+        self.rng = np.random.default_rng(seed)
+        self.y = None; self.p = None
+    def add(self, y_new, p_new):
+        y_new = y_new.reshape(-1); p_new = p_new.reshape(-1)
+        m = y_new.size
+        if m == 0: return
+        if self.n == 0:
+            take = min(self.k, m)
+            idx = np.arange(m) if m <= take else self.rng.choice(m, take, replace=False)
+            self.y = y_new[idx].copy(); self.p = p_new[idx].copy()
+            self.n = take
+            return
+        # fill if not full
+        if self.n < self.k:
+            space = self.k - self.n
+            take = min(space, m)
+            self.y = np.concatenate([self.y, y_new[:take]])
+            self.p = np.concatenate([self.p, p_new[:take]])
+            self.n += take
+        # reservoir replacement for any remainder
+        r = m - max(0, min(self.k - (self.n - (m - (m - (self.k - self.n)))) , m))
+        if r <= 0: return
+        for i in range(m - r, m):
+            j = self.rng.integers(0, self.n + 1)
+            if j < self.k:
+                self.y[j] = y_new[i]
+                self.p[j] = p_new[i]
+            self.n += 1
+
 @torch.no_grad()
 def gather_pred_label_pairs(
     *,
@@ -210,7 +243,7 @@ def gather_pred_label_pairs(
 
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
     annual_names  = list(rollout_cfg.get("out_annual_names", []))
-    buf = {n: ([], []) for n in (monthly_names + annual_names)}
+    buf = {n: Reservoir(max_points_per_var, seed=123) for n in (monthly_names + annual_names)}
 
     month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
     bounds = [0]; 
@@ -298,11 +331,15 @@ def gather_pred_label_pairs(
                     if not (torch.isfinite(ybm).all() and torch.isfinite(yba).all()):
                         continue
                     for j, name in enumerate(monthly_names):
-                        buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
-                        buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
+                        buf[name].add(
+                            ybm[..., j].reshape(-1).cpu().numpy(),
+                            pm[..., j].reshape(-1).cpu().numpy()
+                        )
                     for j, name in enumerate(annual_names):
-                        buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
-                        buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+                        buf[name].add(
+                            ybm[..., j].reshape(-1).cpu().numpy(),
+                            pm[..., j].reshape(-1).cpu().numpy()
+                        )
             continue
 
         # ----------- MODE B: full-sequence (warm-up + carry, forced sequential) ----------
