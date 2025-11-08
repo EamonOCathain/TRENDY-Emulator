@@ -17,20 +17,28 @@ from src.training.varschema import VarSchema
 
 class CustomDatasetTL(Dataset):
     """
-    Transfer-learning dataset:
-      - Identical to the standard CustomDataset where possible.
-      - Applies replace_map ONLY to label groups (monthly_fluxes, monthly_states, annual_states).
-      - Uses scenario index 3 exclusively (zero-based), but validates that the Zarr has ≥4 scenarios.
-      - Supports inclusive TL time slicing [tl_start, tl_end] on 365-day 'days since 1901-01-01'.
+    Transfer-learning dataset with parity to the standard dataset:
 
-    One SAMPLE = (one zarr group, scenario=3, one contiguous location block):
+      • Same strict variable filtering policy:
+          - respect exclude list
+          - silently drop vars with invalid/missing std stats
+          - require presence in the Zarrs (soft-skip LUH deltas if delta_luh=True)
+      • Same public surface:
+          - self.var_names (dict of filtered groups)
+          - self.schema (VarSchema with month_lengths)
+          - self.input_order / self.output_order
+      • Same t-1 shifting for states + drop first year after shifting.
+
+    TL-specific features retained:
+      • Hard-codes scenario index = 3 (zero-based); validates scenario size == 4.
+      • TL windowing by [tl_start, tl_end] years on days-since-1901 (noleap).
+      • Label-only replacement via replace_map on {monthly_fluxes, monthly_states, annual_states}.
+      • Planning builds blocks only for scenario 3.
+
+    Each SAMPLE:
       inputs:   [C_in, 365*(Y-1),   L]
       labels_m: [C_m,  12*(Y-1),    L]
       labels_a: [C_a,  (Y-1),       L]
-
-    Shifting:
-      - Monthly states: Jan(t) ← Dec(t-1); first-year Jan is dummy (dropped with first year).
-      - Annual states : t-1 with zero on first year; first year dropped.
     """
 
     def __init__(
@@ -38,7 +46,7 @@ class CustomDatasetTL(Dataset):
         data_dir: str,
         std_dict: Dict[str, Dict[str, float]],
         tensor_type: str,                  # "train" | "val" | "test"
-        block_locs: int = 70,              # locations per block (floor division)
+        block_locs: int = 70,
         exclude_vars: Sequence[str] | None = None,
         delta_luh: bool = False,
         tl_activated: bool = False,
@@ -54,10 +62,6 @@ class CustomDatasetTL(Dataset):
         self.exclude_set = set(exclude_vars or [])
         self.unfiltered_var_names = var_names
 
-        # We only ever read scenario index 3; we do not enumerate scenarios.
-        self.required_scenario_index = 3
-        self.n_scenarios = 1  # planning enumerates only blocks, not scenarios
-
         # TL config
         self.transfer_learn = bool(tl_activated)
         self.tl_start = int(tl_start) if tl_start is not None else None
@@ -66,51 +70,58 @@ class CustomDatasetTL(Dataset):
 
         if self.transfer_learn:
             if self.tl_start is None or self.tl_end is None:
-                raise ValueError("tl_activated=True requires tl_start and tl_end.")
+                raise ValueError("tl_activated=True requires tl_start and tl_end (years).")
             if self.tl_start > self.tl_end:
                 raise ValueError(f"Invalid TL window: {self.tl_start}>{self.tl_end}")
 
-        # Paths
+        # Always use scenario index 3 (zero-based); require exactly 4 scenarios.
+        self.required_scenario_index = 3
+        self.n_scenarios = 4  # invariant of the stores; we only read index 3
+
+        # ---- resolve split paths + tags (match standard) ----
         self._get_paths()
 
-        # Open stores
+        # ---- open stores ----
         opts = dict(consolidated=True, decode_times=False, chunks={})
         self.ds_daily   = [xr.open_zarr(p, **opts) for p in self.daily_paths]
         self.ds_monthly = [xr.open_zarr(p, **opts) for p in self.monthly_paths]
         self.ds_annual  = [xr.open_zarr(p, **opts) for p in self.annual_paths]
         self._all = self.ds_daily + self.ds_monthly + self.ds_annual
 
-        # Validate scenarios present (but we will only use index 3)
-        for ds in (self.ds_daily + self.ds_monthly + self.ds_annual):
-            if "scenario" not in ds.dims:
-                raise AssertionError("All Zarr datasets must have a 'scenario' dimension.")
-            if int(ds.sizes["scenario"]) <= self.required_scenario_index:
-                raise AssertionError(
-                    f"Expected at least {self.required_scenario_index+1} scenarios, "
-                    f"got {int(ds.sizes['scenario'])}"
-                )
-
-        # Calendar (define before schema)
+        # ---- calendar helpers (before schema) ----
         self._month_lengths = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], dtype=np.int32)
         self._day_to_month  = np.repeat(np.arange(12, dtype=np.int64), self._month_lengths)
 
-        # TL slicing (if enabled) — slice all opened datasets and drop unusable stores
+        # ---- TL windowing (slice all datasets; drop stores with <2 years) ----
         if self.transfer_learn:
             self._apply_transfer_learning_window(self.tl_start, self.tl_end)
 
-        # Variable filtering + schema (strict)
+        # ---- variable filtering + schema (STRICT; parity with standard) ----
         self._filter_var_names()
 
-        # Plan samples (floor division)
+        # ---- planning: blocks over scenario index 3 only ----
         self._plan_samples()
 
-    # ----------------------------- Paths -----------------------------
+        # ---- scenario cardinality check (same guarantees as standard) ----
+        for ds in (self.ds_daily + self.ds_monthly + self.ds_annual):
+            if "scenario" not in ds.dims:
+                raise AssertionError("All Zarr datasets must have a 'scenario' dimension.")
+            if int(ds.sizes["scenario"]) != self.n_scenarios:
+                raise AssertionError(
+                    f"Expected scenario size {self.n_scenarios}, got {int(ds.sizes['scenario'])}"
+                )
+
+    # ---------------------------------------------------------------------
+    # Paths + tags (mirror standard)
+    # ---------------------------------------------------------------------
     def _get_paths(self) -> None:
         if self.tensor_type == "train":
             stem = "train_location_train_period"
             self.daily_paths   = [self.base_path / f"{stem}/daily.zarr"]
             self.monthly_paths = [self.base_path / f"{stem}/monthly.zarr"]
             self.annual_paths  = [self.base_path / f"{stem}/annual.zarr"]
+            self.dataset_tags  = ["full"]
+
         elif self.tensor_type == "val":
             stems = [
                 "train_location_val_period_early",
@@ -120,6 +131,8 @@ class CustomDatasetTL(Dataset):
             self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
             self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
             self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
+            self.dataset_tags  = ["early", "late", "full"]
+
         elif self.tensor_type == "test":
             stems = [
                 "test_location_whole_period",
@@ -129,16 +142,19 @@ class CustomDatasetTL(Dataset):
             self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
             self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
             self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
+            self.dataset_tags  = ["full", "early", "late"]
         else:
             raise ValueError(f"Unknown tensor_type: {self.tensor_type!r}")
 
-    # -------------------------- TL slicing --------------------------
+    # ---------------------------------------------------------------------
+    # TL slicing by days-since-1901 (noleap)
+    # ---------------------------------------------------------------------
     def _slice_days_since_1901(self, ds: xr.Dataset, start_year: int, end_year: int) -> xr.Dataset:
         if "time" not in ds:
             return ds
-        time_vals = ds["time"].values  # numeric "days since 1901-01-01", noleap
+        time_vals = ds["time"].values  # numeric days since 1901-01-01 (noleap)
         start_day = (int(start_year) - 1901) * 365
-        end_day_excl = (int(end_year) - 1901 + 1) * 365
+        end_day_excl = (int(end_year) - 1901 + 1) * 365  # exclusive
         mask = (time_vals >= start_day) & (time_vals < end_day_excl)
         idx = np.where(mask)[0]
         if idx.size == 0:
@@ -150,36 +166,53 @@ class CustomDatasetTL(Dataset):
         self.ds_monthly = [self._slice_days_since_1901(ds, start_year, end_year) for ds in self.ds_monthly]
         self.ds_annual  = [self._slice_days_since_1901(ds, start_year, end_year) for ds in self.ds_annual]
 
+        # Keep only stores with >=2 years after slicing (to support dropping first year)
         keep = []
         for i, ds_m in enumerate(self.ds_monthly):
             months = int(ds_m.sizes.get("time", 0))
             years = months // 12 if months % 12 == 0 else 0
-            if years >= 2:  # need ≥2 years because we drop the first
+            if years >= 2:
                 keep.append(i)
         if not keep:
-            raise RuntimeError(f"[TL] Window {start_year}-{end_year} left no usable stores in split='{self.tensor_type}'.")
+            raise RuntimeError(f"[TL] Window {start_year}-{end_year} leaves no usable stores in split='{self.tensor_type}'.")
 
         self.ds_daily   = [self.ds_daily[i]   for i in keep]
         self.ds_monthly = [self.ds_monthly[i] for i in keep]
         self.ds_annual  = [self.ds_annual[i]  for i in keep]
         self._all = self.ds_daily + self.ds_monthly + self.ds_annual
 
-    # --------------- Var filtering (strict) + schema ----------------
+    # ---------------------------------------------------------------------
+    # Var filtering (STRICT; parity with standard) + schema
+    # ---------------------------------------------------------------------
     def _present_in_any_zarr(self, name: str) -> bool:
         return any(name in ds.data_vars for ds in self._all)
 
-    def _require_stats(self, name: str) -> None:
-        stats = self.std_dict.get(name)
-        if not stats:
-            raise AssertionError(f"Missing standardisation stats for '{name}'.")
-        std = stats.get("std", None)
-        if std is None or std <= 0:
-            raise AssertionError(f"Non-positive std for '{name}'.")
+    def _has_valid_stats(self, name: str) -> bool:
+        st = self.std_dict.get(name)
+        if not st:
+            return False
+        try:
+            mu = float(st.get("mean", np.nan))
+            sd = float(st.get("std", np.nan))
+            return np.isfinite(mu) and np.isfinite(sd) and sd > 0.0
+        except Exception:
+            return False
 
     def _filter_var_names(self) -> None:
+        """
+        Build filtered var lists by:
+        - respecting exclude list,
+        - requiring valid std stats (std > 0, finite) and silently dropping if not,
+        - requiring presence in any Zarr (softly skip LUH deltas if requested but not present),
+        then freeze stable input/output orders and construct VarSchema.
+
+        Additionally (TL only):
+        - apply replace_map *only* to label groups (monthly_fluxes, monthly_states, annual_states).
+        """
+        # safe copy of groups
         base = {k: list(v) for k, v in self.unfiltered_var_names.items()}
 
-        # Optional LUH deltas into annual_forcing
+        # optional LUH deltas into annual_forcing
         if self.delta_luh:
             for v in luh2_deltas:
                 if v not in base["annual_forcing"]:
@@ -191,28 +224,35 @@ class CustomDatasetTL(Dataset):
         for group, var_list in base.items():
             keep: List[str] = []
             for logical in var_list:
-                # Apply replace_map ONLY to label groups
+                # TL-only: label replacement
                 actual = self.replace_map.get(logical, logical) if group in label_groups else logical
 
+                # exclusions
                 if logical in self.exclude_set or actual in self.exclude_set:
                     continue
 
-                # Stats required
-                self._require_stats(actual)
+                # stats (strict, silent drop on invalid/missing)
+                if not self._has_valid_stats(actual):
+                    continue
 
-                # Presence required; LUH deltas may be optional if requested but missing
+                # presence (strict; soft for LUH deltas when delta_luh=True)
                 if not self._present_in_any_zarr(actual):
                     if self.delta_luh and group == "annual_forcing" and logical in luh2_deltas:
                         continue
                     raise AssertionError(
-                        f"Zarr datasets are missing variable{(' after replacement' if actual != logical else '')}: {actual}"
+                        f"Zarr datasets are missing variable"
+                        f"{' after replacement' if actual != logical else ''}: {actual}"
                     )
 
                 if actual not in keep:
                     keep.append(actual)
+
             filtered[group] = keep
 
-        # Persist sorted lists
+        # --- expose filtered names just like the standard dataset ---
+        self.var_names = filtered
+
+        # persist sorted lists for stable channel layout
         self.daily_forcing   = sorted(filtered["daily_forcing"])
         self.monthly_forcing = sorted(filtered["monthly_forcing"])
         self.monthly_states  = sorted(filtered["monthly_states"])
@@ -220,7 +260,7 @@ class CustomDatasetTL(Dataset):
         self.annual_states   = sorted(filtered["annual_states"])
         self.monthly_fluxes  = sorted(filtered["monthly_fluxes"])
 
-        # Schema & orders
+        # schema (unchanged)
         self.schema = VarSchema(
             daily_forcing   = list(self.daily_forcing),
             monthly_forcing = list(self.monthly_forcing),
@@ -230,6 +270,8 @@ class CustomDatasetTL(Dataset):
             monthly_fluxes  = list(self.monthly_fluxes),
             month_lengths   = self._month_lengths.tolist(),
         )
+
+        # handy orders (unchanged)
         self.input_order = (
             self.daily_forcing + self.monthly_forcing + self.monthly_states + self.annual_forcing + self.annual_states
         )
@@ -237,17 +279,24 @@ class CustomDatasetTL(Dataset):
             self.monthly_fluxes + self.monthly_states + self.annual_states
         )
 
-    # ----------------------- Planning (floor) -----------------------
+        if not self.input_order:
+            raise RuntimeError("Empty input_order after filtering.")
+        if not self.output_order:
+            raise RuntimeError("Empty output_order after filtering.")
+
+    # ---------------------------------------------------------------------
+    # Planning (blocks over scenario=3 only; floor division)
+    # ---------------------------------------------------------------------
     def _plan_samples(self) -> None:
         """
         meta[i] = (dataset_idx, scenario=3, loc0, loc1)
-        Floor partitioning: drop tail < block_locs.
+        Floor partitioning: drop any tail block with < block_locs locations.
         """
         self.meta: List[Tuple[int, int, int, int]] = []
         self.tail_dropped: List[int] = []
 
         for k in range(len(self.ds_daily)):
-            # location sizes must match
+            # location sizes must match across resolutions
             Ld = int(self.ds_daily[k].sizes["location"])
             Lm = int(self.ds_monthly[k].sizes["location"])
             La = int(self.ds_annual[k].sizes["location"])
@@ -255,7 +304,7 @@ class CustomDatasetTL(Dataset):
                 raise AssertionError(f"location size mismatch at ds[{k}]: daily={Ld}, monthly={Lm}, annual={La}")
             L = Ld
 
-            # time alignment
+            # years must align (noleap)
             Td = int(self.ds_daily[k].sizes["time"])
             Tm = int(self.ds_monthly[k].sizes["time"])
             Ta = int(self.ds_annual[k].sizes["time"])
@@ -264,19 +313,24 @@ class CustomDatasetTL(Dataset):
             if Ta < 2:
                 raise AssertionError(f"Need at least 2 years (to drop first year) at ds[{k}], got {Ta}")
 
-            n_blocks = L // self.block_locs  # floor
+            # blocks (floor division)
+            n_blocks = L // self.block_locs
             remainder = L % self.block_locs
             self.tail_dropped.append(remainder)
 
+            # scenario is fixed to 3
+            s = self.required_scenario_index
             for b in range(n_blocks):
                 loc0 = b * self.block_locs
                 loc1 = loc0 + self.block_locs
-                self.meta.append((k, self.required_scenario_index, loc0, loc1))
+                self.meta.append((k, s, loc0, loc1))
 
     def __len__(self) -> int:
         return len(self.meta)
 
-    # --------------------- Standardisation (strict) ---------------------
+    # ---------------------------------------------------------------------
+    # Standardisation (strict)
+    # ---------------------------------------------------------------------
     def _standardise(self, arr: np.ndarray, name: str) -> np.ndarray:
         stats = self.std_dict.get(name)
         if stats is None:
@@ -300,7 +354,9 @@ class CustomDatasetTL(Dataset):
             )
         return xr.Dataset(out, coords={"time": ds["time"].values, "location": ds["location"].values})
 
-    # ------------------ Monthly/Annual → Daily (shared) ------------------
+    # ---------------------------------------------------------------------
+    # Monthly/Annual → Daily expansion (shared)
+    # ---------------------------------------------------------------------
     def _expand_monthly_to_daily(self, ds_m: xr.Dataset) -> xr.Dataset:
         months = int(ds_m.sizes["time"])
         if months % 12 != 0:
@@ -330,9 +386,11 @@ class CustomDatasetTL(Dataset):
             out[name] = xr.DataArray(arr_d, dims=("time", "location"), coords={"time": days, "location": loc})
         return xr.Dataset(out, coords={"time": days, "location": loc})
 
-    # ---------------------- Shifting (standard) ----------------------
+    # ---------------------------------------------------------------------
+    # State shifting (shared)
+    # ---------------------------------------------------------------------
     def _shift_monthly_states_across_years(self, ds: xr.Dataset) -> xr.Dataset:
-        """t-1 month shift with January(t) = December(t-1). First year's Jan is dummy (dropped later)."""
+        """t-1 month shift with January(t) ← December(t-1). First year's Jan is dummy (dropped later)."""
         out = {}
         T = int(ds.sizes["time"])
         if T % 12 != 0:
@@ -348,7 +406,7 @@ class CustomDatasetTL(Dataset):
             shifted = np.empty_like(arr, dtype=arr.dtype)
             shifted[:, 1:, :] = arr[:, 0:11, :]   # Feb..Dec(t) ← Jan..Nov(t)
             shifted[1:, 0, :] = arr[:-1, 11, :]   # Jan(t)     ← Dec(t-1)
-            shifted[0, 0, :] = 0.0                # first-year Jan (dropped later)
+            shifted[0, 0, :] = 0.0                # first-year Jan (dummy; dropped later)
             out[v] = xr.DataArray(
                 shifted.reshape(T, L), dims=("time", "location"),
                 coords={"time": time_vals, "location": loc_vals}
@@ -369,11 +427,14 @@ class CustomDatasetTL(Dataset):
                                   coords={"time": time_vals, "location": loc_vals})
         return xr.Dataset(out, coords={"time": time_vals, "location": loc_vals})
 
-    # ------------------------------- Item -------------------------------
-    def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        ds_idx, scenario, loc0, loc1 = self.meta[i]  # scenario is fixed to index 3 in meta
+    # ---------------------------------------------------------------------
+    # Item
+    # ---------------------------------------------------------------------
+    def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str]:
+        ds_idx, scenario, loc0, loc1 = self.meta[i]  # scenario fixed to 3
+        period_tag = self.dataset_tags[ds_idx]
 
-        # slice scenario=3
+        # slice
         Dd = self.ds_daily[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
         Dm = self.ds_monthly[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
         Da = self.ds_annual[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
@@ -443,24 +504,15 @@ class CustomDatasetTL(Dataset):
             torch.from_numpy(inputs.astype(np.float32,   copy=False)),
             torch.from_numpy(labels_m.astype(np.float32, copy=False)),
             torch.from_numpy(labels_a.astype(np.float32, copy=False)),
+            period_tag,
         )
-        
+
+
 # ---------------------------------------------------------------------------
-# Utilities
+# Utilities (parity with standard)
 # ---------------------------------------------------------------------------
 
 def get_subset(dataset: Dataset, frac: float = 0.01, seed: int = 42) -> Subset:
-    """
-    Take a random subset of a dataset (useful for smoke tests).
-
-    Args:
-        dataset: Dataset to subset.
-        frac:    Fraction of dataset to keep (0 < frac ≤ 1).
-        seed:    RNG seed for reproducibility.
-
-    Returns:
-        Subset object pointing to the selected samples.
-    """
     n_total = len(dataset)
     n_subset = max(1, int(n_total * frac))
     subset, _ = random_split(
@@ -472,8 +524,4 @@ def get_subset(dataset: Dataset, frac: float = 0.01, seed: int = 42) -> Subset:
 
 
 def base(ds: Dataset | Subset) -> Dataset:
-    """
-    Return the underlying Dataset if `ds` is a Subset; otherwise return `ds`.
-    Handy when accessing custom attributes on the original dataset.
-    """
     return ds.dataset if isinstance(ds, Subset) else ds

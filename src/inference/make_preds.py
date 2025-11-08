@@ -62,20 +62,20 @@ def years_in_range(start: str, end: str) -> List[int]:
     eY = int(end[:4])
     return list(range(sY, eY + 1))
 
-def flatten_tile_time_to_batch(X: np.ndarray) -> np.ndarray:
+def flatten_tile_time_to_batch(arr: np.ndarray) -> np.ndarray:
     """
     (T, Y, X, C) -> (B, T, C) with B = Y*X, row-major [y,x] order.
     """
-    T, Y, X, C = X.shape
-    return X.reshape(T, Y * X, C).transpose(1, 0, 2).copy()
+    T, H, W, C = arr.shape
+    return arr.reshape(T, H * W, C).transpose(1, 0, 2).copy()
 
-def unflatten_batch_to_tile(BTC: np.ndarray, Y: int, X: int) -> np.ndarray:
+def unflatten_batch_to_tile(btc: np.ndarray, H: int, W: int) -> np.ndarray:
     """
     (B, T, C) -> (T, Y, X, C) where B = Y*X, row-major.
     """
-    B, T, C = BTC.shape
-    assert B == Y * X, f"B={B} must equal Y*X={Y*X}"
-    return BTC.transpose(1, 0, 2).reshape(T, Y, X, C).copy()
+    B, T, C = btc.shape
+    assert B == H * W, f"B={B} must equal Y*X={H*W}"
+    return btc.transpose(1, 0, 2).reshape(T, H, W, C).copy()
 
 def _expand_monthly_to_daily(m12_y_x_c: np.ndarray) -> np.ndarray:
     """
@@ -697,79 +697,94 @@ def _get_tile_window(tiles_json: dict, tile_index: int) -> tuple[slice, slice, i
     """
     Resolve (ys, xs) slices for a tile and return (ys, xs, Y, X).
 
-    Supports several common tile JSON schemas:
-      1) Explicit pixel spans per tile:
-         tiles[i] has any of:
-           - {'ys':..., 'ye':..., 'xs':..., 'xe':...}
-           - {'y0':..., 'y1':..., 'x0':..., 'x1':...}
-           - {'row_start':..., 'row_end':..., 'col_start':..., 'col_end':...}
-
-      2) Grid index + tile size:
-         tiles[i] has {'row': r, 'col': c} and either per-root or per-tile sizes:
-           - tiles_json has {'tile_h': H, 'tile_w': W} (preferred)
-           - or tiles[i] has {'tile_h': H, 'tile_w': W}
-         Optionally provide full image size:
-           - tiles_json may have {'nlat': NLAT, 'nlon': NLON} or {'height':..., 'width':...}
-           - or {'shape': [NLAT, NLON]}.
-
-    We clamp the end indices to the full image size if provided.
+    Supported schemas for tiles_json["tiles"][i]:
+      A) [y0, y1, x0, x1]  (list/tuple of 4 ints)
+      B) dict with explicit spans:
+         {"ys":..,"ye":..,"xs":..,"xe":..} or {"y0":..,"y1":..,"x0":..,"x1":..}
+         or {"row_start":..,"row_end":..,"col_start":..,"col_end":..}
+      C) dict with (row,col) and tile sizes (either at root or per-tile):
+         {"row": r, "col": c}  and  tiles_json has {"tile_h": H, "tile_w": W}
+         (or per-tile {"tile_h": H, "tile_w": W}). Optional overall size:
+         tiles_json may have {"nlat":NLAT,"nlon":NLON} or {"height":..,"width":..} or {"shape":[NLAT,NLON]}.
     """
-    t = tiles_json.get("tiles", [])[int(tile_index)]
-    # --- case 1: explicit pixel bounds on the tile dict
+    # Robustly fetch the tile entry
+    tiles = tiles_json["tiles"] if isinstance(tiles_json, dict) and "tiles" in tiles_json else tiles_json
+    t = tiles[int(tile_index)]
+
+    # --- Schema A: list/tuple of [y0,y1,x0,x1]
+    if isinstance(t, (list, tuple)) and len(t) >= 4:
+        try:
+            y0, y1, x0, x1 = map(int, t[:4])
+            ys, xs = slice(y0, y1), slice(x0, x1)
+            Y, X = y1 - y0, x1 - x0
+            if Y <= 0 or X <= 0:
+                raise RuntimeError(f"Empty tile window from list schema: {t}")
+            return ys, xs, Y, X
+        except Exception as e:
+            raise RuntimeError(f"Invalid list/tuple tile entry at index {tile_index}: {t}") from e
+
+    # Helper for dict schemas
     def _pick(d, *keys):
         for k in keys:
-            if k in d and d[k] is not None:
+            if isinstance(d, dict) and (k in d) and (d[k] is not None):
                 return int(d[k])
         return None
 
-    ys = _pick(t, "ys", "y0", "row_start")
-    ye = _pick(t, "ye", "y1", "row_end")
-    xs = _pick(t, "xs", "x0", "col_start")
-    xe = _pick(t, "xe", "x1", "col_end")
+    # --- Schema B: dict with explicit spans
+    if isinstance(t, dict):
+        ys0 = _pick(t, "ys", "y0", "row_start")
+        ye0 = _pick(t, "ye", "y1", "row_end")
+        xs0 = _pick(t, "xs", "x0", "col_start")
+        xe0 = _pick(t, "xe", "x1", "col_end")
+        if None not in (ys0, ye0, xs0, xe0):
+            Y = int(ye0 - ys0); X = int(xe0 - xs0)
+            if Y <= 0 or X <= 0:
+                raise RuntimeError(f"Empty tile window from explicit-span schema: {t}")
+            return slice(ys0, ye0), slice(xs0, xe0), Y, X
 
-    if None not in (ys, ye, xs, xe):
-        Y = int(ye - ys); X = int(xe - xs)
-        return slice(ys, ye), slice(xs, xe), Y, X
+        # --- Schema C: grid (row, col) + sizes
+        row = _pick(t, "row", "iy", "tile_row", "r")
+        col = _pick(t, "col", "ix", "tile_col", "c")
+        if row is None or col is None:
+            # Better error that doesn't assume dict.keys() exists
+            raise RuntimeError(
+                f"tiles_json entry at index {tile_index} lacks spans or (row,col). "
+                f"Entry type={type(t).__name__}, value={t}"
+            )
 
-    # --- case 2: grid (row, col) with sizes
-    row = _pick(t, "row", "iy", "tile_row", "r")
-    col = _pick(t, "col", "ix", "tile_col", "c")
-    if row is None or col is None:
-        raise RuntimeError(
-            "tiles_json does not provide explicit spans or (row,col) indices for tiles. "
-            f"Tile keys seen: {sorted(t.keys())}"
-        )
+        tile_h = _pick(tiles_json, "tile_h", "tileH", "tile_height") or _pick(t, "tile_h", "tileH", "tile_height")
+        tile_w = _pick(tiles_json, "tile_w", "tileW", "tile_width")  or _pick(t, "tile_w", "tileW", "tile_width")
+        if tile_h is None or tile_w is None:
+            raise RuntimeError("Missing tile_h/tile_w in tiles_json or per-tile entry.")
 
-    tile_h = _pick(tiles_json, "tile_h", "tileH", "tile_height")
-    tile_w = _pick(tiles_json, "tile_w", "tileW", "tile_width")
-    if tile_h is None: tile_h = _pick(t, "tile_h", "tileH", "tile_height")
-    if tile_w is None: tile_w = _pick(t, "tile_w", "tileW", "tile_width")
-    if tile_h is None or tile_w is None:
-        raise RuntimeError("Missing tile_h/tile_w in tiles_json or per-tile entry.")
+        ys0 = int(row) * int(tile_h)
+        xs0 = int(col) * int(tile_w)
+        ye0 = ys0 + int(tile_h)
+        xe0 = xs0 + int(tile_w)
 
-    ys = int(row) * int(tile_h)
-    xs = int(col) * int(tile_w)
-    ye = ys + int(tile_h)
-    xe = xs + int(tile_w)
+        # Optional clamping to full grid size
+        nlat = _pick(tiles_json, "nlat", "height")
+        nlon = _pick(tiles_json, "nlon", "width")
+        if (nlat is None) or (nlon is None):
+            shape = tiles_json.get("shape") if isinstance(tiles_json, dict) else None
+            if isinstance(shape, (list, tuple)) and len(shape) >= 2:
+                nlat, nlon = int(shape[0]), int(shape[1])
 
-    # Optional clamping to full grid size
-    nlat = _pick(tiles_json, "nlat", "height")
-    nlon = _pick(tiles_json, "nlon", "width")
-    if nlat is None or nlon is None:
-        shape = tiles_json.get("shape")
-        if isinstance(shape, (list, tuple)) and len(shape) >= 2:
-            nlat, nlon = int(shape[0]), int(shape[1])
+        if nlat is not None:
+            ye0 = min(ye0, int(nlat))
+        if nlon is not None:
+            xe0 = min(xe0, int(nlon))
 
-    if nlat is not None:
-        ye = min(ye, int(nlat))
-    if nlon is not None:
-        xe = min(xe, int(nlon))
+        Y = int(ye0 - ys0); X = int(xe0 - xs0)
+        if Y <= 0 or X <= 0:
+            raise RuntimeError(f"Computed empty tile window: (ys,ye,xs,xe)=({ys0},{ye0},{xs0},{xe0})")
 
-    Y = int(ye - ys); X = int(xe - xs)
-    if Y <= 0 or X <= 0:
-        raise RuntimeError(f"Computed empty tile window: (ys,ye,xs,xe)=({ys},{ye},{xs},{xe})")
+        return slice(ys0, ye0), slice(xs0, xe0), Y, X
 
-    return slice(ys, ye), slice(xs, xe), Y, X
+    # If we got here, the entry is of an unknown type
+    raise RuntimeError(
+        f"Unsupported tile entry type at index {tile_index}: type={type(t).__name__}, value={t}"
+    )
 
 
 def _compute_nfert_fill_indices(input_names: list[str], nfert: Optional[list[str]]) -> list[int]:

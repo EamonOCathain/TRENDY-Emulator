@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=400G
 #SBATCH --time=3-00:00:00
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
+#SBATCH --output=logs/training/%x_%j.out
+#SBATCH --error=logs/training/%x_%j.err
 #SBATCH --ntasks=4
 
 
@@ -50,10 +50,10 @@ export CUDA_LAUNCH_BLOCKING=1
 export TORCH_SHOW_CPP_STACKTRACES=1 
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
-torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name train_carry_8 \
+torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/train.py \
+  --job_name train_carry_32 \
   --epochs 40 \
-  --num_workers 4 \
+  --num_workers 6 \
   --val_frac 0.5 \
   --test_frac 0.1 \
   --early_stop \
@@ -63,11 +63,11 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 8 \
-  --eval_mb_size 1880 \
-  --train_mb_size 1880 \
+  --carry_years 32 \
+  --eval_mb_size 1855 \
+  --train_mb_size 1855 \
   --model_monthly_mode sequential_months \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/4_year/checkpoints/best.pt \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/exponential/16_year/checkpoints/best.pt \
 
 # With block_loc 140 total windows without carry is 11760..
 # 0 carry sequential mode = 11760 total windows = 84 windows per location = 3920
@@ -82,7 +82,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
 # 2 carry = 11620 total windows = 83 per location = 1960 train, 1470 val
 # 4 carry = 11340 total windows = 81 per location = 1880
 # 8 carry = 10780 total windows = 77 per location = 1880
-# 16 carry = 9680 total windows = 69 per location =
-# 32 carry = 7420 total windows = 53 per location =
+# 16 carry = 9680 total windows = 69 per location = 1936
+# 32 carry = 7420 total windows = 53 per location = 1855
 # 64 carry = 2940 total windows = 21 per location =
 # 84 carry = 140 total windows = 1 per location =

@@ -189,37 +189,74 @@ def _slice_last_year_bounds(t: int) -> tuple[tuple[int, int], tuple[int, int]]:
     return (t * 12, (t + 1) * 12), (t, t + 1)
 
 # Class to prevent gathering more pairs than the subsample amount
+
 class Reservoir:
-    def __init__(self, k, seed=123):
-        self.k = int(k); self.n = 0
+    """
+    Classic reservoir sampling for fixed-size k.
+    - Keeps an unbiased sample of all pairs seen so far.
+    - Works with batched adds without off-by-one issues.
+    """
+    def __init__(self, k: int, seed: int = 123):
+        self.k = int(k)
+        self.n_total = 0  # total items ever seen
         self.rng = np.random.default_rng(seed)
-        self.y = None; self.p = None
-    def add(self, y_new, p_new):
-        y_new = y_new.reshape(-1); p_new = p_new.reshape(-1)
+        self.y = None
+        self.p = None
+
+    def add(self, y_new, p_new) -> int:
+        """
+        Append a batch of pairs. Returns number of *candidates processed*.
+        Stores up to k items total (unbiased reservoir).
+        """
+        y_new = np.asarray(y_new).reshape(-1)
+        p_new = np.asarray(p_new).reshape(-1)
         m = y_new.size
-        if m == 0: return
-        if self.n == 0:
-            take = min(self.k, m)
-            idx = np.arange(m) if m <= take else self.rng.choice(m, take, replace=False)
-            self.y = y_new[idx].copy(); self.p = p_new[idx].copy()
-            self.n = take
-            return
-        # fill if not full
-        if self.n < self.k:
-            space = self.k - self.n
-            take = min(space, m)
-            self.y = np.concatenate([self.y, y_new[:take]])
-            self.p = np.concatenate([self.p, p_new[:take]])
-            self.n += take
-        # reservoir replacement for any remainder
-        r = m - max(0, min(self.k - (self.n - (m - (m - (self.k - self.n)))) , m))
-        if r <= 0: return
-        for i in range(m - r, m):
-            j = self.rng.integers(0, self.n + 1)
-            if j < self.k:
-                self.y[j] = y_new[i]
-                self.p[j] = p_new[i]
-            self.n += 1
+        if m == 0:
+            return 0
+
+        # Lazily allocate buffers
+        if self.y is None:
+            self.y = np.empty(self.k, dtype=y_new.dtype)
+            self.p = np.empty(self.k, dtype=p_new.dtype)
+
+        written = m  # candidates we processed (not necessarily stored)
+
+        # 1) Fill stage (while we have empty slots)
+        if self.n_total < self.k:
+            free = self.k - self.n_total
+            take = min(free, m)
+            if take > 0:
+                self.y[self.n_total:self.n_total + take] = y_new[:take]
+                self.p[self.n_total:self.n_total + take] = p_new[:take]
+                self.n_total += take
+                # trim the batch for the replacement stage
+                y_new = y_new[take:]
+                p_new = p_new[take:]
+                m -= take
+
+        # 2) Replacement stage (standard reservoir sampling)
+        if m > 0:
+            # i are the global indices of incoming items: n_total .. n_total + m - 1
+            i = np.arange(self.n_total, self.n_total + m, dtype=np.int64)
+            # draw j ~ Uniform{0, i} for each incoming item
+            j = self.rng.integers(low=0, high=i + 1)  # vectorised; high is elementwise
+            mask = j < self.k
+            if np.any(mask):
+                src_idx = np.nonzero(mask)[0]
+                self.y[j[mask]] = y_new[src_idx]
+                self.p[j[mask]] = p_new[src_idx]
+            self.n_total += m
+
+        return written
+
+    def snapshot(self):
+        """
+        Return only the *filled* portion if n_total < k; otherwise the full reservoir.
+        """
+        if self.y is None:
+            return np.empty((0,), dtype=float), np.empty((0,), dtype=float)
+        filled = min(self.n_total, self.k)
+        return self.y[:filled], self.p[:filled]
 
 @torch.no_grad()
 def gather_pred_label_pairs(
@@ -229,35 +266,54 @@ def gather_pred_label_pairs(
     device: torch.device,
     rollout_cfg: dict,
     eval_mode: str,  # {"teacher_forced","full_sequence","tail_only","sequential_no_carry"}
-    max_points_per_var: int | None = 2_000_000,
+    max_points_per_var: int | None = 200_000,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
-    Returns {var: (y_norm, yhat_norm)} in NORMALISED units, matching runtime semantics.
-    - teacher_forced:     H=0, evaluate all years independently; monthly_mode = 'batch_months' (pass via rollout_cfg)
-    - sequential_no_carry:H=0, evaluate all years independently; monthly_mode = 'sequential_months' (pass via rollout_cfg)
-    - full_sequence:      warm-up y=0, score 1..Y-1; monthly_mode = 'sequential_months'.
-    - tail_only:          windowed with H=rollout_cfg['carry_horizon']; score tail year; monthly_mode forced sequential if H>0 else user.
+    Collects (y, yhat) pairs for diagnostics, with filters:
+      • For full-sequence mode, skip batches not flagged with `full=True`.
+      • Any batch containing non-finite labels is skipped, EXCEPT non-finites
+        in monthly heads named 'lai_avh15c1' or 'lai_modis' (ignored).
+      • Inputs and predictions must be finite (no exceptions).
     """
     assert eval_mode in {"teacher_forced", "full_sequence", "tail_only", "sequential_no_carry"}
     model.eval()
 
+    # ---- Filters / config ----
+    IGNORED_NONFINITE_VARS = {"lai_avh15c1", "lai_modis"}
+
+    def _labels_all_finite_except(
+        ybm: torch.Tensor,               # [..., 12, nm]
+        yba: torch.Tensor,               # [...,  1, na]
+        monthly_names: list[str],
+        ignore: set[str]
+    ) -> bool:
+        nm = ybm.shape[-1] if ybm is not None else 0
+        for j in range(nm):
+            name = monthly_names[j] if j < len(monthly_names) else None
+            if name in ignore:
+                continue
+            if not torch.isfinite(ybm[..., j]).all():
+                return False
+        if yba is not None and not torch.isfinite(yba).all():
+            return False
+        return True
+
     monthly_names = list(rollout_cfg.get("out_monthly_names", []))
     annual_names  = list(rollout_cfg.get("out_annual_names", []))
-    buf = {n: Reservoir(max_points_per_var, seed=123) for n in (monthly_names + annual_names)}
+    names_all = monthly_names + annual_names
 
-    month_lengths = rollout_cfg.get("month_lengths", MONTH_LENGTHS_FALLBACK)
-    bounds = [0]; 
-    for m in month_lengths: bounds.append(bounds[-1] + m)
+    # One reservoir per variable
+    buf: dict[str, Reservoir] = {n: Reservoir(int(max_points_per_var or 0), seed=123) for n in names_all}
+
+    # Month pooling helpers
+    month_lengths = rollout_cfg.get("month_lengths", [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+    bounds = [0]
+    for m in month_lengths:
+        bounds.append(bounds[-1] + m)
     first_month_len = int(month_lengths[0])
 
-    # Index helpers (sanitise per batch)
-    def _san_idx(idx_list, size):
-        if not idx_list: return []
-        good = [int(i) for i in idx_list if 0 <= int(i) < size]
-        return good
-
-    # Pool daily absolutes -> (monthly, annual)
     def _pool_from_daily_abs(y_daily_abs: torch.Tensor, nm: int, na: int) -> tuple[torch.Tensor, torch.Tensor]:
+        # y_daily_abs: [B,365,nm+na]
         y_m_daily = y_daily_abs[..., :nm]
         y_a_daily = y_daily_abs[..., nm:nm+na]
         pieces = [y_m_daily[:, bounds[i]:bounds[i+1], :].mean(dim=1, keepdim=True) for i in range(12)]
@@ -265,21 +321,18 @@ def gather_pred_label_pairs(
         preds_a = y_a_daily.mean(dim=1, keepdim=True) # [B,1, na]
         return preds_m, preds_a
 
-    # Carry helpers
     def _prev_monthly_from_preds(preds_m: torch.Tensor, out_m_idx: list[int]) -> Optional[torch.Tensor]:
-        if (preds_m is None) or (not out_m_idx): return None
+        if (preds_m is None) or (not out_m_idx):
+            return None
         return preds_m[:, -1, out_m_idx]
 
     def _inject_monthly_carry(x_year: torch.Tensor, carry_vec: torch.Tensor, in_m_idx: list[int]):
-        if (carry_vec is None) or (not in_m_idx): return
+        if (carry_vec is None) or (not in_m_idx):
+            return
         B = x_year.size(0)
         idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
-        # January inject
         Ljan = first_month_len
-        x_year[:, :Ljan, :].index_copy_(
-            2, idx, carry_vec.unsqueeze(1).expand(B, Ljan, len(in_m_idx))
-        )
-        # Poison Feb–Dec for those features
+        x_year[:, :Ljan, :].index_copy_(2, idx, carry_vec.unsqueeze(1).expand(B, Ljan, len(in_m_idx)))
         if Ljan < 365:
             x_year[:, Ljan:, :].index_fill_(2, idx, float("nan"))
 
@@ -295,58 +348,93 @@ def gather_pred_label_pairs(
         ok = finite | allowed
         return ok.all().item()
 
-    for batch_inputs, batch_monthly, batch_annual in test_dl:
-        inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)   # [nin,365*Y,L]
-        labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)  # [nm,12*Y,L]
-        labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)   # [na,Y,L]
+    def _san_idx(idx_list, size):
+        if not idx_list: return []
+        return [int(i) for i in idx_list if 0 <= int(i) < size]
+
+    for batch in test_dl:
+        # --- Unpack batch and read 'full' flag (no helper; supports tuple/dict) ---
+        is_full = False
+        if isinstance(batch, (tuple, list)):
+            if len(batch) < 3:
+                raise RuntimeError("Expected at least (inputs, monthly, annual) in test batch")
+            batch_inputs, batch_monthly, batch_annual = batch[0], batch[1], batch[2]
+            if len(batch) >= 4:
+                extra = batch[3]
+                if isinstance(extra, dict):
+                    is_full = bool(extra.get("full", False))
+                elif isinstance(extra, (bool, int)):
+                    is_full = bool(extra)
+        elif isinstance(batch, dict):
+            batch_inputs  = batch.get("inputs")
+            batch_monthly = batch.get("monthly")
+            batch_annual  = batch.get("annual")
+            is_full       = bool(batch.get("full", False))
+        else:
+            # Fallback: try positional unpack
+            batch_inputs, batch_monthly, batch_annual = batch
+
+        # For full-sequence diagnostics, skip batches not marked full
+        if eval_mode == "full_sequence" and not is_full:
+            continue
+
+        # shapes:
+        #   inputs   [nin, 365*Y, L]
+        #   labels_m [nm, 12*Y,  L]
+        #   labels_a [na, Y,     L]
+        inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
+        labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
+        labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
 
         nin, Ttot, L = int(inputs.shape[0]), int(inputs.shape[1]), int(inputs.shape[2])
         Y = int(labels_a.shape[1])
-        if L <= 0 or Y <= 0:
-            continue
 
-        nm = int(labels_m.shape[0]); na = int(labels_a.shape[0])
+        nm = int(labels_m.shape[0])
+        na = int(labels_a.shape[0])
 
         in_m_idx  = _san_idx(rollout_cfg.get("in_monthly_state_idx", []) or [], nin)
         in_a_idx  = _san_idx(rollout_cfg.get("in_annual_state_idx", [])  or [], nin)
         out_m_idx = _san_idx(rollout_cfg.get("out_monthly_state_idx", []) or [], nm)
         out_a_idx = _san_idx(rollout_cfg.get("out_annual_state_idx", [])  or [], na)
 
-        # ----------- MODE A: teacher-forced (H=0, forced monthly mode from cfg) -----------
+        # ---------- MODE A: teacher-forced / sequential_no_carry (H=0) ----------
         if eval_mode in {"teacher_forced", "sequential_no_carry"}:
-            forced_mode = rollout_cfg.get("monthly_mode", "batch_months")
+            forced_mode = "batch_months" if eval_mode == "teacher_forced" else "sequential_months"
             with model_mode(model, forced_mode):
                 for y in range(Y):
-                    ds, de = _year_bounds(y, y + 1)
+                    ds, de = y * 365, (y + 1) * 365
                     xb = torch.stack([inputs[:, ds:de, loc].T for loc in range(L)], dim=0)  # [L,365,nin]
-                    if not torch.isfinite(xb).all():  # strict finiteness
+                    # inputs + preds must be finite (no exceptions)
+                    if not torch.isfinite(xb).all():
                         continue
                     preds_abs = model(xb)  # [L,365,nm+na]
                     if not torch.isfinite(preds_abs).all():
                         continue
+
                     pm, pa = _pool_from_daily_abs(preds_abs, nm, na)
-                    (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+                    ms, me = y * 12, (y + 1) * 12
                     ybm = torch.stack([labels_m[:, ms:me, loc].T for loc in range(L)], dim=0)  # [L,12,nm]
-                    yba = torch.stack([labels_a[:, ys:ye, loc].T for loc in range(L)], dim=0)  # [L, 1,na]
-                    if not (torch.isfinite(ybm).all() and torch.isfinite(yba).all()):
+                    yba = torch.stack([labels_a[:, y:y+1, loc].T for loc in range(L)], dim=0)  # [L, 1,na]
+
+                    # ---- Filter 2: labels must be finite except ignored LAI heads ----
+                    if not _labels_all_finite_except(ybm, yba, monthly_names, IGNORED_NONFINITE_VARS):
                         continue
+
+                    # Add pairs
                     for j, name in enumerate(monthly_names):
-                        buf[name].add(
-                            ybm[..., j].reshape(-1).cpu().numpy(),
-                            pm[..., j].reshape(-1).cpu().numpy()
-                        )
+                        buf[name].add(ybm[..., j].reshape(-1).cpu().numpy(),
+                                      pm[..., j].reshape(-1).cpu().numpy())
                     for j, name in enumerate(annual_names):
-                        buf[name].add(
-                            ybm[..., j].reshape(-1).cpu().numpy(),
-                            pm[..., j].reshape(-1).cpu().numpy()
-                        )
+                        buf[name].add(yba[..., j].reshape(-1).cpu().numpy(),
+                                      pa[..., j].reshape(-1).cpu().numpy())
             continue
 
-        # ----------- MODE B: full-sequence (warm-up + carry, forced sequential) ----------
+        # ---------- MODE B: full-sequence (forced sequential) ----------
         if eval_mode == "full_sequence":
             with model_mode(model, "sequential_months"):
                 for loc in range(L):
-                    ds0, de0 = _year_bounds(0, 1)
+                    # warm-up year 0
+                    ds0, de0 = 0, 365
                     xb0 = inputs[:, ds0:de0, loc].T.unsqueeze(0)  # [1,365,nin]
                     if not torch.isfinite(xb0).all():
                         continue
@@ -358,8 +446,8 @@ def gather_pred_label_pairs(
                     prev_a = pa0[:, 0, out_a_idx] if out_a_idx else None
 
                     for y in range(1, Y):
-                        ds, de = _year_bounds(y, y+1)
-                        xb = inputs[:, ds:de, loc].T.unsqueeze(0)
+                        ds, de = y * 365, (y + 1) * 365
+                        xb = inputs[:, ds:de, loc].T.unsqueeze(0)  # [1,365,nin]
                         if (prev_m is not None) and in_m_idx:
                             _inject_monthly_carry(xb, prev_m, in_m_idx)
                         if (prev_a is not None) and in_a_idx:
@@ -371,21 +459,25 @@ def gather_pred_label_pairs(
                         if not torch.isfinite(preds).all():
                             continue
                         pm, pa = _pool_from_daily_abs(preds, nm, na)
-                        (ms, me), (ys, ye) = _slice_last_year_bounds(y)
+
+                        # ground truth for year y
+                        ms, me = y * 12, (y + 1) * 12
                         ybm = labels_m[:, ms:me, loc].T.unsqueeze(0)
-                        yba = labels_a[:, ys:ye, loc].T.unsqueeze(0)
-                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
+                        yba = labels_a[:, y:y+1, loc].T.unsqueeze(0)
+
+                        if _labels_all_finite_except(ybm, yba, monthly_names, IGNORED_NONFINITE_VARS):
                             for j, name in enumerate(monthly_names):
-                                buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
-                                buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
+                                buf[name].add(ybm[..., j].reshape(-1).cpu().numpy(),
+                                              pm[..., j].reshape(-1).cpu().numpy())
                             for j, name in enumerate(annual_names):
-                                buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
-                                buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+                                buf[name].add(yba[..., j].reshape(-1).cpu().numpy(),
+                                              pa[..., j].reshape(-1).cpu().numpy())
+
                         prev_m = _prev_monthly_from_preds(pm, out_m_idx)
                         prev_a = pa[:, 0, out_a_idx] if out_a_idx else None
             continue
 
-        # ----------- MODE C: tail-only (windowed; H = cfg['carry_horizon']) -----------
+        # ---------- MODE C: tail-only (windowed; H from cfg) ----------
         H = int(rollout_cfg.get("carry_horizon", 0) or 0)
         target_mode = "sequential_months" if H > 0 else rollout_cfg.get("monthly_mode", "batch_months")
         windows = [(loc, t) for loc in range(L) for t in range(H, Y)]
@@ -393,13 +485,12 @@ def gather_pred_label_pairs(
             continue
 
         with model_mode(model, target_mode):
-            # Simple streaming loop over windows
             for loc, t in windows:
                 prev_m = None
                 prev_a = None
                 for y_off in range(H + 1):
                     y_abs = t - H + y_off
-                    ds, de = _year_bounds(y_abs, y_abs + 1)
+                    ds, de = y_abs * 365, (y_abs + 1) * 365
                     xb = inputs[:, ds:de, loc].T.unsqueeze(0)  # [1,365,nin]
                     if y_off > 0:
                         if (prev_m is not None) and in_m_idx:
@@ -416,30 +507,24 @@ def gather_pred_label_pairs(
                     prev_m = _prev_monthly_from_preds(pm, out_m_idx)
                     prev_a = pa[:, 0, out_a_idx] if out_a_idx else None
 
-                    # collect only tail
                     if y_off == H:
-                        (ms, me), (ys, ye) = _slice_last_year_bounds(t)
+                        ms, me = t * 12, (t + 1) * 12
                         ybm = labels_m[:, ms:me, loc].T.unsqueeze(0)
-                        yba = labels_a[:, ys:ye, loc].T.unsqueeze(0)
-                        if torch.isfinite(ybm).all() and torch.isfinite(yba).all():
-                            for j, name in enumerate(monthly_names):
-                                buf[name][0].append(ybm[..., j].reshape(-1).cpu().numpy())
-                                buf[name][1].append(pm[..., j].reshape(-1).cpu().numpy())
-                            for j, name in enumerate(annual_names):
-                                buf[name][0].append(yba[..., j].reshape(-1).cpu().numpy())
-                                buf[name][1].append(pa[..., j].reshape(-1).cpu().numpy())
+                        yba = labels_a[:, t:t+1, loc].T.unsqueeze(0)
 
-    # Concatenate & optional downsample
-    rng = np.random.default_rng(123)
+                        if _labels_all_finite_except(ybm, yba, monthly_names, IGNORED_NONFINITE_VARS):
+                            for j, name in enumerate(monthly_names):
+                                buf[name].add(ybm[..., j].reshape(-1).cpu().numpy(),
+                                              pm[..., j].reshape(-1).cpu().numpy())
+                            for j, name in enumerate(annual_names):
+                                buf[name].add(yba[..., j].reshape(-1).cpu().numpy(),
+                                              pa[..., j].reshape(-1).cpu().numpy())
+
+    # ---- Extract from reservoirs safely ----
     out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-    for k, (ys, ps) in buf.items():
-        y = np.concatenate(ys, axis=0) if ys else np.empty((0,), dtype=float)
-        p = np.concatenate(ps, axis=0) if ps else np.empty((0,), dtype=float)
-        n = y.size
-        if (max_points_per_var is not None) and (n > max_points_per_var):
-            idx = rng.choice(n, size=max_points_per_var, replace=False)
-            y = y[idx]; p = p[idx]
-        out[k] = (y, p)
+    for name, r in buf.items():
+        y, p = r.snapshot()
+        out[name] = (y, p)
     return out
 
 # =============================================================================
@@ -588,7 +673,7 @@ def run_diagnostics(
     rollout_cfg: dict,
     run_dir: Path,
     logger: Optional[logging.Logger] = None,
-    subsample_points_pairs: int = 2_000_000,
+    subsample_points_pairs: int = 200_000,
     subsample_points_plots: int = 200_000,
     do_teacher_forced: bool = True,
     do_full_sequence: bool = True,

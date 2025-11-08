@@ -1,10 +1,52 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Dict, Tuple, Set
+from typing import Iterable, Optional, Dict, Tuple, Set, Any
 from pathlib import Path
 import random
 import json
 import numpy as np
 import torch
+
+# ---------------------------------------------------------------------------
+# Internal helper: safely unpack a batch that may include a 4th "full"/meta item
+# ---------------------------------------------------------------------------
+
+def _extract_inputs_and_annual(batch: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Return (inputs, annual_labels) from a DataLoader batch.
+
+    Supports:
+      • tuple/list of length 3: (x, m, a)
+      • tuple/list of length ≥4: (x, m, a, meta/flag, ...)
+      • dict-like: expects keys 'inputs' and 'annual' (or fallback 'labels_a')
+
+    Raises:
+      RuntimeError if required tensors cannot be found.
+    """
+    # tuple/list
+    if isinstance(batch, (tuple, list)):
+        if len(batch) < 3:
+            raise RuntimeError("Batch must have at least 3 items: (inputs, monthly, annual)")
+        x = batch[0]
+        a = batch[2]
+        return x, a
+
+    # dict-like
+    if isinstance(batch, dict):
+        # Preferred keys
+        x = batch.get("inputs", None)
+        a = batch.get("annual", batch.get("labels_a", None))
+        if x is not None and a is not None:
+            return x, a
+
+    # Fallback: try positional unpack if it behaves like (x, m, a, ...)
+    try:
+        x, _m, a = batch[0], batch[1], batch[2]
+        return x, a
+    except Exception:
+        pass
+
+    raise RuntimeError("Unrecognised batch structure; expected (x,m,a[,...]) or dict-like with 'inputs'/'annual'.")
+
 
 # ---------------------------------------------------------------------------
 # 1. Batch & window statistics
@@ -14,31 +56,60 @@ def count_batches_and_windows(dl: Iterable, split_name: str = "dataset") -> Tupl
     """
     Count how many *outer batches* and (location × year) *windows* exist in a DataLoader.
 
-    Used for reporting dataset geometry and computing steps per epoch.
+    Assumes shape conventions:
+      inputs   : [batch=1, nin, 365*Y, L]  or [nin, 365*Y, L]
+      annual   : [batch=1, na,      Y, L]  or [na,      Y, L]
 
     Args:
-        dl: DataLoader-like iterable returning (inputs, monthly_labels, annual_labels).
-        split_name: Human-readable name for error reporting (e.g., 'train').
+        dl: DataLoader-like iterable returning (inputs, monthly_labels, annual_labels, [meta/full]).
+        split_name: Used for friendly error messages.
 
     Returns:
-        tuple[int, int]: (num_batches, total_windows)
+        (num_batches, total_windows)
     """
-    num_batches = len(dl)
+    # Number of outer batches
+    try:
+        num_batches = len(dl)
+    except Exception:
+        # If the DataLoader has no __len__, fall back to single pass (rare in your setup)
+        num_batches = sum(1 for _ in dl)
+
     if num_batches == 0:
         raise ValueError(f"{split_name} is empty (no batches). Cannot proceed with training.")
 
-    # Peek at first batch (no persistent consumption) to infer geometry
-    first_inputs, _, first_annual = next(iter(dl))
+    # Peek the first batch to infer geometry (does not consume the loader globally)
+    first_batch = next(iter(dl))
+    first_inputs, first_annual = _extract_inputs_and_annual(first_batch)
 
-    # Shapes: inputs [nin, 365 * n_years, n_locations]; annual [na, n_years, n_locations]
+    # Squeeze leading batch dim if present
     s_in  = first_inputs.squeeze(0)
     s_ann = first_annual.squeeze(0)
 
-    n_locations = s_in.shape[2]
-    n_years     = s_ann.shape[1]
+    # Expect inputs [nin, 365*Y, L] and annual [na, Y, L]
+    if s_in.ndim != 3 or s_ann.ndim != 3:
+        raise ValueError(
+            f"{split_name}: unexpected tensor ranks — inputs.ndim={s_in.ndim}, annual.ndim={s_ann.ndim} "
+            "(expected 3 after squeeze)."
+        )
 
-    # One less year used for supervision (since we use previous year’s state)
-    effective_years = n_years - 1
+    nin, Ttot, n_locations = int(s_in.shape[0]), int(s_in.shape[1]), int(s_in.shape[2])
+    na, n_years, n_locations_b = int(s_ann.shape[0]), int(s_ann.shape[1]), int(s_ann.shape[2])
+
+    if n_locations_b != n_locations:
+        raise ValueError(
+            f"{split_name}: location dimension mismatch between inputs (L={n_locations}) "
+            f"and annual labels (L={n_locations_b})."
+        )
+
+    # Robust year inference from annual head (preferred)
+    Y = n_years
+    # (Optionally sanity-check: Ttot should be 365 * Y for noleap calendars)
+    # If needed, you could relax this but it matches your dataset convention.
+    if Y <= 0:
+        raise ValueError(f"{split_name}: inferred Y={Y} from annual labels; must be > 0.")
+
+    # Supervision uses previous-year state → effective target years = Y-1
+    effective_years = max(0, Y - 1)
     windows_per_batch = n_locations * effective_years
 
     return num_batches, num_batches * windows_per_batch
@@ -53,12 +124,12 @@ def get_split_stats(
     """
     Compute per-split batch/window counts and steps-per-epoch (considering grad accumulation).
 
-    Args:
-        train_dl, valid_dl, test_dl: Dataloaders for each split.
-        accum_steps: Gradient accumulation steps (optional).
-
     Returns:
-        dict[str, dict[str, int]]: Summary stats for {train, val, test}.
+        dict with keys 'train', 'val', 'test' and sub-keys:
+          - batches
+          - windows
+          - steps_per_epoch (train only)
+          - eff_accum (train only)
     """
     stats: Dict[str, Dict[str, int]] = {}
 
@@ -106,7 +177,6 @@ def set_seed(seed: int = 42) -> None:
 # 3. Standardisation dictionary loader & filter
 # ---------------------------------------------------------------------------
 
-
 def load_standardisation_only(
     standardisation_path: Path,
 ) -> Tuple[Dict[str, Dict[str, float]], Set[str]]:
@@ -129,8 +199,8 @@ def load_standardisation_only(
     with open(standardisation_path, "r") as f:
         raw_stats = json.load(f)
 
-    std_dict = {}
-    invalid_vars = set()
+    std_dict: Dict[str, Dict[str, float]] = {}
+    invalid_vars: Set[str] = set()
 
     for k, v in raw_stats.items():
         if is_valid_stat(v):

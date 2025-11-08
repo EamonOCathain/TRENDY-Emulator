@@ -73,13 +73,15 @@ def parse_args():
     parser.add_argument("--scan_finite", action="store_true",
                     help="Scan datasets for non-finite values before training (warns if any found)")
     
-    # Modes
+    # --- Modes
     parser.add_argument("--val_only", action="store_true",
-                    help="Run only the validation pass (skip training and testing).")
+                        help="Run only the validation pass (skip training and testing).")
     parser.add_argument("--train_only", action="store_true",
                         help="Skip testing after training.")
     parser.add_argument("--test_only", action="store_true",
                         help="Run only the testing suite (skip training/validation).")
+    parser.add_argument("--diagnostics_only", action="store_true",
+                        help="Skip loss-testing and run only diagnostics plots/metrics in the testing stage.")
     parser.add_argument("--skip_diagnostics", action="store_true",
                         help="Skip the diagnostic plots part of the testing routine")
     parser.add_argument("--delta_luh", action="store_true",
@@ -161,6 +163,10 @@ def parse_args():
     # --- Validation ---
     parser.add_argument("--val_freq", type=float, default=1.0,
                         help="Validate every N epochs (can be fractional)")
+    parser.add_argument("--validation_type", type=str, default="tail",
+                        choices=["tail", "full_sequence"],
+                        help="Validation policy: 'tail' (current behaviour) or 'full_sequence' "
+                            "(carry across the whole series, score all years, only on batches flagged 'full').")
     
     # Transfer Learning
     parser.add_argument("--transfer_learn", action="store_true",
@@ -184,6 +190,13 @@ if args.resume and args.use_foundation:
 
 if args.train_only and args.test_only:
     raise SystemExit("Cannot use --train_only and --test_only together.")
+
+# diagnostics_only overrides skip_diagnostics (can't both skip and only-run them)
+if args.diagnostics_only and args.skip_diagnostics:
+    logging.getLogger(args.job_name).warning(
+        "[flags] --diagnostics_only set; overriding --skip_diagnostics."
+    )
+    args.skip_diagnostics = False
 
 # ensure cleanup runs even if something sys.exit()'s later
 atexit.register(lambda: cleanup_distrib_and_cuda(ddp=dist.is_available() and dist.is_initialized()))
@@ -929,64 +942,90 @@ def main():
                         log.warning(f"[plots] {name} failed but continuing: {e}", exc_info=True)
                     return None
 
-            reload_best_weights()
-
-            if ddp and dist.is_initialized():
-                dist.barrier(device_ids=[LOCAL_RANK])
-
-            # Use the best weights (if available) for testing/diagnostics
-            _ = reload_best_weights()
-
-            if ddp and dist.is_initialized():
-                dist.barrier(device_ids=[LOCAL_RANK])
-
-            # Evaluate losses in all modes and write JSONs under run_dir/test
-            results = evaluate_all_modes(
-                model=model,
-                loss_func=loss_fn,
-                test_dl=test_dl,
-                device=DEVICE,
-                rollout_cfg=rollout_cfg,
-                args=args,
-                run_dir=run_dir,
-                logger=log,
-                eval_mb_size=args.eval_mb_size,
-                full_sequence_horizon=123,
-            )
-
-            # --- synchronize all ranks before diagnostics ---
+            # --- make sure all ranks are done writing checkpoints before loading ---
             if ddp and dist.is_initialized():
                 dist.barrier()
 
-            # Only rank 0 runs diagnostics; others idle behind a barrier
-            is_main_rank = (not ddp) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+            # Load best weights once (if present) before testing/diagnostics
+            reloaded = reload_best_weights()
+            if is_main:
+                log.info("[eval] Using %s weights",
+                        "best.pt" if reloaded else "current model (no best.pt found)")
 
-            if is_main_rank and not args.skip_diagnostics:
-                # Metrics CSVs, NPZs, and scatter plots (teacher-forced, full-sequence, and tail-only if H>0)
-                log.info("[diagnostics] starting metrics/plots (subsample pairs=2M, plots=200k)")
-                _safe(lambda: run_diagnostics(
+            if ddp and dist.is_initialized():
+                dist.barrier()
+
+            # =============== Branch: diagnostics-only vs normal testing ===============
+            if args.diagnostics_only:
+                # Diagnostics-only: skip evaluate_all_modes and go straight to plots/metrics
+                is_main_rank = (not ddp) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+                if is_main_rank:
+                    log.info("[diagnostics] diagnostics-only mode: skipping loss tests.")
+                    _safe(lambda: run_diagnostics(
+                        model=model,
+                        test_dl=test_dl,
+                        device=DEVICE,
+                        rollout_cfg=rollout_cfg,
+                        run_dir=run_dir,
+                        logger=log,
+                        subsample_points_pairs=200_000,
+                        subsample_points_plots=200_000,
+                        do_teacher_forced=True,
+                        do_full_sequence=True,
+                        do_tail_only=True,
+                        do_sequential_no_carry=True,
+                    ), "run_diagnostics")
+                else:
+                    try:
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
+
+                if ddp and dist.is_initialized():
+                    dist.barrier()
+
+            else:
+                # Normal testing path: run losses first
+                results = evaluate_all_modes(
                     model=model,
+                    loss_func=loss_fn,
                     test_dl=test_dl,
                     device=DEVICE,
                     rollout_cfg=rollout_cfg,
+                    args=args,
                     run_dir=run_dir,
                     logger=log,
-                    subsample_points_pairs=2_000_000,
-                    subsample_points_plots=200_000,
-                    do_teacher_forced=True,
-                    do_full_sequence=True,
-                    do_tail_only=True,
-                ), "run_diagnostics")
+                    eval_mb_size=args.eval_mb_size,
+                    full_sequence_horizon=123,
+                )
 
-                # Let non-main ranks leave their wait
                 if ddp and dist.is_initialized():
                     dist.barrier()
-            else:
-                # Free GPU memory while waiting for rank 0 to finish diagnostics
-                try:
-                    torch.cuda.empty_cache()
-                except Exception:
-                    pass
+
+                # Then optional diagnostics
+                is_main_rank = (not ddp) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+                if is_main_rank and not args.skip_diagnostics:
+                    log.info("[diagnostics] starting metrics/plots (subsample pairs=2M, plots=200k)")
+                    _safe(lambda: run_diagnostics(
+                        model=model,
+                        test_dl=test_dl,
+                        device=DEVICE,
+                        rollout_cfg=rollout_cfg,
+                        run_dir=run_dir,
+                        logger=log,
+                        subsample_points_pairs=200_000,
+                        subsample_points_plots=200_000,
+                        do_teacher_forced=True,
+                        do_full_sequence=True,
+                        do_tail_only=True,
+                        do_sequential_no_carry=True,
+                    ), "run_diagnostics")
+                else:
+                    try:
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
+
                 if ddp and dist.is_initialized():
                     dist.barrier()
                 
@@ -994,7 +1033,7 @@ def main():
         cleanup_distrib_and_cuda(ddp=ddp)
 
     if is_main:
-        log.info("Succesfully completed training: %s", run_dir)
+        log.info("Successfully completed training: %s", run_dir)
 
 # =============================================================================
 # Entrypoint

@@ -84,6 +84,7 @@ class CustomDataset(Dataset):
             self.daily_paths   = [self.base_path / f"{stem}/daily.zarr"]
             self.monthly_paths = [self.base_path / f"{stem}/monthly.zarr"]
             self.annual_paths  = [self.base_path / f"{stem}/annual.zarr"]
+            self.dataset_tags  = ["full"]
 
         elif self.tensor_type == "val":
             stems = [
@@ -94,6 +95,7 @@ class CustomDataset(Dataset):
             self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
             self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
             self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
+            self.dataset_tags  = ["early", "late", "full"]
 
         elif self.tensor_type == "test":
             stems = [
@@ -104,7 +106,7 @@ class CustomDataset(Dataset):
             self.daily_paths   = [self.base_path / f"{s}/daily.zarr"   for s in stems]
             self.monthly_paths = [self.base_path / f"{s}/monthly.zarr" for s in stems]
             self.annual_paths  = [self.base_path / f"{s}/annual.zarr"  for s in stems]
-
+            self.dataset_tags  = ["full", "early", "late"]
         else:
             raise ValueError(f"Unknown tensor_type: {self.tensor_type!r}")
 
@@ -365,7 +367,8 @@ class CustomDataset(Dataset):
     # ---------------------------------------------------------------------
     def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         ds_idx, scenario, loc0, loc1 = self.meta[i]
-
+        period_tag = self.dataset_tags[ds_idx] 
+        
         # slice
         Dd = self.ds_daily[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
         Dm = self.ds_monthly[ds_idx].isel(location=slice(loc0, loc1), scenario=scenario)
@@ -438,6 +441,7 @@ class CustomDataset(Dataset):
             torch.from_numpy(inputs.astype(np.float32,   copy=False)),
             torch.from_numpy(labels_m.astype(np.float32, copy=False)),
             torch.from_numpy(labels_a.astype(np.float32, copy=False)),
+            period_tag, 
         )
         
 # ---------------------------------------------------------------------------

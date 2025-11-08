@@ -11,14 +11,14 @@
 # #SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=carry_months_in_}"
+: "${JOB_NAME:=carry_months}"
 : "${CARRY_FORWARD_STATES=True}"
 : "${SEQUENTIAL_MONTHS=True}"
 : "${SCENARIO:=S3}"
 # Device
 : "${DEVICE:=cpu}"
 : "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/carry_distances/MODELS}"
-
+: "${NUMBER_TILES:=2}"
 # Weights
 : "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/sequential_months/checkpoints/best.pt}"
 
@@ -60,7 +60,8 @@ python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipel
   --sequential_months "${SEQUENTIAL_MONTHS}" \
   --exclude_vars "${EXCLUDE_VARS}" \
   --device "${DEVICE}" \
-  --ilamb_dir_global "${ILAMB_DIR_GLOBAL}"
+  --ilamb_dir_global "${ILAMB_DIR_GLOBAL}" \
+  --number_tiles "${NUMBER_TILES}"
 
 # --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
 #   --overwrite_data

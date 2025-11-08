@@ -3,18 +3,23 @@
 """
 Overwrite ONLY 'potential_radiation' for the test early period (daily) training Zarr.
 
+Changes from previous version:
+- Always reads from the fixed file:
+    /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/preprocessed/1x1/historical/twenty_year_files/potential_radiation/potential_radiation_1981-2000.nc
+- Ignores the file's time axis completely. Assumes it starts at 1901-01-01,
+  daily, noleap, and simply writes the first n_time rows needed by the target period.
+- Overwrites actual values in the store for the target period; store's own time
+  coordinate is created from 1901-01-01 via make_time_axis_days_since_1901.
+
 Array-friendly:
 - Builds per-tile tasks (disjoint location slices).
 - Uses src.utils.tools.slurm_shard(tasks) to select tasks for this SLURM array element.
 - Each shard overwrites only its own tiles (safe concurrent writes to disjoint regions).
 - Only shard 0 consolidates metadata and validates NaNs at the end.
 
-Details:
-- Target:  tensor_type='test', mask_code=2, period='test_period_early', time_res='daily'
-- Variable: 'potential_radiation'
-- Source layout: daily "twenty"-year files (daily_files_mode='twenty')
-- Overwrite: unconditional (ignores any .done flags)
-- Validation: shard 0 counts total NaNs for 'potential_radiation' and prints the number
+Target:
+- tensor_type='test', mask_code=2, period='test_period_early', time_res='daily'
+- variable: 'potential_radiation'
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Tuple, List
 
 import numpy as np
+import xarray as xr
 import zarr
 from numcodecs import Blosc
 
@@ -53,8 +59,6 @@ from src.utils.make_training_zarrs import (
     ensure_variable_in_training_store,
     out_store_path,
     scenario_index,
-    open_source_for_var,
-    load_batch_from_daily_tiles,
     make_time_axis_days_since_1901,
     build_indices_from_mask,
     flat_to_ij,
@@ -87,9 +91,10 @@ LOC_FOR_MASK = {0: "train", 1: "val", 2: "test"}
 OUT_ROOT_DEFAULT = zarr_dir / "training_new"
 OUT_ROOT = Path(os.getenv("OUT_ROOT_OVERRIDE", str(OUT_ROOT_DEFAULT)))
 
-# Force daily twenty-year layout for sources
-DAILY_FILES_MODE = "twenty"  # same meaning as --daily_files_mode=twenty
-
+# Fixed source file (always used)
+FIXED_SOURCE_FILE = Path(
+    "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/preprocessed/1x1/historical/twenty_year_files/potential_radiation/potential_radiation_1981-2000.nc"
+)
 
 def is_shard0() -> bool:
     """Return True if this is SLURM array task 0 (or no array set)."""
@@ -101,39 +106,52 @@ def is_shard0() -> bool:
     except Exception:
         return False
 
+def load_fixed_source_array() -> np.ndarray:
+    """
+    Load VAR_NAME from the fixed NetCDF file as a numpy array [time, lat, lon].
+    Ignores and does not decode the file's time axis.
+    """
+    if not FIXED_SOURCE_FILE.exists():
+        raise FileNotFoundError(f"Fixed source file not found: {FIXED_SOURCE_FILE}")
+    ds = xr.open_dataset(FIXED_SOURCE_FILE, decode_times=False)
+    if VAR_NAME not in ds:
+        raise KeyError(f"Variable '{VAR_NAME}' not found in {FIXED_SOURCE_FILE.name}")
+    # Load into memory (thread-safe indexing afterward)
+    arr = ds[VAR_NAME].astype("float32").values  # shape [T, Y, X]
+    if arr.ndim != 3:
+        raise RuntimeError(f"Unexpected shape for {VAR_NAME}: {arr.shape} (expected 3D [time, lat, lon])")
+    return arr  # numpy float32
 
-def process_prad_tile(
-    arr,                    # zarr array [time, scenario, location]
+def process_prad_tile_from_fixed(
+    target_arr,            # zarr array [time, scenario, location]
     n_time: int,
     loc_start: int,
     loc_end: int,
     iy: np.ndarray,
     ix: np.ndarray,
-    start_str: str,
-    end_str: str,
+    src_full: np.ndarray,  # numpy [Tsrc, Ny, Nx]
 ) -> None:
     """
-    Unconditionally read from daily-twenty-year sources and overwrite this tile for all scenarios.
+    Overwrite this tile for all scenarios using the fixed source array.
+    - Uses the first n_time rows of src_full (ignores src time values).
+    - Selects elementwise (iy[k], ix[k]) per location into a [n_time, Lchunk] block.
     """
+    Tsrc, Ny, Nx = src_full.shape
+    Lchunk = int(loc_end - loc_start)
+    if Tsrc < n_time:
+        raise RuntimeError(
+            f"Source has too few timesteps for requested period: src={Tsrc}, needed={n_time}"
+        )
+
+    # Pairwise gather: convert to flat spatial index, slice first n_time days
+    flat_idx = (iy.astype(np.int64) * Nx + ix.astype(np.int64))  # [Lchunk]
+    block = src_full[:n_time].reshape(n_time, Ny * Nx)[:, flat_idx]  # [n_time, Lchunk]
+    block = np.ascontiguousarray(block, dtype="float32")
+
+    # Write the same block for each scenario (S0..S3)
     for scen in SCENARIOS:
         s_idx = scenario_index(scen)
-
-        mode, src_obj = open_source_for_var(scen, VAR_NAME, TIME_RES, daily_mode=DAILY_FILES_MODE)
-        if mode != "daily":
-            raise RuntimeError(f"Expected daily mode for {VAR_NAME}, got {mode}")
-
-        data_tb = load_batch_from_daily_tiles(src_obj, VAR_NAME, iy, ix, start_str, end_str)
-
-        if data_tb.shape[0] != n_time:
-            raise RuntimeError(
-                f"Time mismatch {VAR_NAME} scen={scen}: source T={data_tb.shape[0]} vs target T={n_time}"
-            )
-
-        data_tb = np.ascontiguousarray(data_tb, dtype="float32")  # enforce dtype
-
-        # overwrite write into disjoint location slice
-        arr.oindex[0:n_time, s_idx:s_idx+1, loc_start:loc_end] = data_tb[:, None, :]
-
+        target_arr.oindex[0:n_time, s_idx:s_idx+1, loc_start:loc_end] = block[:, None, :]
 
 def validate_and_count_nans(store: Path) -> int:
     root = zarr.open_group(str(store), mode="r")
@@ -147,9 +165,8 @@ def validate_and_count_nans(store: Path) -> int:
             total_nans += int(np.isnan(block).sum())
     return total_nans
 
-
 def main():
-    # --- indices & time axis ---
+    # --- indices & time axis (store time is authoritative) ---
     start_str, end_str = PERIODS[PERIOD_KEY]
     time_days = make_time_axis_days_since_1901(TIME_RES, start_str, end_str)
     n_time = len(time_days)
@@ -160,9 +177,13 @@ def main():
     loc_idx = loc_idx_full[:n_locations]
     lat_idx_all, lon_idx_all = flat_to_ij(loc_idx)
 
-    loc_key  = LOC_FOR_MASK[MASK_CODE]
+    loc_key  = {0: "train", 1: "val", 2: "test"}[MASK_CODE]
     set_name = "test"
-    store = out_store_path(OUT_ROOT, set_name, loc_key, PERIOD_KEY, TIME_RES)
+    set_name = "test"  # top-level tensor
+    period_dir = f"train_location_{PERIOD_KEY}"  # literally "train_location_test_period_early"
+    leaf = f"{TIME_RES}.zarr"                    # "daily.zarr"
+    store = OUT_ROOT / set_name / period_dir / leaf
+    store.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info("Target store: %s", store)
     logger.info("Locations: %d (chunk=%d); Timesteps: %d; Period: %s -> %s",
@@ -171,7 +192,7 @@ def main():
     # Ensure skeleton/variable exist (safe for concurrent shards; overwrite=False)
     ensure_training_skeleton(
         store,
-        time_days=time_days,
+        time_days=time_days,   # <-- store's time axis: daily noleap from 1901-01-01
         loc_idx=loc_idx,
         overwrite=False,
     )
@@ -185,9 +206,13 @@ def main():
         compressor=DEFAULT_COMP,
     )
 
-    # Open once per shard
+    # Open target zarr once per shard
     root = zarr.open_group(str(store), mode="a")
     arr = root[VAR_NAME]
+
+    # Load the fixed source once per shard (numpy array)
+    src_full = load_fixed_source_array()  # [Tsrc, Ny, Nx]
+    logger.info("Loaded fixed source array %s with shape %s", FIXED_SOURCE_FILE.name, src_full.shape)
 
     # Build full tile list
     total_tiles = n_locations // FINAL_LOCATION_CHUNK
@@ -211,7 +236,7 @@ def main():
                 iy = lat_idx_all[local]
                 ix = lon_idx_all[local]
                 futs.append(ex.submit(
-                    process_prad_tile, arr, n_time, loc_start, loc_end, iy, ix, start_str, end_str
+                    process_prad_tile_from_fixed, arr, n_time, loc_start, loc_end, iy, ix, src_full
                 ))
             for f in as_completed(futs):
                 f.result()
@@ -234,10 +259,6 @@ def main():
             logger.info("[NaN REPORT] No NaNs for '%s' in %s", VAR_NAME, store)
         # Print bare number last for easy parsing
         print(nan_count)
-    else:
-        # Non-zero tasks print nothing (avoid double-reporting)
-        pass
-
 
 if __name__ == "__main__":
     main()

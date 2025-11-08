@@ -21,19 +21,28 @@ from src.paths.paths import training_zarr_dir
 
 def custom_collate(batch):
     """
-    Collate function for (inputs, labels_monthly, labels_annual) samples.
-
-    Stacks a list of tuples into three batched tensors:
-      inputs          → [B, ...]
-      labels_monthly  → [B, ...]
-      labels_annual   → [B, ...]
+    Supports samples of:
+      (inputs, labels_m, labels_a, period_tag:str)
+    Returns:
+      inputs[B,...], labels_m[B,...], labels_a[B,...], extra: dict(full=bool, tags=List[str]|None)
     """
-    inputs, labels_monthly, labels_annual = zip(*batch)
-    batched_inputs = torch.stack(inputs)
-    batched_monthly = torch.stack(labels_monthly)
-    batched_annual = torch.stack(labels_annual)
-    return batched_inputs, batched_monthly, batched_annual
+    first = batch[0]
+    if len(first) == 4:
+        inputs, labels_m, labels_a, tags = zip(*batch)      # tags: tuple[str]
+        period_tags = list(tags)
+        # consider the batch "full" if ANY sample tag equals 'full'
+        is_full = any((t == "full") or (t == "val_full") or (t == True) for t in period_tags)
+        extra = {"full": bool(is_full), "tags": period_tags}
+    else:
+        inputs, labels_m, labels_a = zip(*batch)
+        extra = {"full": False, "tags": None}
 
+    return (
+        torch.stack(inputs),
+        torch.stack(labels_m),
+        torch.stack(labels_a),
+        extra,
+    )
 
 def get_train_val_test(
     std_dict: dict,

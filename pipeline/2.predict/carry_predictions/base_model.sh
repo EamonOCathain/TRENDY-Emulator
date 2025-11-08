@@ -18,6 +18,7 @@
 # Device
 : "${DEVICE:=cpu}"
 : "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/carry_distances/MODELS}"
+: "${NUMBER_TILES:=2}"
 
 # Weights
 : "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt}"
@@ -32,9 +33,6 @@
 
 : "${STORE_PERIOD:=1901-01-01:2023-12-31}"
 : "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
-
-# Scenario
-
 
 # ---- Env ----
 module purge
@@ -63,7 +61,9 @@ python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipel
   --sequential_months "${SEQUENTIAL_MONTHS}" \
   --exclude_vars "${EXCLUDE_VARS}" \
   --device "${DEVICE}" \
-  --ilamb_dir_global "${ILAMB_DIR_GLOBAL}"
+  --ilamb_dir_global "${ILAMB_DIR_GLOBAL}" \
+  --number_tiles "${NUMBER_TILES}" \
+  --export_nc
 
 # --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
 #   --overwrite_data

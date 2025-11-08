@@ -186,18 +186,6 @@ def main():
         torch.set_num_threads(1)
     except Exception:
         pass
-    
-    
-    # -----------------------------------------------------------------------
-    # Run metadata
-    # -----------------------------------------------------------------------
-    info_dir = args.out_dir / args.job_name / "info"
-    info_dir.mkdir(parents=True, exist_ok=True)
-    args_path = info_dir / "args.yaml"
-    with open(args_path, "w") as f:
-        yaml.safe_dump({k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                       f, sort_keys=False)
-    print(f"[INFO] Saved run arguments to {args_path}")
 
     # -----------------------------------------------------------------------
     # Periods / validation
@@ -302,7 +290,7 @@ def main():
 
     print(f"[INFO] Inference input_dim={spec.nin} | output_dim={len(OUTPUT_ORDER)}")
 
-    # TL seeding provenance blob (optional)
+    # TL seeding provenance blob (optional; file is written per-scenario later)
     tl_seed_cfg: Optional[dict] = None
     if tl_vars_set:
         mapped = [rename_map.get("lai", None)]
@@ -314,8 +302,6 @@ def main():
             "state_map": rename_map.copy(),
             "state_targets": state_targets,
         }
-        with open(info_dir / "tl_seed_cfg.json", "w") as f:
-            json.dump(tl_seed_cfg, f, indent=2, sort_keys=True)
 
     # -----------------------------------------------------------------------
     # Scenario resolution
@@ -343,6 +329,24 @@ def main():
         zarr_root, nc_root = resolve_roots_for(scenario)
         run_root = zarr_root
         print(f"Writing Zarr into {run_root}")
+        
+        # --- Per-scenario run metadata (args + optional TL seed cfg) ---
+        info_dir = args.out_dir / args.job_name / "info" / scenario
+        info_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save effective args for this scenario
+        args_dict = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}
+        args_dict["scenario"] = scenario
+
+        args_path = info_dir / "args.yaml"
+        with open(args_path, "w") as f:
+            yaml.safe_dump(args_dict, f, sort_keys=False)
+        print(f"[INFO] Saved run arguments to {args_path}")
+
+        # Save TL seeding config next to args.yaml (if present)
+        if tl_seed_cfg is not None:
+            with open(info_dir / "tl_seed_cfg.json", "w") as f:
+                json.dump(tl_seed_cfg, f, indent=2, sort_keys=True)
 
         # (Re)create stores under lock
         if args.overwrite_skeleton and run_root.exists():

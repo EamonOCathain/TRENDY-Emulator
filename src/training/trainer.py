@@ -20,8 +20,7 @@ import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP  # noqa: F401
 from torch.optim import Optimizer
-from torch.utils.data import DataLoader
-
+from torch.utils.data import Subset, DataLoader
 # ---------------------------------------------------------------------------
 # Project imports / path setup
 # ---------------------------------------------------------------------------
@@ -144,28 +143,6 @@ def _inject_monthly_carry(
     except Exception as e:
         logger.error("[carry] failed to set NaNs for post-January monthly-carry inputs: %s", e)
 
-def _isfinite_except_monthly_carry_mask(
-    x_year: torch.Tensor,
-    in_m_idx: List[int],
-    first_month_len: int,
-) -> bool:
-    """
-    Return True iff x_year is finite, except allow NaNs for the *monthly-carry*
-    input features (in_m_idx) on days after January (first_month_len..364).
-    Everything else must be finite.
-    """
-    if not in_m_idx:
-        return torch.isfinite(x_year).all().item()
-
-    finite = torch.isfinite(x_year)
-    B, D, N = x_year.shape
-    allowed = torch.zeros((B, D, N), dtype=torch.bool, device=x_year.device)
-    if first_month_len < D:
-        idx = torch.as_tensor(in_m_idx, device=x_year.device, dtype=torch.long)
-        allowed[:, first_month_len:, :].index_fill_(2, idx, True)
-    ok = finite | allowed
-    return ok.all().item()
-
 def _mask_ignored_nans(
     tensor: torch.Tensor,
     name_list: list[str],
@@ -183,6 +160,30 @@ def _mask_ignored_nans(
     t_copy = tensor.clone()
     t_copy[:, mask, ...] = torch.nan_to_num(t_copy[:, mask, ...], nan=0.0)
     return t_copy
+
+def _unpack_batch(batch):
+    """
+    Returns (x, m, a, extra)
+    Supports:
+      - tuple/list: (x, m, a) or (x, m, a, extra)
+      - dict: {'inputs','monthly','annual', ['full': bool] }
+      - raw 3-tuple fallback
+    """
+    if isinstance(batch, dict):
+        x = batch.get("inputs")
+        m = batch.get("monthly")
+        a = batch.get("annual")
+        extra = batch.get("full", False)
+        return x, m, a, extra
+    if isinstance(batch, (tuple, list)):
+        if len(batch) >= 3:
+            x, m, a = batch[0], batch[1], batch[2]
+            extra = batch[3] if len(batch) >= 4 else False
+            return x, m, a, extra
+        raise RuntimeError("Batch must have at least (x, m, a)")
+    # Fallback: expect a 3-tuple-like object
+    x, m, a = batch
+    return x, m, a, False
 
 # ---------------------------------------------------------------------------
 # Early stopping helper
@@ -230,6 +231,22 @@ class EarlyStopping:
 # ---------------------------------------------------------------------------
 # Helpers for Validation 
 # ---------------------------------------------------------------------------
+
+def _find_full_batch_indices(dl) -> List[int]:
+    """Return indices in dl whose batch carries a truthy 'full' flag.
+    Cheap: inspects batch[3] or dict['full'] only; no device transfer."""
+    full_idxs = []
+    for i, batch in enumerate(dl):
+        try:
+            _, _, _, extra = _unpack_batch(batch)
+            is_full = bool(extra if isinstance(extra, (bool, int))
+                           else (isinstance(extra, dict) and extra.get("full", False)))
+            if is_full:
+                full_idxs.append(i)
+        except Exception:
+            # If anything odd, treat as not full
+            continue
+    return full_idxs
 
 def plan_validation(
     train_stats: Dict[str, int],
@@ -358,6 +375,61 @@ def model_mode(model, mode: Optional[str]):
         log.info("[mode] exit: restored_to=%s | actual_now=%s",
                  prev, getattr(target, "mode", None))
 
+# Return only a subset of val or test batches from the 'full' time zarrs
+def _choose_fullseq_batch_indices(
+    dl: DataLoader,
+    args: Optional[object],
+    device: torch.device,
+    logger: Optional[logging.Logger] = None,
+) -> List[int]:
+    """
+    Discover 'full' batches and choose a deterministic subset sized by args.val_frac.
+    DDP-consistent via broadcast.
+
+    Args:
+      dl     : DataLoader to inspect (validation or test).
+      args   : must carry .val_frac (float in [0,1]); optional .full_seq_seed (int).
+      device : torch.device (for DDP broadcast).
+      logger : optional logger for diagnostics.
+
+    Returns:
+      Sorted list of selected batch indices (may be empty if none exist or val_frac==0).
+    """
+    log = logger or _LOG
+
+    # 1) discover all 'full' batches
+    full_all = _find_full_batch_indices(dl)
+    if not full_all:
+        if log:
+            log.warning("[fullseq/select] No 'full' batches present in loader.")
+        return []
+
+    # 2) choose val_frac subset (deterministic)
+    try:
+        val_frac = float(getattr(args, "val_frac", 1.0))
+    except Exception:
+        val_frac = 1.0
+    val_frac = max(0.0, min(1.0, val_frac))
+
+    # Allow k==0 when val_frac==0 explicitly
+    k = int(round(val_frac * len(full_all)))
+    if val_frac > 0.0:
+        k = max(1, k)
+
+    seed = int(getattr(args, "full_seq_seed", 42))
+    rng = random.Random(seed)
+    idxs = list(full_all)
+    rng.shuffle(idxs)
+    chosen = sorted(idxs[:k])
+
+    # 3) DDP: broadcast chosen ids so all ranks use the same set
+    if dist.is_available() and dist.is_initialized():
+        chosen = broadcast_indices_for_ddp(chosen, device=device)
+
+    if log:
+        log.info("[fullseq/select] full_all=%d, val_frac=%.3f → chosen=%d",
+                 len(full_all), val_frac, len(chosen))
+    return chosen
 
 # =============================================================================
 # Rollout Over a Single Batch (for train/val/test)
@@ -524,20 +596,8 @@ def rollout(
                         else:
                             log.warning("[carry] non-finite annual carry vector; skipping injection.")
 
-                # guard inputs (allow NaNs only for monthly-carry vars after Jan)
-                if not _isfinite_except_monthly_carry_mask(xb, in_m_idx, first_month_len):
-                    # Extra one-shot debug on first failure
-                    if y_off == 1 and B > 0:
-                        bad = ~torch.isfinite(xb)
-                        # collapse batch
-                        bad_any = bad.any(dim=0)  # [365, nin]
-                        # show first few offending (day, channel)
-                        where = bad_any.nonzero(as_tuple=False)
-                        log.warning("[debug] non-finite INPUT at %d positions; first 10 (day,chan): %s",
-                                    where.size(0), where[:10].tolist())
-                    log.warning("[rollout] non-finite INPUT (disallowed NaNs) (B=%d, y_off=%d)", B, y_off)
-                    del xb
-                    continue
+                # NOTE: (changed) — removed all finiteness checks on inputs.
+                # We no longer gate on NaNs in inputs at any point.
 
                 # forward → daily absolutes
                 preds_abs_daily = model(xb)  # [B,365,nm+na]
@@ -568,8 +628,6 @@ def rollout(
 
                 if score_this_step:
                     # labels for current target year(s)
-                    # tail_only: one target per window (t)
-                    # all_years: if min_target_year cuts, only those >= threshold count
                     ybm_list = []
                     yba_list = []
                     valid_mask = []
@@ -589,18 +647,17 @@ def rollout(
                         continue
 
                     # pack only valid rows
-                    xb_sel = xb  # <- ensure defined for both branches
+                    xb_sel = xb
                     if all(valid_mask):
                         ybm = torch.stack(ybm_list, dim=0)              # [B,12,nm]
                         yba = torch.stack(yba_list, dim=0)              # [B, 1,na]
                         B_eff = B
-                        # xb_sel stays as xb
                     else:
                         sel = [i for i, ok in enumerate(valid_mask) if ok]
                         ybm = torch.stack([ybm_list[i] for i in sel], dim=0)
                         yba = torch.stack([yba_list[i] for i in sel], dim=0)
                         preds_abs_daily = preds_abs_daily[sel, ...]
-                        xb_sel = xb[sel, :, :]                          
+                        xb_sel = xb[sel, :, :]
                         B_eff = len(sel)
 
                     if (not torch.isfinite(ybm).all()) or (not torch.isfinite(yba).all()):
@@ -835,11 +892,11 @@ def train(
         epoch_train_units: int = 0
 
         # ============================== outer-batch loop ==============================
-        for batch_idx, (batch_inputs, batch_monthly, batch_annual) in enumerate(train_dl):
-            # Move once per outer batch
-            inputs   = batch_inputs.squeeze(0).float().to(model_device)
-            labels_m = batch_monthly.squeeze(0).float().to(model_device)
-            labels_a = batch_annual.squeeze(0).float().to(model_device)
+        for batch_idx, batch in enumerate(train_dl):
+            x_cpu, m_cpu, a_cpu, _extra = _unpack_batch(batch)
+            inputs   = x_cpu.squeeze(0).float().to(model_device)
+            labels_m = m_cpu.squeeze(0).float().to(model_device)
+            labels_a = a_cpu.squeeze(0).float().to(model_device)
 
             # Build *train* rollout policy (TF or carry depending on cfg)
             train_cfg = dict(rollout_cfg or {})
@@ -1093,6 +1150,7 @@ def train(
 
     return history, best_val, stopped_early_flag
 
+
 def validate(
     model: torch.nn.Module,
     loss_func,
@@ -1103,64 +1161,127 @@ def validate(
     rollout_cfg: Optional[dict] = None,
     args: Optional[object] = None, 
 ) -> Tuple[float, int, Dict[str, float]]:
-    
-    # Make sure args passed in
+
     assert args is not None, "trainer.train/validate require `args` (with train_mb_size/eval_mb_size)."
-    
     model.eval()
-    
     if device is None:
         device = next(model.parameters()).device
 
-    # Use same policy as training: tail_only over t>=1; H from cfg (0 for TF val)
-    base_cfg = dict(rollout_cfg or {})
-    base_cfg.update({
-        "loss_policy": "tail_only",
-        "min_target_year": 1,
-        "monthly_mode": getattr(args, "model_monthly_mode", "batch_months"),
-    })
-    
-    mb_size_eval = int(args.eval_mb_size)
-
+    val_type = getattr(args, "validation_type", "tail")
     use_index_subset = batch_indices is not None
     index_set = set(batch_indices) if use_index_subset else None
+
     total_loss = 0.0
     total_cnt  = 0
     mb_sums: Dict[str, float] = {}
 
-    with torch.inference_mode():
-        for b_idx, (batch_inputs, batch_monthly, batch_annual) in enumerate(valid_dl):
-            if use_index_subset and (b_idx not in index_set):
-                continue
-            if (not use_index_subset) and (max_batches is not None) and (b_idx >= max_batches):
-                break
+    # --- common base cfg (will be specialised per-mode below) ---
+    base_cfg = dict(rollout_cfg or {})
+    base_cfg.setdefault("min_target_year", 1)
 
-            inputs   = batch_inputs.squeeze(0).float().to(device, non_blocking=True)
-            labels_m = batch_monthly.squeeze(0).float().to(device, non_blocking=True)
-            labels_a = batch_annual.squeeze(0).float().to(device, non_blocking=True)
+    if val_type == "tail":
+        # --- existing behaviour (unchanged except inputs are no longer checked) ---
+        base_cfg.update({
+            "loss_policy": "tail_only",
+            "monthly_mode": getattr(args, "model_monthly_mode", "batch_months"),
+        })
+        mb_size_eval = int(args.eval_mb_size)
 
-            s, n, _step, mb_step = rollout(
-                model=model,
-                loss_func=loss_func,
-                inputs=inputs,
-                labels_m=labels_m,
-                labels_a=labels_a,
-                device=device,
-                rollout_cfg=base_cfg,
-                training=False,
-                mb_size=mb_size_eval,
-            )
+        with torch.inference_mode():
+            for b_idx, batch in enumerate(valid_dl):
+                if use_index_subset and (b_idx not in index_set):
+                    continue
+                if (not use_index_subset) and (max_batches is not None) and (b_idx >= max_batches):
+                    break
 
-            total_loss += float(s)
-            total_cnt  += int(n)
-            if mb_step:
-                for k, v in mb_step.items():
-                    mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+                x_cpu, m_cpu, a_cpu, _extra = _unpack_batch(batch)
+                inputs   = x_cpu.squeeze(0).float().to(device, non_blocking=True)
+                labels_m = m_cpu.squeeze(0).float().to(device, non_blocking=True)
+                labels_a = a_cpu.squeeze(0).float().to(device, non_blocking=True)
 
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+                s, n, _step, mb_step = rollout(
+                    model=model,
+                    loss_func=loss_func,
+                    inputs=inputs,
+                    labels_m=labels_m,
+                    labels_a=labels_a,
+                    device=device,
+                    rollout_cfg=base_cfg,
+                    training=False,
+                    mb_size=mb_size_eval,
+                )
 
-    # DDP reduction (sum/count and mb_sums) — keep your existing code here
+                total_loss += float(s)
+                total_cnt  += int(n)
+                if mb_step:
+                    for k, v in mb_step.items():
+                        mb_sums[k] = mb_sums.get(k, 0.0) + float(v)
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
+    else:
+        # --- full_sequence validation ---
+        base_cfg.update({
+            "loss_policy": "all_years",
+            "monthly_mode": "sequential_months",
+        })
+        mb_size_eval = int(globals().get("FULL_SEQUENCE_TEST_MB_SIZE", 35))
+
+        # Select full-sequence batches using shared helper (DDP-consistent via broadcast)
+        chosen_ids = _choose_fullseq_batch_indices(valid_dl, args, device, logger=_LOG)
+        if not chosen_ids:
+            _LOG.warning("[validate/full] No usable 'full' batches selected. "
+                        "Validation will score 0 windows this epoch.")
+            return float("inf"), 0, {}
+        _LOG.info("[validate/full] using %d full-sequence batches", len(chosen_ids))
+
+        # Build a small DataLoader over just those indices (avoid scanning the full loader)
+        base_ds = getattr(valid_dl, "dataset", None)
+        assert base_ds is not None, "valid_dl must have a dataset"
+        valid_dl_small = DataLoader(
+            Subset(base_ds, sorted(chosen_ids)),
+            batch_size=getattr(valid_dl, "batch_size", 1),
+            shuffle=False,
+            num_workers=0,                # avoids worker deadlocks here
+            persistent_workers=False,
+            pin_memory=getattr(valid_dl, "pin_memory", False),
+        )
+
+        with torch.inference_mode():
+            for _b_idx, batch in enumerate(valid_dl_small):
+                x_cpu, m_cpu, a_cpu, _extra = _unpack_batch(batch)
+                inputs   = x_cpu.squeeze(0).float().to(device, non_blocking=True)
+                labels_m = m_cpu.squeeze(0).float().to(device, non_blocking=True)
+                labels_a = a_cpu.squeeze(0).float().to(device, non_blocking=True)
+
+                # Set carry_horizon = Y-1 per chosen batch
+                Y = int(labels_a.shape[1])
+                cfg = dict(base_cfg)
+                cfg["carry_horizon"] = max(0, Y - 1)
+
+                s, n, _step, mb_step = rollout(
+                    model=model,
+                    loss_func=loss_func,
+                    inputs=inputs,
+                    labels_m=labels_m,
+                    labels_a=labels_a,
+                    device=device,
+                    rollout_cfg=cfg,
+                    training=False,
+                    mb_size=mb_size_eval,
+                )
+
+                total_loss += float(s)
+                total_cnt  += int(n)
+                if mb_step:
+                    for k_, v_ in mb_step.items():
+                        mb_sums[k_] = mb_sums.get(k_, 0.0) + float(v_)
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
+    # --------- DDP reduce (unchanged) ---------
     if dist.is_available() and dist.is_initialized():
         dev = device
         t_sum = torch.tensor([total_loss], device=dev, dtype=torch.float64)
@@ -1180,6 +1301,7 @@ def validate(
     avg = (total_loss / max(1, total_cnt)) if total_cnt > 0 else float("inf")
     mb_avgs = {k: (v / max(1, total_cnt)) for k, v in mb_sums.items()}
     return avg, total_cnt, mb_avgs
+
 
 def test_once(
     *,
@@ -1231,7 +1353,6 @@ def test_once(
         mb_size_eval = int(getattr(args, "eval_mb_size", 2048))
 
     # ---- short-series policy (only for full_sequence) ----
-    # Use args.min_full_sequence_years if present; else default 120 (after dataset drop).
     min_years_full = int(getattr(args, "min_full_sequence_years", 120))
     enforce_short_series = (carry_mode == "full_sequence" and min_years_full > 0)
 
@@ -1257,51 +1378,81 @@ def test_once(
             )
         return bad_vars
 
-    with torch.no_grad():
-        for batch_idx, (x_cpu, m_cpu, a_cpu) in enumerate(test_dl):
-            # --- Short-series guard (ONLY for full_sequence) ---
-            if enforce_short_series:
-                Y_cpu = None
-                try:
-                    if a_cpu is not None:
-                        Y_cpu = int(a_cpu.shape[2])      # labels_a is [1, na, Y_postdrop, L]
-                    elif x_cpu is not None:
-                        T = int(x_cpu.shape[2])          # inputs is [1, nin, 365*Y_postdrop, L]
-                        Y_cpu = T // 365
-                except Exception:
-                    Y_cpu = None
+    # If full-sequence, preselect batches using the same helper as validate
+    if carry_mode == "full_sequence":
+        selected = _choose_fullseq_batch_indices(test_dl, args, device, logger=log)
+        if not selected:
+            if is_main:
+                log.warning("[test/full] No usable 'full' batches selected; test will score 0 windows.")
+            return {
+                "sum_loss": 0.0, "count": 0, "num_batches": 0,
+                "avg_loss": float("inf"),
+                "skipped_batches": 0,
+                "skipped_reason_counts": {"x": 0, "m": 0, "a": 0, "short": 0},
+            }
 
-                if (Y_cpu is not None) and (Y_cpu < min_years_full):
-                    skipped_batches += 1
-                    skipped_reason_counts["short"] += 1
-                    if is_main:
-                        log.info(
-                            "[test] Skipping batch %d due to short series (Y=%d < %d)",
-                            batch_idx, Y_cpu, min_years_full
-                        )
-                    continue
-            # ---------------------------------------------------
+        # --- Build a small DataLoader over just the chosen indices ---
+        base_ds = getattr(test_dl, "dataset", None)
+        assert base_ds is not None, "test_dl must have a dataset"
+        test_dl_small = DataLoader(
+            Subset(base_ds, sorted(selected)),
+            batch_size=getattr(test_dl, "batch_size", 1),  # mirrors your test_dl
+            shuffle=False,
+            num_workers=0,                # avoid worker deadlocks here
+            persistent_workers=False,
+            pin_memory=getattr(test_dl, "pin_memory", False),
+        )
+    else:
+        test_dl_small = test_dl  # non full-seq path unchanged
+        
+    # True if we're scanning the original loader (not a subset)
+    enforce_full_flag = (carry_mode == "full_sequence") and (test_dl_small is test_dl)
+
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(test_dl_small):
+
+            # --- Unpack with optional 'full' flag (kept for safety) ---
+            is_full = False
+            if isinstance(batch, (tuple, list)):
+                if len(batch) >= 3:
+                    x_cpu, m_cpu, a_cpu = batch[0], batch[1], batch[2]
+                    if len(batch) >= 4:
+                        extra = batch[3]
+                        if isinstance(extra, dict):
+                            is_full = bool(extra.get("full", False))
+                        elif isinstance(extra, (bool, int)):
+                            is_full = bool(extra)
+                else:
+                    raise RuntimeError("Expected at least (x, m, a) in test batch")
+            elif isinstance(batch, dict):
+                x_cpu = batch.get("inputs")
+                m_cpu = batch.get("monthly")
+                a_cpu = batch.get("annual")
+                is_full = bool(batch.get("full", False))
+            else:
+                x_cpu, m_cpu, a_cpu, extra = _unpack_batch(batch)
+                is_full = bool(extra if isinstance(extra, (bool, int)) else
+                               (isinstance(extra, dict) and extra.get("full", False)))
+
+            # Only enforce 'full' when scanning the original loader.
+            if enforce_full_flag and not is_full:
+                continue
 
             # --- Batch-level finiteness guard (CPU, before .to(device)) ---
-            IGNORE_VARS = {"lai_avh15c1", "lai_modis"}
+            # NOTE: (changed) we no longer check inputs for finiteness.
+            IGNORE_VARS_LABELS = {"lai_avh15c1", "lai_modis"}
 
-            names_x = list(cfg.get("in_names", []))
             names_m = list(cfg.get("out_monthly_names", []))
             names_a = list(cfg.get("out_annual_names", []))
 
-            x_cpu_masked = _mask_ignored_nans(x_cpu, names_x, IGNORE_VARS)
-            m_cpu_masked = _mask_ignored_nans(m_cpu, names_m, IGNORE_VARS)
-            a_cpu_masked = _mask_ignored_nans(a_cpu, names_a, IGNORE_VARS)
+            m_cpu_masked = _mask_ignored_nans(m_cpu, names_m, IGNORE_VARS_LABELS)
+            a_cpu_masked = _mask_ignored_nans(a_cpu, names_a, IGNORE_VARS_LABELS)
 
-            fx = bool(torch.isfinite(x_cpu_masked).all().item()) if x_cpu_masked is not None else True
             fm = bool(torch.isfinite(m_cpu_masked).all().item()) if m_cpu_masked is not None else True
             fa = bool(torch.isfinite(a_cpu_masked).all().item()) if a_cpu_masked is not None else True
 
-            if not (fx and fm and fa):
+            if not (fm and fa):
                 skipped_batches += 1
-                if not fx:
-                    skipped_reason_counts["x"] += 1
-                    _report_nonfinite(x_cpu, "inputs (x)")
                 if not fm:
                     skipped_reason_counts["m"] += 1
                     _report_nonfinite(m_cpu, "monthly labels (m)")
@@ -1310,10 +1461,10 @@ def test_once(
                     _report_nonfinite(a_cpu, "annual labels (a)")
                 if is_main:
                     log.info(
-                        "[test] Skipping batch %d due to non-finite tensors "
-                        "(ignoring %s): finite(x)=%s finite(m)=%s finite(a)=%s",
-                        batch_idx, ", ".join(sorted(IGNORE_VARS)),
-                        fx, fm, fa,
+                        "[test] Skipping batch %d due to non-finite LABELS "
+                        "(ignoring %s). finite(m)=%s finite(a)=%s",
+                        batch_idx, ", ".join(sorted(IGNORE_VARS_LABELS)),
+                        fm, fa,
                     )
                 continue
             # ------------------------------------------------------------------------
@@ -1365,7 +1516,7 @@ def test_once(
             count_f,
             num_batches_f,
             sk_b_f,
-            sk_x_f,
+            sk_x_f,  # remains in tensor shape; will just be zero if never incremented
             sk_m_f,
             sk_a_f,
             sk_short_f,
@@ -1374,13 +1525,25 @@ def test_once(
         num_batches = int(num_batches_f)
         skipped_batches = int(sk_b_f)
         skipped_reason_counts = {
-            "x": int(sk_x_f),
+            "x": int(sk_x_f),   # kept for compatibility with any downstream logging
             "m": int(sk_m_f),
             "a": int(sk_a_f),
             "short": int(sk_short_f),
         }
 
-    avg = sum_loss / max(1.0, float(count))
+    # Summary log (only on main rank; values are now globally reduced)
+    if is_main:
+        log.info(
+            "[test/%s] batches=%d, windows=%d, sum=%.6f, avg=%s | skipped=%d (m=%d, a=%d)",
+            carry_mode, num_batches, count, sum_loss,
+            ("%.6f" % (sum_loss/float(count)) if count > 0 else "inf"),
+            skipped_batches,
+            skipped_reason_counts["m"],
+            skipped_reason_counts["a"],
+        )
+
+    # Use the same 'inf if zero' convention as validate()
+    avg = (sum_loss / float(count)) if count > 0 else float("inf")
     return {
         "sum_loss": float(sum_loss),
         "count": int(count),

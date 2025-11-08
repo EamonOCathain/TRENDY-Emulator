@@ -1,0 +1,175 @@
+[INFO][0][<module>] Linux node-r5-he18.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-08 16:40:56.435033
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][fLuc] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fLuc] RMSE scored using Collier2018
+[INFO][0][confront][Land-UseChangeEmissions/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][16_year] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][carry_months] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][16_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][1_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][2_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][3_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][5_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][8_year] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][base_model] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][carry_months] Success
+[INFO][0][<module>][total time] 5237.1 s

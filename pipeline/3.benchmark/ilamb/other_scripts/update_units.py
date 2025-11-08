@@ -3,11 +3,12 @@ import netCDF4 as nc
 from pathlib import Path
 
 # --- Parent directories to scan ---
-path_1 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_S3")
-path_2 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/ground_truth/global/MODELS")
-path_3 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/ground_truth/test/MODELS")
-path_4 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry")
-paths = [path_1, path_2, path_3, path_4]
+#path_1 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_S3")
+#path_2 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/ground_truth/global/MODELS")
+#path_3 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/ground_truth/test/MODELS")
+#path_4 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry")
+path_5 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/carry_distances")
+paths = [path_5] # path_1, path_2, path_3, path_4,
 
 # Helper: is a file within a given dir?
 def in_dir(file_path: Path, dir_path: Path) -> bool:
@@ -127,14 +128,14 @@ for base in paths:
                     ds.renameVariable("cTotal_monthly", "cTotal")
                     print(f"🔄 Renamed cTotal_monthly → cTotal in {f}")
 
-                # 2) Ground-truth model dirs: rename evapotrans/mrso
+                '''# 2) Ground-truth model dirs: rename evapotrans/mrso
                 if in_dir(f, path_2) or in_dir(f, path_3):
                     if "et" in ds.variables and "evapotrans" not in ds.variables:
                         ds.renameVariable("et", "evapotrans")
                         print(f"🔄 Renamed et → evapotrans in {f}")
                     if "mrso" in ds.variables and "mrsol" not in ds.variables:
                         ds.renameVariable("mrso", "mrsol")
-                        print(f"🔄 Renamed mrso → mrsol in {f}")
+                        print(f"🔄 Renamed mrso → mrsol in {f}")'''
 
                 # 3) Apply attributes where we have a spec
                 for varname, var in list(ds.variables.items()):

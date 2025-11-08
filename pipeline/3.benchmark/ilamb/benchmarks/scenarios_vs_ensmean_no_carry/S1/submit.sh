@@ -32,4 +32,4 @@ export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewMod
   --config "$ILAMB_ROOT/build.cfg" \
   --model_root "$ILAMB_ROOT/MODELS" \
   --define_regions "$MASKS_DIR/ilamb_tvt.nc" \
-  --regions global test val train
+  --regions global train

@@ -182,11 +182,14 @@
       </div>
 
       <select id="ScalarOption" onchange="colorTable()">
+        <option value="Spatial Distribution Score">Spatial Distribution Score</option>
+        <option value="Seasonal Cycle Score">Seasonal Cycle Score</option>
+        <option value="Bias Score">Bias Score</option>
+        <option value="RMSE Score">RMSE Score</option>
+        <option value="Overall Score" selected="selected">Overall Score</option>
       </select>
       <select id="RegionOption" onchange="colorTable()">
           <option value='global' selected="selected">Globe</option>
-          <option value='test'>test</option>
-          <option value='val'>val</option>
           <option value='train'>train</option>
       </select>
 

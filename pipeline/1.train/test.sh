@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=Training
+#SBATCH --job-name=Testing
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A100:8
+#SBATCH --gres=gpu:A100:1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=400G
 #SBATCH --time=3-00:00:00
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
+#SBATCH --output=logs/testing/%x_%j.out
+#SBATCH --error=logs/testing/%x_%j.err
 #SBATCH --ntasks=4
 
 
@@ -51,7 +51,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name train_carry_3 \
+  --job_name test_carry_16 \
   --epochs 40 \
   --num_workers 4 \
   --val_frac 0.5 \
@@ -63,11 +63,13 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 3 \
+  --carry_years 16 \
   --eval_mb_size 1880 \
   --train_mb_size 1880 \
   --model_monthly_mode sequential_months \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/2_year/checkpoints/best.pt \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/2025-11-07/3721372_train_carry_16/checkpoints/best.pt \
+  --test_only \
+  --skip_diagnostics
 
 # With block_loc 140 total windows without carry is 11760..
 # 0 carry sequential mode = 11760 total windows = 84 windows per location = 3920
