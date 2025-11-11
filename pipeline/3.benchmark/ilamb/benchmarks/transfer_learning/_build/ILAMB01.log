@@ -1,0 +1,583 @@
+[INFO][0][<module>] Linux node-r5-he18.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-08 23:08:01.249416
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/WECANN][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/WECANN][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/WECANN][Stabilised-Emulator-No-TL] Success
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][Emulator-TL-1982-Start]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][Ensemble-Mean]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/FLUXNET2015][Stabilised-Emulator-No-TL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][nee] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nee] RMSE scored using Collier2018
+[INFO][0][confront][NetEcosystemExchange/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][nee] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nee] RMSE scored using Collier2018
+[INFO][0][confront][NetEcosystemExchange/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][nee] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nee] RMSE scored using Collier2018
+[INFO][0][confront][NetEcosystemExchange/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][Emulator-TL-1982-Start]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][Ensemble-Mean]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][NetEcosystemExchange/FLUXNET2015][Stabilised-Emulator-No-TL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][reco] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][reco] RMSE scored using Collier2018
+[INFO][0][confront][EcosystemRespiration/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][reco] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][reco] RMSE scored using Collier2018
+[INFO][0][confront][EcosystemRespiration/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][reco] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][reco] RMSE scored using Collier2018
+[INFO][0][confront][EcosystemRespiration/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][Emulator-TL-1982-Start]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][Ensemble-Mean]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[DEBUG][0][WorkConfront][EcosystemRespiration/FLUXNET2015][Stabilised-Emulator-No-TL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 277, in __init__
+    self.depth_bnds = _createBnds(self.depth)
+                      ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 37, in _createBnds
+    x_bnds[+1:, 0] = 0.5 * (x[:-1] + x[+1:])
+                     ~~~~^~~~~~~~~~~~~~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/CLASS][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/CLASS][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/CLASS][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSites][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSites][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/Dai][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSites][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSites][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/Dai][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSites][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSites][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/Dai][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/LORA][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/LORA][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/LORA][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/GLEAMv3.3a][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/GLEAMv3.3a][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/GLEAMv3.3a][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MODIS][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MODIS][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MODIS][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MOD16A2][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MOD16A2][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/MOD16A2][Stabilised-Emulator-No-TL] Success
+[DEBUG][0][extractTimeSeries][Emulator-TL-1982-Start] Could not find [mrsol] in the model results
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][Emulator-TL-1982-Start]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[DEBUG][0][extractTimeSeries][Ensemble-Mean] Could not find [mrsol] in the model results
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][Ensemble-Mean]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[DEBUG][0][extractTimeSeries][Stabilised-Emulator-No-TL] Could not find [mrsol] in the model results
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/WangMao][Stabilised-Emulator-No-TL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[INFO][0][MakeComparable][Biomass/ESACCI][Emulator-TL-1982-Start] Spatial data was clipped from the comparison:  before: [ 12 360 720] after: [ 12 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/ESACCI][Emulator-TL-1982-Start] Success
+[INFO][0][MakeComparable][Biomass/ESACCI][Ensemble-Mean] Spatial data was clipped from the comparison:  before: [ 12 360 720] after: [ 12 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/ESACCI][Ensemble-Mean] Success
+[INFO][0][MakeComparable][Biomass/ESACCI][Stabilised-Emulator-No-TL] Spatial data was clipped from the comparison:  before: [ 12 360 720] after: [ 12 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/ESACCI][Stabilised-Emulator-No-TL] Success
+[INFO][0][MakeComparable][Biomass/GEOCARBON][Emulator-TL-1982-Start] Spatial data was clipped from the comparison:  before: [120 360 720] after: [120 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/GEOCARBON][Emulator-TL-1982-Start] Success
+[INFO][0][MakeComparable][Biomass/GEOCARBON][Ensemble-Mean] Spatial data was clipped from the comparison:  before: [120 360 720] after: [120 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/GEOCARBON][Ensemble-Mean] Success
+[INFO][0][MakeComparable][Biomass/GEOCARBON][Stabilised-Emulator-No-TL] Spatial data was clipped from the comparison:  before: [120 360 720] after: [120 281 720]
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/GEOCARBON][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/NBCD2000][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/NBCD2000][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/NBCD2000][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Saatchi2011][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Saatchi2011][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Saatchi2011][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Thurner][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Thurner][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][biomass] Bias scored using Collier2018
+[INFO][0][confront][Biomass/Thurner][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/HWSD2][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/HWSD2][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/HWSD2][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/SoilGrids2][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/SoilGrids2][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/SoilGrids2][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/MODIS][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/MODIS][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/MODIS][Stabilised-Emulator-No-TL] Success
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][Emulator-TL-1982-Start]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/transfer_learning/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][Ensemble-Mean]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/transfer_learning/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[DEBUG][0][WorkConfront][LeafAreaIndex/GIMMS_LAI4g][Stabilised-Emulator-No-TL]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 940, in FromNetCDF4
+    t, t_bnd, cbounds, begin, end, calendar = GetTime(
+                                              ~~~~~~~^
+        var, t0=t0, tf=tf, convert_calendar=convert_calendar
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 358, in GetTime
+    raise ValueError(msg)
+ValueError: Time intervals defined in /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/transfer_learning/DATA/lai/GIMMS_LAI4g/cao2023_lai.nc:time_bounds are not continuous
+
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVHRR][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVHRR][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVHRR][Stabilised-Emulator-No-TL] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVH15C1][Emulator-TL-1982-Start] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVH15C1][Ensemble-Mean] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/AVH15C1][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][Ensemble-Mean] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/WECANN][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][modelPlots][NetEcosystemExchange/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][Ensemble-Mean] Success
+[INFO][0][modelPlots][EcosystemRespiration/FLUXCOM][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][Ensemble-Mean] Success
+[INFO][0][modelPlots][TotalRunoff/CLASS][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][TotalRunoff/Dai][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][TotalRunoff/Dai][Ensemble-Mean] Success
+[INFO][0][modelPlots][TotalRunoff/Dai][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][Ensemble-Mean] Success
+[INFO][0][modelPlots][TotalRunoff/LORA][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Evapotranspiration/GLEAMv3.3a][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Evapotranspiration/GLEAMv3.3a][Ensemble-Mean] Success
+[INFO][0][modelPlots][Evapotranspiration/GLEAMv3.3a][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Evapotranspiration/MODIS][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Evapotranspiration/MODIS][Ensemble-Mean] Success
+[INFO][0][modelPlots][Evapotranspiration/MODIS][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Evapotranspiration/MOD16A2][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Evapotranspiration/MOD16A2][Ensemble-Mean] Success
+[INFO][0][modelPlots][Evapotranspiration/MOD16A2][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Biomass/ESACCI][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Biomass/ESACCI][Ensemble-Mean] Success
+[INFO][0][modelPlots][Biomass/ESACCI][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][Ensemble-Mean] Success
+[INFO][0][modelPlots][Biomass/GEOCARBON][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][Ensemble-Mean] Success
+[INFO][0][modelPlots][Biomass/NBCD2000][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][Ensemble-Mean] Success
+[INFO][0][modelPlots][Biomass/Saatchi2011][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][Biomass/Thurner][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][Biomass/Thurner][Ensemble-Mean] Success
+[INFO][0][modelPlots][Biomass/Thurner][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][CarboninSoilPool/HWSD2][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][CarboninSoilPool/HWSD2][Ensemble-Mean] Success
+[INFO][0][modelPlots][CarboninSoilPool/HWSD2][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][CarboninSoilPool/SoilGrids2][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][CarboninSoilPool/SoilGrids2][Ensemble-Mean] Success
+[INFO][0][modelPlots][CarboninSoilPool/SoilGrids2][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][Ensemble-Mean] Success
+[INFO][0][modelPlots][LeafAreaIndex/MODIS][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][Ensemble-Mean] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVHRR][Stabilised-Emulator-No-TL] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][Emulator-TL-1982-Start] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][Ensemble-Mean] Success
+[INFO][0][modelPlots][LeafAreaIndex/AVH15C1][Stabilised-Emulator-No-TL] Success
+[INFO][0][<module>][total time] 3778.5 s

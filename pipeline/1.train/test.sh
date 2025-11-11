@@ -51,11 +51,11 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name test_carry_16 \
+  --job_name test_carry_32 \
   --epochs 40 \
   --num_workers 4 \
   --val_frac 0.5 \
-  --test_frac 0.1 \
+  --test_frac 0.01 \
   --early_stop \
   --early_stop_patience 10 \
   --early_stop_min_delta 0 \
@@ -63,11 +63,11 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 16 \
-  --eval_mb_size 1880 \
-  --train_mb_size 1880 \
+  --carry_years 32 \
+  --eval_mb_size 1855 \
+  --train_mb_size 1855 \
   --model_monthly_mode sequential_months \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/runs/2025-11-07/3721372_train_carry_16/checkpoints/best.pt \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt \
   --test_only \
   --skip_diagnostics
 

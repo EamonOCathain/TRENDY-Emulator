@@ -1,0 +1,1504 @@
+[INFO][0][<module>] Linux node-r5-he39.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-10 19:20:58.624180
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2 s-1')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninSoilPool/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninSoilPool/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninSoilPool/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninLitterPool/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninLitterPool/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninLitterPool/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1045, in convert
+    src_unit.convert(self.data, tar_unit, inplace=True)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units/__init__.py", line 1855, in convert
+    raise ValueError(
+        f"Unable to convert from '{self!r}' to '{other!r}'."
+    )
+ValueError: Unable to convert from 'Unit('kg m-2')' to 'Unit('1')'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 380, in stageData
+    obs, mod = il.MakeComparable(
+               ~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<4 lines>...
+        logstring="[%s][%s]" % (self.longname, m.name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2570, in MakeComparable
+    com = com.convert(ref.unit)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1050, in convert
+    raise il.UnitConversionError()
+ILAMB.ilamblib.UnitConversionError: UnitConversionError
+
+[DEBUG][0][WorkConfront][CarboninEcosystem/ENSMEAN][co2_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [cTotal] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals/DATA/cTotal/ENSMEAN/ENSMEAN_S0_cTotal_monthly.nc
+
+[DEBUG][0][WorkConfront][CarboninEcosystem/ENSMEAN][pre_0]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [cTotal,cTotal] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals/DATA/cTotal/ENSMEAN/ENSMEAN_S0_cTotal_monthly.nc
+
+[DEBUG][0][WorkConfront][CarboninEcosystem/ENSMEAN][tmp_+5]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 341, in stageData
+    obs = Variable(
+        filename=self.source,
+    ...<3 lines>...
+        tf=None if len(self.study_limits) != 2 else self.study_limits[1],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 140, in __init__
+    out = il.FromNetCDF4(
+        filename,
+    ...<5 lines>...
+        convert_calendar=convert_calendar,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 746, in FromNetCDF4
+    raise RuntimeError(
+        "Unable to find [%s] in the file: %s" % (",".join(alternate_vars), filename)
+    )
+RuntimeError: Unable to find [cTotal,cTotal,cTotal] in the file: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals/DATA/cTotal/ENSMEAN/ENSMEAN_S0_cTotal_monthly.nc
+
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][co2_0] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_0] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][tmp_+5] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][co2_0] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_0] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][tmp_+5] Success
+[INFO][0][<module>][total time] 2235.3 s

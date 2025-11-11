@@ -167,6 +167,7 @@
           document.getElementById("16_year_legend").style.display = 'none';
           document.getElementById("1_year_legend").style.display = 'none';
           document.getElementById("2_year_legend").style.display = 'none';
+          document.getElementById("32_year_legend").style.display = 'none';
           document.getElementById("3_year_legend").style.display = 'none';
           document.getElementById("5_year_legend").style.display = 'none';
           document.getElementById("8_year_legend").style.display = 'none';
@@ -177,6 +178,7 @@
           document.getElementById("16_year_legend").style.display = 'inline';
           document.getElementById("1_year_legend").style.display = 'inline';
           document.getElementById("2_year_legend").style.display = 'inline';
+          document.getElementById("32_year_legend").style.display = 'inline';
           document.getElementById("3_year_legend").style.display = 'inline';
           document.getElementById("5_year_legend").style.display = 'inline';
           document.getElementById("8_year_legend").style.display = 'inline';
@@ -191,6 +193,8 @@
         document.getElementById('1_year_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('2_year').src = '2_year_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('2_year_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('32_year').src = '32_year_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('32_year_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('3_year').src = '3_year_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('3_year_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('5_year').src = '5_year_' + RNAME + '_' + PNAME + '.png';
@@ -277,6 +281,7 @@
         <option value='16_year' selected="selected">16_year</option>
         <option value='1_year'>1_year</option>
         <option value='2_year'>2_year</option>
+        <option value='32_year'>32_year</option>
         <option value='3_year'>3_year</option>
         <option value='5_year'>5_year</option>
         <option value='8_year'>8_year</option>
@@ -383,6 +388,25 @@
                <td onclick="highlightRowMeanState(this)">0.879</td>
                <td onclick="highlightRowMeanState(this)">0.983</td>
                <td onclick="highlightRowMeanState(this)">0.774</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.778</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0167</td>
+               <td onclick="highlightRowMeanState(this)">0.111</td>
+               <td onclick="highlightRowMeanState(this)">0.819</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.688</td>
+               <td onclick="highlightRowMeanState(this)">0.733</td>
+               <td onclick="highlightRowMeanState(this)">0.883</td>
+               <td onclick="highlightRowMeanState(this)">0.997</td>
+               <td onclick="highlightRowMeanState(this)">0.807</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">3_year</td>
@@ -583,6 +607,25 @@
                <td onclick="highlightRowMeanState(this)">0.762</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0169</td>
+               <td onclick="highlightRowMeanState(this)">0.137</td>
+               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.641</td>
+               <td onclick="highlightRowMeanState(this)">0.703</td>
+               <td onclick="highlightRowMeanState(this)">0.883</td>
+               <td onclick="highlightRowMeanState(this)">0.996</td>
+               <td onclick="highlightRowMeanState(this)">0.785</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">3_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_3_year.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.907</td>
@@ -781,6 +824,25 @@
                <td onclick="highlightRowMeanState(this)">0.778</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0182</td>
+               <td onclick="highlightRowMeanState(this)">0.105</td>
+               <td onclick="highlightRowMeanState(this)">0.815</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.702</td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.882</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.813</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">3_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_3_year.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.900</td>
@@ -977,6 +1039,25 @@
                <td onclick="highlightRowMeanState(this)">0.894</td>
                <td onclick="highlightRowMeanState(this)">0.978</td>
                <td onclick="highlightRowMeanState(this)">0.765</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">1.00</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.00798</td>
+               <td onclick="highlightRowMeanState(this)">0.123</td>
+               <td onclick="highlightRowMeanState(this)">0.766</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.659</td>
+               <td onclick="highlightRowMeanState(this)">0.719</td>
+               <td onclick="highlightRowMeanState(this)">0.892</td>
+               <td onclick="highlightRowMeanState(this)">0.997</td>
+               <td onclick="highlightRowMeanState(this)">0.797</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">3_year</td>
@@ -1249,6 +1330,13 @@
           <center>2_year</center>
           <img src="" id="2_year" alt="Data not available" ></img>
           <center><img src="legend_2_year.png" id="2_year_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="32_year_div">
+          <div class="child">
+          <center>32_year</center>
+          <img src="" id="32_year" alt="Data not available" ></img>
+          <center><img src="legend_32_year.png" id="32_year_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
         <div class="container" id="3_year_div">

@@ -51,7 +51,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/1.train/train.py \
-  --job_name train_carry_32 \
+  --job_name train_carry_64 \
   --epochs 40 \
   --num_workers 6 \
   --val_frac 0.5 \
@@ -63,11 +63,11 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} /Net/Groups/BGI/peopl
   --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 32 \
-  --eval_mb_size 1855 \
-  --train_mb_size 1855 \
+  --carry_years 64 \
+  --eval_mb_size 1470 \
+  --train_mb_size 1470 \
   --model_monthly_mode sequential_months \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/exponential/16_year/checkpoints/best.pt \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt \
 
 # With block_loc 140 total windows without carry is 11760..
 # 0 carry sequential mode = 11760 total windows = 84 windows per location = 3920

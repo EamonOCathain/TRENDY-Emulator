@@ -1,6 +1,6 @@
 # ---- Shared config for predict jobs (defaults; can be overridden by env) ----
 
-: "${JOB_NAME:=8_year_scenarios}"
+: "${JOB_NAME:=32_year_scenarios}"
 : "${CARRY_FORWARD_STATES:=True}"
 : "${SEQUENTIAL_MONTHS:=True}"
 
@@ -8,9 +8,9 @@
 : "${SCENARIO:=S3}"   # override via: sbatch --export=ALL,SCENARIO=S0 ...
 
 : "${DEVICE:=cpu}"    # set "cuda" if you enable a GPU
-: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_8_year_scenarios/MODELS}"
-: "${NUMBER_TILES:=4}"
-: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/exponential/8_year/checkpoints/best.pt}"
+: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_32_year_scenarios/MODELS}"
+: "${NUMBER_TILES:=8}"
+: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt}"
 
 # Carrying / Nudging
 : "${NUDGE_LAMBDA:=0}"
@@ -18,7 +18,7 @@
 
 # Paths
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stabilised_8_year}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stabilised_32_year}"
 
 # Periods
 : "${STORE_PERIOD:=1901-01-01:2023-12-31}"

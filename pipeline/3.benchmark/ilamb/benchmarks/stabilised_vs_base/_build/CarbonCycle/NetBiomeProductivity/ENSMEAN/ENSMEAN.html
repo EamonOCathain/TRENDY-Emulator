@@ -165,16 +165,20 @@
         if(PNAME == "cycle" || PNAME == "dtcycle" || PNAME == "spaceint"){
           document.getElementById("Benchmark_legend").style.display = 'none';
           document.getElementById("Base_Model_legend").style.display = 'none';
+          document.getElementById("Base_model_carrying_legend").style.display = 'none';
           document.getElementById("Stabilised_over_8_years_legend").style.display = 'none';
         }else{
           document.getElementById("Benchmark_legend").style.display = 'inline';
           document.getElementById("Base_Model_legend").style.display = 'inline';
+          document.getElementById("Base_model_carrying_legend").style.display = 'inline';
           document.getElementById("Stabilised_over_8_years_legend").style.display = 'inline';
         }
         document.getElementById('Benchmark').src = 'Benchmark_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('Benchmark_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('Base_Model').src = 'Base_Model_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('Base_Model_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('Base_model_carrying').src = 'Base_model_carrying_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('Base_model_carrying_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('Stabilised_over_8_years').src = 'Stabilised_over_8_years_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('Stabilised_over_8_years_legend').src = 'legend_' + PNAME + '.png';
       }
@@ -249,6 +253,7 @@
       <select id="MeanStateModel">
         <option value='Benchmark'>Benchmark</option>
         <option value='Base_Model' selected="selected">Base_Model</option>
+        <option value='Base_model_carrying'>Base_model_carrying</option>
         <option value='Stabilised_over_8_years'>Stabilised_over_8_years</option>
       </select>
       </div>
@@ -313,6 +318,25 @@
                <td onclick="highlightRowMeanState(this)">0.915</td>
                <td onclick="highlightRowMeanState(this)">0.309</td>
                <td onclick="highlightRowMeanState(this)">0.691</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">Base_model_carrying</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_Base_model_carrying.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.0272</td>
+               <td onclick="highlightRowMeanState(this)">0.0272</td>
+               <td onclick="highlightRowMeanState(this)">0.00757</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.00940</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0196</td>
+               <td onclick="highlightRowMeanState(this)">0.303</td>
+               <td onclick="highlightRowMeanState(this)">0.916</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.728</td>
+               <td onclick="highlightRowMeanState(this)">0.579</td>
+               <td onclick="highlightRowMeanState(this)">0.876</td>
+               <td onclick="highlightRowMeanState(this)">0.0576</td>
+               <td onclick="highlightRowMeanState(this)">0.564</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">Stabilised_over_8_years</td>
@@ -397,6 +421,25 @@
                <td onclick="highlightRowMeanState(this)">0.912</td>
                <td onclick="highlightRowMeanState(this)">0.151</td>
                <td onclick="highlightRowMeanState(this)">0.649</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">Base_model_carrying</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_Base_model_carrying.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.0264</td>
+               <td onclick="highlightRowMeanState(this)">0.0264</td>
+               <td onclick="highlightRowMeanState(this)">0.00934</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0171</td>
+               <td onclick="highlightRowMeanState(this)">0.306</td>
+               <td onclick="highlightRowMeanState(this)">0.902</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.738</td>
+               <td onclick="highlightRowMeanState(this)">0.574</td>
+               <td onclick="highlightRowMeanState(this)">0.877</td>
+               <td onclick="highlightRowMeanState(this)">0.0505</td>
+               <td onclick="highlightRowMeanState(this)">0.563</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">Stabilised_over_8_years</td>
@@ -577,6 +620,13 @@
           <center>Base_Model</center>
           <img src="" id="Base_Model" alt="Data not available" ></img>
           <center><img src="legend_Base_Model.png" id="Base_Model_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="Base_model_carrying_div">
+          <div class="child">
+          <center>Base_model_carrying</center>
+          <img src="" id="Base_model_carrying" alt="Data not available" ></img>
+          <center><img src="legend_Base_model_carrying.png" id="Base_model_carrying_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
         <div class="container" id="Stabilised_over_8_years_div">

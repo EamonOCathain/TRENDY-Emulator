@@ -37,19 +37,8 @@
             
           document.getElementById('timeint').src =  MNAME + '_' + RNAME + '_timeint.png'
           document.getElementById('benchmark_timeint').src =  'Benchmark_' + RNAME + '_timeint.png'
-          document.getElementById('phase').src =  MNAME + '_' + RNAME + '_phase.png'
-          document.getElementById('benchmark_phase').src =  'Benchmark_' + RNAME + '_phase.png'
-          document.getElementById('shift').src =  MNAME + '_' + RNAME + '_shift.png'
-          document.getElementById('shiftscore').src =  MNAME + '_' + RNAME + '_shiftscore.png'
-          document.getElementById('bias').src =  MNAME + '_' + RNAME + '_bias.png'
-          document.getElementById('biasscore').src =  MNAME + '_' + RNAME + '_biasscore.png'
-          document.getElementById('rmse').src =  MNAME + '_' + RNAME + '_rmse.png'
-          document.getElementById('rmsescore').src =  MNAME + '_' + RNAME + '_rmsescore.png'
           document.getElementById('spatial_variance').src =  RNAME + '_spatial_variance.png'
           document.getElementById('legend_spatial_variance').src =  'legend_spatial_variance.png'
-          document.getElementById('cycle').src =  MNAME + '_' + RNAME + '_cycle.png'
-          document.getElementById('dtcycle').src =  MNAME + '_' + RNAME + '_dtcycle.png'
-          document.getElementById('spaceint').src =  MNAME + '_' + RNAME + '_spaceint.png'
           document.getElementById('compcycle').src =  RNAME + '_compcycle.png'
           document.getElementById('legend_compcycle').src =  'legend_compcycle.png'
         }
@@ -157,12 +146,12 @@
         var PNAME  = document.getElementById("AllModelsPlot").options[pid].value;
         header     = header.replace("RNAME",RNAME);
         $("#AllModelsHead").text(header);
-        if(PNAME == "shift" || PNAME == "shiftscore" || PNAME == "bias" || PNAME == "biasscore" || PNAME == "rmse" || PNAME == "rmsescore" || PNAME == "cycle" || PNAME == "dtcycle" || PNAME == "spaceint"){
+        if(0){
           document.getElementById("Benchmark_div").style.display = 'none';
         }else{
           document.getElementById("Benchmark_div").style.display = 'inline';
         }
-        if(PNAME == "cycle" || PNAME == "dtcycle" || PNAME == "spaceint"){
+        if(0){
           document.getElementById("Benchmark_legend").style.display = 'none';
           document.getElementById("Base_Model_legend").style.display = 'none';
           document.getElementById("Stabilised_over_8_years_legend").style.display = 'none';
@@ -434,62 +423,6 @@
           <img src="" id="timeint" alt="Data not available" ></img>
           <center><img src="legend_timeint.png" id="leg"  alt="Data not available" ></img></center>
           </div>
-        </div>
-        <div class="container" id="bias_div">
-          <div class="child">
-          <center>BIAS</center>
-          <img src="" id="bias" alt="Data not available" ></img>
-          <center><img src="legend_bias.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="biasscore_div">
-          <div class="child">
-          <center>BIAS&nbsp;SCORE</center>
-          <img src="" id="biasscore" alt="Data not available" ></img>
-          <center><img src="legend_biasscore.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="rmse_div">
-          <div class="child">
-          <center>RMSE</center>
-          <img src="" id="rmse" alt="Data not available" ></img>
-          <center><img src="legend_rmse.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="rmsescore_div">
-          <div class="child">
-          <center>RMSE&nbsp;SCORE</center>
-          <img src="" id="rmsescore" alt="Data not available" ></img>
-          <center><img src="legend_rmsescore.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="benchmark_phase_div">
-          <div class="child">
-          <center>BENCHMARK&nbsp;MAX&nbsp;MONTH</center>
-          <img src="" id="benchmark_phase" alt="Data not available" ></img>
-          <center><img src="legend_phase.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="phase_div">
-          <div class="child">
-          <center>MODEL&nbsp;MAX&nbsp;MONTH</center>
-          <img src="" id="phase" alt="Data not available" ></img>
-          <center><img src="legend_phase.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="shift_div">
-          <div class="child">
-          <center>DIFFERENCE&nbsp;IN&nbsp;MAX&nbsp;MONTH</center>
-          <img src="" id="shift" alt="Data not available" ></img>
-          <center><img src="legend_shift.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
-        </div>
-        <div class="container" id="shiftscore_div">
-          <div class="child">
-          <center>SEASONAL&nbsp;CYCLE&nbsp;SCORE</center>
-          <img src="" id="shiftscore" alt="Data not available" ></img>
-          <center><img src="legend_shiftscore.png" id="leg"  alt="Data not available" ></img></center>
-          </div>
         </div><br>
         <div class="container" id="spatial_variance_div">
           <div class="child">
@@ -509,24 +442,6 @@
           <div class="child">
           <center>MODEL&nbsp;COLORS</center>
           <img src="" id="legend_compcycle" alt="Data not available" ></img>
-          </div>
-        </div>
-        <div class="container" id="spaceint_div">
-          <div class="child">
-          <center>REGIONAL&nbsp;MEAN</center>
-          <img src="" id="spaceint" alt="Data not available" ></img>
-          </div>
-        </div>
-        <div class="container" id="cycle_div">
-          <div class="child">
-          <center>ANNUAL&nbsp;CYCLE</center>
-          <img src="" id="cycle" alt="Data not available" ></img>
-          </div>
-        </div>
-        <div class="container" id="dtcycle_div">
-          <div class="child">
-          <center>MONTHLY&nbsp;ANOMALY</center>
-          <img src="" id="dtcycle" alt="Data not available" ></img>
           </div>
         </div>
         <div class="container" id="compcycle_div">
@@ -554,16 +469,6 @@
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>
-        <option value='phase'>Temporally integrated period mean max month</option>
-        <option value='shift'>Temporally integrated mean phase shift</option>
-        <option value='shiftscore'>Temporally integrated mean phase shift score</option>
-        <option value='bias'>Temporally integrated period mean bias</option>
-        <option value='biasscore'>Temporally integrated period mean bias score</option>
-        <option value='rmse'>Temporally integrated period mean rmse</option>
-        <option value='rmsescore'>Temporally integrated period mean rmse score</option>
-        <option value='cycle'>Spatially integrated regional mean cycle</option>
-        <option value='dtcycle'>Spatially integrated regional mean detrended cycle</option>
-        <option value='spaceint'>Spatially integrated regional mean</option>
       </select>
         <div class="container" id="Benchmark_div">
           <div class="child">

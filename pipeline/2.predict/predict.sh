@@ -11,14 +11,14 @@
 # #SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=carry_months}"
-: "${CARRY_FORWARD_STATES=True}"
-: "${SEQUENTIAL_MONTHS=True}"
+: "${JOB_NAME:=8_years_teacher_forced}"
+: "${CARRY_FORWARD_STATES=False}"
+: "${SEQUENTIAL_MONTHS=False}"
 : "${SCENARIO:=S3}"
 # Device
 : "${DEVICE:=cpu}"
-: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/carry_distances/MODELS}"
-: "${NUMBER_TILES:=2}"
+: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_vs_base/MODELS}"
+: "${NUMBER_TILES:=4}"
 # Weights
 : "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/sequential_months/checkpoints/best.pt}"
 
@@ -28,7 +28,7 @@
 
 # Params You Rarely Change
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/carry}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stabilised_8_year}"
 
 : "${STORE_PERIOD:=1901-01-01:2023-12-31}"
 : "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
