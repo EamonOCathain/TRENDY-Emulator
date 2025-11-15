@@ -1,0 +1,124 @@
+[INFO][0][<module>] Linux node-r5-he28.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-14 23:12:42.044060
+[DEBUG][0][extractTimeSeries][Base-Emulator] Could not find [mrso] in the model results
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][Base-Emulator]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][Stable-Emulator] Success
+[DEBUG][0][CombineVariables][MonotonicityError]
+   0: t = [18630.500, 63494.000]  * /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation/MODELS/Base-Emulator/BASE_S3_lai.nc
+   1: t = [18630.500, 63494.000] *** /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation/MODELS/Base-Emulator/BASE_S3_cTotal.nc
+   2: t = [18630.500, 63494.000] *** /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation/MODELS/Base-Emulator/BASE_S3_mrso.nc
+   3: t = [18630.500, 63494.000] ** /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation/MODELS/Base-Emulator/BASE_S3_cVeg.nc
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][Base-Emulator]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 435, in extractTimeSeries
+    v = il.CombineVariables(V)
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2638, in CombineVariables
+    raise MonotonicityError()
+ILAMB.ilamblib.MonotonicityError: MonotonicityError
+
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][Stable-Emulator] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][Stable-Emulator] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][Stable-Emulator] Success
+[DEBUG][0][extractTimeSeries][Base-Emulator] Could not find [cTotal] in the model results
+[DEBUG][0][WorkConfront][CarboninEcosystem/ENSMEAN][Base-Emulator]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][Stable-Emulator] Success
+[DEBUG][0][extractTimeSeries][Base-Emulator] Could not find [lai] in the model results
+[DEBUG][0][WorkConfront][LeafAreaIndex/ENSMEAN][Base-Emulator]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 433, in confront
+    obs, mod = self.stageData(m)
+               ~~~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 371, in stageData
+    mod = m.extractTimeSeries(
+        self.variable,
+    ...<5 lines>...
+        lons=None if obs.spatial else obs.lon,
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ModelResult.py", line 433, in extractTimeSeries
+    raise il.VarNotInModel()
+ILAMB.ilamblib.VarNotInModel: VarNotInModel
+
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][Stable-Emulator] Success
+[INFO][0][<module>][total time] 1238.9 s

@@ -1,0 +1,22 @@
+[INFO][0][<module>] Linux node-r6-he35.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-13 20:22:26.386899
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][Stable-Emulator] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][Base-Emulator] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][Stable-Emulator] Success
+[DEBUG][0][generateHtml][TotalSoilMoistureContent/ENSMEAN][Stable-Emulator] 'global' not in region list = []

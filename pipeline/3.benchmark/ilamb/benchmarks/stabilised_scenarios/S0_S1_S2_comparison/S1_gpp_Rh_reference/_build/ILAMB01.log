@@ -1,0 +1,121 @@
+[INFO][0][<module>] Linux node-r6-he35.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-15 13:14:19.962900
+[DEBUG][0][__init__][NetBiomeProductivity/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/nbp/ENSMEAN/ENSMEAN_S1_nbp.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][NetPrimaryProduction/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/npp/ENSMEAN/ENSMEAN_S1_npp.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][AutotrophicRespiration/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/ra/ENSMEAN/ENSMEAN_S1_ra.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][NetEcosystemExchange/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/nee/ENSMEAN/ENSMEAN_S1_nee.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][Land-UseChangeEmissions/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/fLuc/ENSMEAN/ENSMEAN_S1_fLuc.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][FireEmissions/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/fFire/ENSMEAN/ENSMEAN_S1_fFire.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][TotalRunoff/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/mrro/ENSMEAN/ENSMEAN_S1_mrro.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][Evapotranspiration/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/evapotrans/ENSMEAN/ENSMEAN_S1_evapotrans.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][TotalSoilMoistureContent/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/mrso/ENSMEAN/ENSMEAN_S1_mrso.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][CarboninVegetation/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/cVeg/ENSMEAN/ENSMEAN_S1_cVeg.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][CarboninSoilPool/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/cSoil/ENSMEAN/ENSMEAN_S1_cSoil.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][CarboninLitterPool/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/cLitter/ENSMEAN/ENSMEAN_S1_cLitter.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][CarboninEcosystem/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/cTotal/ENSMEAN/ENSMEAN_S1_cTotal_monthly.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+
+[DEBUG][0][__init__][LeafAreaIndex/ENSMEAN] 
+
+I am looking for data for the ENSMEAN confrontation here
+
+/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_scenarios/S0_S1_S2_comparison/S1_gpp_Rh_reference/DATA/lai/ENSMEAN/ENSMEAN_S1_lai.nc
+
+but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
+

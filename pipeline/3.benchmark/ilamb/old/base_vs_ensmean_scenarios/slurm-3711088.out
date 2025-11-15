@@ -1,0 +1,12 @@
+[INFO] Launching recursive sbatch submissions from: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry
+
+[SUBMIT] /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry/S0
+Submitted batch job 3711089
+[SUBMIT] /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry/S1
+Submitted batch job 3711090
+[SUBMIT] /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry/S2
+Submitted batch job 3711091
+[SUBMIT] /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/scenarios_vs_ensmean_no_carry/S3
+Submitted batch job 3711092
+
+[DONE] Submitted 4 jobs.

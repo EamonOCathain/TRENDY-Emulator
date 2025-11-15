@@ -13,8 +13,10 @@ path_8 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/
 path_9 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/ensmean_files")
 path_10 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/transfer_learning/MODELS")
 path_11 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/transfer_learning/AllTrendyModels")
-path_12 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals/MODELS")
-paths = [path_12]
+path_12 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals")
+path_13 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/32_year_vs_ensmean_scenarios")
+path_14 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation")
+paths = [path_14]
 
 # Helper: is a file within a given dir?
 def in_dir(file_path: Path, dir_path: Path) -> bool:

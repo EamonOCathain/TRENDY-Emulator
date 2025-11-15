@@ -19,5 +19,5 @@ conda activate base
 
 # Run the Python script with SLURM task ID as argument
 python -u process_ensmean.py \
-    --in_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/preprocessed/30x30/model_outputs \
+    --in_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation/MODELS/Base-Emulator \
     --out_dir /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/emulators_vs_ensmean/ensmean_files

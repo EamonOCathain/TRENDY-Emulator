@@ -1,26 +1,25 @@
 #!/bin/bash
 #SBATCH --job-name=predict
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=work
-#SBATCH --mem=24G
-#SBATCH --array=0-49
+#SBATCH --partition=gpu
+#SBATCH --mem=50G
+#SBATCH --array=0-7
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-
-# #SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=8_years_teacher_forced}"
-: "${CARRY_FORWARD_STATES=False}"
-: "${SEQUENTIAL_MONTHS=False}"
+: "${JOB_NAME:=32_years_1982_2018}"
+: "${CARRY_FORWARD_STATES=True}"
+: "${SEQUENTIAL_MONTHS=True}"
 : "${SCENARIO:=S3}"
 # Device
-: "${DEVICE:=cpu}"
-: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_vs_base/MODELS}"
-: "${NUMBER_TILES:=4}"
+: "${DEVICE:=cuda}"
+: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark}"
+: "${NUMBER_TILES:=8}"
 # Weights
-: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/sequential_months/checkpoints/best.pt}"
+: "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt}"
 
 # Carrying and Nudging
 : "${NUDGE_LAMBDA:=0}" 
@@ -28,10 +27,10 @@
 
 # Params You Rarely Change
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stabilised_8_year}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/transfer_learn}"
 
-: "${STORE_PERIOD:=1901-01-01:2023-12-31}"
-: "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
+: "${STORE_PERIOD:=1982-01-01:2018-12-31}"
+: "${WRITE_PERIOD:=1982-01-01:2018-12-31}"
 
 # ---- Env ----
 module purge
@@ -61,7 +60,8 @@ python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipel
   --exclude_vars "${EXCLUDE_VARS}" \
   --device "${DEVICE}" \
   --ilamb_dir_global "${ILAMB_DIR_GLOBAL}" \
-  --number_tiles "${NUMBER_TILES}"
+  --number_tiles "${NUMBER_TILES}" \
+  --export_nc_only
 
 # --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
 #   --overwrite_data

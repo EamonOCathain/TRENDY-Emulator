@@ -55,7 +55,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --epochs 40 \
   --num_workers 4 \
   --val_frac 0.5 \
-  --test_frac 0.01 \
+  --test_frac 0.1 \
   --early_stop \
   --early_stop_patience 10 \
   --early_stop_min_delta 0 \
@@ -63,13 +63,13 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --block_locs 140 \
   --prefetch_factor 1 \
   --val_prefetch_factor 1 \
-  --carry_years 32 \
+  --carry_years 0 \
   --eval_mb_size 1855 \
   --train_mb_size 1855 \
   --model_monthly_mode sequential_months \
   --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt \
   --test_only \
-  --skip_diagnostics
+  --diagnostics_only
 
 # With block_loc 140 total windows without carry is 11760..
 # 0 carry sequential mode = 11760 total windows = 84 windows per location = 3920
