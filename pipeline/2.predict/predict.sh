@@ -1,23 +1,23 @@
 #!/bin/bash
 #SBATCH --job-name=predict
-#SBATCH --cpus-per-task=8
-#SBATCH --partition=gpu
+#SBATCH --cpus-per-task=12
+#SBATCH --partition=big
 #SBATCH --mem=50G
-#SBATCH --array=0-7
+#SBATCH --array=0-5
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
-#SBATCH --gres=gpu:1
+# SBATCH --gres=gpu:1
 
 # ---- USER PARAMS ----
-: "${JOB_NAME:=32_years_1982_2018}"
-: "${CARRY_FORWARD_STATES=True}"
-: "${SEQUENTIAL_MONTHS=True}"
+: "${JOB_NAME:=32_years_no_carry}"
+: "${CARRY_FORWARD_STATES=False}"
+: "${SEQUENTIAL_MONTHS=False}"
 : "${SCENARIO:=S3}"
 # Device
-: "${DEVICE:=cuda}"
+: "${DEVICE:=cpu}"
 : "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark}"
-: "${NUMBER_TILES:=8}"
+: "${NUMBER_TILES:=16}"
 # Weights
 : "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt}"
 
@@ -27,10 +27,10 @@
 
 # Params You Rarely Change
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/transfer_learn}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/32_years_no_carry}"
 
-: "${STORE_PERIOD:=1982-01-01:2018-12-31}"
-: "${WRITE_PERIOD:=1982-01-01:2018-12-31}"
+: "${STORE_PERIOD:=1901-01-01:2023-12-31}"
+: "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
 
 # ---- Env ----
 module purge
@@ -61,7 +61,4 @@ python -u /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipel
   --device "${DEVICE}" \
   --ilamb_dir_global "${ILAMB_DIR_GLOBAL}" \
   --number_tiles "${NUMBER_TILES}" \
-  --export_nc_only
-
-# --forcing_offsets "daily:tmp=+5,daily:tmin=+5,daily:tmax=+5,annual:tmp_rolling_mean=+5,annual:tmin_rolling_mean=+5,annual:tmax_rolling_mean=+5"
-#   --overwrite_data
+  --export_nc

@@ -1,0 +1,15 @@
+#label,name,lat_min,lat_max,lon_min,lon_max
+
+# Tropics
+tropics,Tropics,-15,15,-180,180
+
+# Subtropics (global: NH + SH)
+subtropics,Subtropics,15,35,-180,180
+subtropics,Subtropics,-35,-15,-180,180
+
+# Temperate (global: NH + SH)
+temperate,Temperate,35,60,-180,180
+temperate,Temperate,-60,-35,-180,180
+
+# Boreal (NH only)
+boreal,Boreal,60,90,-180,180

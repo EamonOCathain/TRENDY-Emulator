@@ -1,0 +1,1574 @@
+[INFO][0][<module>] Linux node-r5-he34.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-18 10:28:26.475276
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_-100pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_-20pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_-40pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_-60pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_-80pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][tmp_100pct] Success
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/GrossPrimaryProduction/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/GrossPrimaryProduction/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/GrossPrimaryProduction/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][GrossPrimaryProduction/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/GrossPrimaryProduction/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][NetBiomeProductivity/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetBiomeProductivity/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][NetPrimaryProduction/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/NetPrimaryProduction/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][AutotrophicRespiration/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/AutotrophicRespiration/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][tmp_-40pct] Success
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][HeterotrophicRespiration/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/HeterotrophicRespiration/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][Land-UseChangeEmissions/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/Land-UseChangeEmissions/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][FireEmissions/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/CarbonCycle/FireEmissions/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][tmp_-40pct] Success
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][TotalRunoff/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalRunoff/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2734, in __enter__
+    self.obs_dset = Dataset(self.obs_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_Benchmark.nc'
+
+[DEBUG][0][WorkConfront][Evapotranspiration/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/Evapotranspiration/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_-100pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_-20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_-20pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_-40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_-40pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_-60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_-60pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_-80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_-80pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_0pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_0pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_100pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_20pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_20pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_40pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_40pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_60pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_60pct.nc'
+
+[DEBUG][0][WorkConfront][TotalSoilMoistureContent/ENSMEAN][tmp_80pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 437, in confront
+    with il.FileContextManager(self.master, mod_file, obs_file) as fcm:
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2732, in __enter__
+    self.mod_dset = Dataset(self.mod_results, mode="w")
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+  File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: '/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/tmp/_build/WaterCycle/TotalSoilMoistureContent/ENSMEAN/ENSMEAN_tmp_80pct.nc'
+
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][tmp_-100pct]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 464, in confront
+    il.AnalysisMeanStateSpace(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<12 lines>...
+        df_errs=self.df_errs,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2186, in AnalysisMeanStateSpace
+    ref_cycle = REF.annualCycle()
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 804, in annualCycle
+    assert self.monthly
+           ^^^^^^^^^^^^
+AssertionError
+

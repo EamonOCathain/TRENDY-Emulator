@@ -165,22 +165,38 @@
         if(PNAME == "cycle" || PNAME == "dtcycle" || PNAME == "spaceint"){
           document.getElementById("Benchmark_legend").style.display = 'none';
           document.getElementById("co2_0_legend").style.display = 'none';
+          document.getElementById("co2_140ppm_legend").style.display = 'none';
           document.getElementById("pre_0_legend").style.display = 'none';
+          document.getElementById("pre_minus_25_legend").style.display = 'none';
+          document.getElementById("pre_spfh_minus_25_legend").style.display = 'none';
           document.getElementById("tmp_+5_legend").style.display = 'none';
+          document.getElementById("tmp_minus_5_legend").style.display = 'none';
         }else{
           document.getElementById("Benchmark_legend").style.display = 'inline';
           document.getElementById("co2_0_legend").style.display = 'inline';
+          document.getElementById("co2_140ppm_legend").style.display = 'inline';
           document.getElementById("pre_0_legend").style.display = 'inline';
+          document.getElementById("pre_minus_25_legend").style.display = 'inline';
+          document.getElementById("pre_spfh_minus_25_legend").style.display = 'inline';
           document.getElementById("tmp_+5_legend").style.display = 'inline';
+          document.getElementById("tmp_minus_5_legend").style.display = 'inline';
         }
         document.getElementById('Benchmark').src = 'Benchmark_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('Benchmark_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('co2_0').src = 'co2_0_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('co2_0_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('co2_140ppm').src = 'co2_140ppm_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('co2_140ppm_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('pre_0').src = 'pre_0_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('pre_0_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('pre_minus_25').src = 'pre_minus_25_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('pre_minus_25_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('pre_spfh_minus_25').src = 'pre_spfh_minus_25_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('pre_spfh_minus_25_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('tmp_+5').src = 'tmp_+5_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('tmp_+5_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('tmp_minus_5').src = 'tmp_minus_5_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('tmp_minus_5_legend').src = 'legend_' + PNAME + '.png';
       }
 
       $(document).on('pageshow', '[data-role="page"]', function(){
@@ -253,8 +269,12 @@
       <select id="MeanStateModel">
         <option value='Benchmark'>Benchmark</option>
         <option value='co2_0' selected="selected">co2_0</option>
+        <option value='co2_140ppm'>co2_140ppm</option>
         <option value='pre_0'>pre_0</option>
+        <option value='pre_minus_25'>pre_minus_25</option>
+        <option value='pre_spfh_minus_25'>pre_spfh_minus_25</option>
         <option value='tmp_+5'>tmp_+5</option>
+        <option value='tmp_minus_5'>tmp_minus_5</option>
       </select>
       </div>
         <center>
@@ -320,6 +340,25 @@
                <td onclick="highlightRowMeanState(this)">0.479</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_140ppm</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_140ppm.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.678</td>
+               <td onclick="highlightRowMeanState(this)">0.678</td>
+               <td onclick="highlightRowMeanState(this)">0.636</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0417</td>
+               <td onclick="highlightRowMeanState(this)">0.200</td>
+               <td onclick="highlightRowMeanState(this)">0.594</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.668</td>
+               <td onclick="highlightRowMeanState(this)">0.664</td>
+               <td onclick="highlightRowMeanState(this)">0.921</td>
+               <td onclick="highlightRowMeanState(this)">0.980</td>
+               <td onclick="highlightRowMeanState(this)">0.779</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_0</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_0.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.205</td>
@@ -339,6 +378,44 @@
                <td onclick="highlightRowMeanState(this)">0.501</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_minus_25</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_minus_25.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.486</td>
+               <td onclick="highlightRowMeanState(this)">0.486</td>
+               <td onclick="highlightRowMeanState(this)">0.636</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.150</td>
+               <td onclick="highlightRowMeanState(this)">0.245</td>
+               <td onclick="highlightRowMeanState(this)">0.606</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.626</td>
+               <td onclick="highlightRowMeanState(this)">0.663</td>
+               <td onclick="highlightRowMeanState(this)">0.919</td>
+               <td onclick="highlightRowMeanState(this)">0.929</td>
+               <td onclick="highlightRowMeanState(this)">0.760</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_25</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_25.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.486</td>
+               <td onclick="highlightRowMeanState(this)">0.486</td>
+               <td onclick="highlightRowMeanState(this)">0.636</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.150</td>
+               <td onclick="highlightRowMeanState(this)">0.245</td>
+               <td onclick="highlightRowMeanState(this)">0.606</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.626</td>
+               <td onclick="highlightRowMeanState(this)">0.663</td>
+               <td onclick="highlightRowMeanState(this)">0.919</td>
+               <td onclick="highlightRowMeanState(this)">0.929</td>
+               <td onclick="highlightRowMeanState(this)">0.760</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">tmp_+5</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_tmp_+5.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.518</td>
@@ -356,6 +433,25 @@
                <td onclick="highlightRowMeanState(this)">0.921</td>
                <td onclick="highlightRowMeanState(this)">0.968</td>
                <td onclick="highlightRowMeanState(this)">0.769</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">tmp_minus_5</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_tmp_minus_5.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.636</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.104</td>
+               <td onclick="highlightRowMeanState(this)">0.273</td>
+               <td onclick="highlightRowMeanState(this)">0.599</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.637</td>
+               <td onclick="highlightRowMeanState(this)">0.599</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+               <td onclick="highlightRowMeanState(this)">0.960</td>
+               <td onclick="highlightRowMeanState(this)">0.744</td>
              </tr>
           </tbody>
         </table>
@@ -423,6 +519,25 @@
                <td onclick="highlightRowMeanState(this)">0.479</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_140ppm</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_140ppm.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.570</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0522</td>
+               <td onclick="highlightRowMeanState(this)">0.226</td>
+               <td onclick="highlightRowMeanState(this)">0.645</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.611</td>
+               <td onclick="highlightRowMeanState(this)">0.633</td>
+               <td onclick="highlightRowMeanState(this)">0.914</td>
+               <td onclick="highlightRowMeanState(this)">0.981</td>
+               <td onclick="highlightRowMeanState(this)">0.755</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_0</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_0.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.209</td>
@@ -442,6 +557,44 @@
                <td onclick="highlightRowMeanState(this)">0.510</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_minus_25</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_minus_25.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)">0.570</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.127</td>
+               <td onclick="highlightRowMeanState(this)">0.246</td>
+               <td onclick="highlightRowMeanState(this)">0.720</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.610</td>
+               <td onclick="highlightRowMeanState(this)">0.650</td>
+               <td onclick="highlightRowMeanState(this)">0.901</td>
+               <td onclick="highlightRowMeanState(this)">0.897</td>
+               <td onclick="highlightRowMeanState(this)">0.742</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_25</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_25.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)">0.570</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.127</td>
+               <td onclick="highlightRowMeanState(this)">0.246</td>
+               <td onclick="highlightRowMeanState(this)">0.720</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.610</td>
+               <td onclick="highlightRowMeanState(this)">0.650</td>
+               <td onclick="highlightRowMeanState(this)">0.901</td>
+               <td onclick="highlightRowMeanState(this)">0.897</td>
+               <td onclick="highlightRowMeanState(this)">0.742</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">tmp_+5</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_tmp_+5.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">0.475</td>
@@ -459,6 +612,25 @@
                <td onclick="highlightRowMeanState(this)">0.904</td>
                <td onclick="highlightRowMeanState(this)">0.956</td>
                <td onclick="highlightRowMeanState(this)">0.752</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">tmp_minus_5</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_tmp_minus_5.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.669</td>
+               <td onclick="highlightRowMeanState(this)">0.669</td>
+               <td onclick="highlightRowMeanState(this)">0.570</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0988</td>
+               <td onclick="highlightRowMeanState(this)">0.290</td>
+               <td onclick="highlightRowMeanState(this)">0.689</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.588</td>
+               <td onclick="highlightRowMeanState(this)">0.573</td>
+               <td onclick="highlightRowMeanState(this)">0.914</td>
+               <td onclick="highlightRowMeanState(this)">0.972</td>
+               <td onclick="highlightRowMeanState(this)">0.724</td>
              </tr>
           </tbody>
         </table>
@@ -622,6 +794,13 @@
           <center><img src="legend_co2_0.png" id="co2_0_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
+        <div class="container" id="co2_140ppm_div">
+          <div class="child">
+          <center>co2_140ppm</center>
+          <img src="" id="co2_140ppm" alt="Data not available" ></img>
+          <center><img src="legend_co2_140ppm.png" id="co2_140ppm_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
         <div class="container" id="pre_0_div">
           <div class="child">
           <center>pre_0</center>
@@ -629,11 +808,32 @@
           <center><img src="legend_pre_0.png" id="pre_0_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
+        <div class="container" id="pre_minus_25_div">
+          <div class="child">
+          <center>pre_minus_25</center>
+          <img src="" id="pre_minus_25" alt="Data not available" ></img>
+          <center><img src="legend_pre_minus_25.png" id="pre_minus_25_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="pre_spfh_minus_25_div">
+          <div class="child">
+          <center>pre_spfh_minus_25</center>
+          <img src="" id="pre_spfh_minus_25" alt="Data not available" ></img>
+          <center><img src="legend_pre_spfh_minus_25.png" id="pre_spfh_minus_25_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
         <div class="container" id="tmp_+5_div">
           <div class="child">
           <center>tmp_+5</center>
           <img src="" id="tmp_+5" alt="Data not available" ></img>
           <center><img src="legend_tmp_+5.png" id="tmp_+5_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="tmp_minus_5_div">
+          <div class="child">
+          <center>tmp_minus_5</center>
+          <img src="" id="tmp_minus_5" alt="Data not available" ></img>
+          <center><img src="legend_tmp_minus_5.png" id="tmp_minus_5_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
     </div>

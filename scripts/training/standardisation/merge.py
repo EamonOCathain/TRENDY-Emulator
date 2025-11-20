@@ -3,7 +3,7 @@
 Merge per-task standardisation JSONs into a single standardisation dictionary.
 
 - Scans:   data/standardisation_dict/per_task_data/*.json
-- Merges:  sums / sumsq / count across files per variable
+- Merges:  sums / sumsq / count / min / max across files per variable
 - Outputs: data/standardisation_dict/standardisation.json  (std_dict_path)
            (override with --out)
 
@@ -14,11 +14,13 @@ Each per-task JSON is expected to look like:
     "std": 0.54,
     "count": 10908240,
     "sum": 7165412.01,
-    "sumsq": 7936653.32
+    "sumsq": 7936653.32,
+    "min": -3.12,
+    "max": 15.87
   },
   ...
 }
-Only sum/sumsq/count are used for merging; mean/std are recomputed.
+Only sum/sumsq/count/min/max are used for merging; mean/std are recomputed.
 """
 
 from __future__ import annotations
@@ -56,8 +58,9 @@ def safe_int(x) -> int:
 
 def merge_dicts(files: list[Path]) -> Dict[str, Dict[str, float]]:
     """
-    Merge per-task dicts by summing 'sum', 'sumsq', 'count' for each variable key.
-    Recompute mean/std at the end (population std).
+    Merge per-task dicts by summing 'sum', 'sumsq', 'count' and taking
+    global 'min'/'max' for each variable key. Recompute mean/std at the end
+    (population std).
     """
     acc: Dict[str, Dict[str, float]] = {}
 
@@ -76,25 +79,45 @@ def merge_dicts(files: list[Path]) -> Dict[str, Dict[str, float]]:
             if not isinstance(stats, dict):
                 print(f"[WARN] {fp}: key '{var}' value is not an object; skipping", flush=True)
                 continue
+
             s   = safe_float(stats.get("sum", 0.0))
             s2  = safe_float(stats.get("sumsq", 0.0))
             cnt = safe_int(stats.get("count", 0))
+            vmin = safe_float(stats.get("min", float("nan")))
+            vmax = safe_float(stats.get("max", float("nan")))
 
             if cnt <= 0:
                 # Nothing to merge from this shard for this var
                 continue
 
-            a = acc.setdefault(var, {"sum": 0.0, "sumsq": 0.0, "count": 0})
+            a = acc.setdefault(
+                var,
+                {
+                    "sum":   0.0,
+                    "sumsq": 0.0,
+                    "count": 0,
+                    "min":   float("inf"),
+                    "max":   float("-inf"),
+                },
+            )
+
             a["sum"]   += s
             a["sumsq"] += s2
             a["count"] += cnt
 
-    # Recompute mean/std
+            # Update global min/max if shard values are finite
+            if not math.isnan(vmin):
+                a["min"] = min(a["min"], vmin)
+            if not math.isnan(vmax):
+                a["max"] = max(a["max"], vmax)
+
+    # Recompute mean/std and final min/max
     out: Dict[str, Dict[str, float]] = {}
     for var, a in acc.items():
         n = int(a["count"])
         if n <= 0:
             continue
+
         s  = float(a["sum"])
         s2 = float(a["sumsq"])
 
@@ -106,12 +129,22 @@ def merge_dicts(files: list[Path]) -> Dict[str, Dict[str, float]]:
             var_pop = 0.0
         std = math.sqrt(var_pop)
 
+        vmin = a.get("min", float("inf"))
+        vmax = a.get("max", float("-inf"))
+        # If min/max were never updated, store None
+        if vmin == float("inf"):
+            vmin = None
+        if vmax == float("-inf"):
+            vmax = None
+
         out[var] = {
             "mean":  float(mean),
             "std":   float(std),
             "count": n,
             "sum":   float(s),
             "sumsq": float(s2),
+            "min":   vmin,
+            "max":   vmax,
         }
 
     return out

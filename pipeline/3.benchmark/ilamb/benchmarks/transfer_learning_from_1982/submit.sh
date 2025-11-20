@@ -29,8 +29,8 @@ export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewMod
 
 # Run ILAMB
 /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run \
-  --build_dir "$ILAMB_ROOT/_build_new" \
-  --config "$ILAMB_ROOT/build.cfg" \
+  --build_dir "$ILAMB_ROOT/_build_new_nee_ensmean" \
+  --config "$ILAMB_ROOT/build_nee_ensmean.cfg" \
   --model_root "$ILAMB_ROOT/MODELS" \
   --define_regions "$MASKS_DIR/ilamb_tvt.nc" \
   --regions global test

@@ -29,7 +29,7 @@ export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewMod
 
 # Run ILAMB
 /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run \
-  --build_dir "$ILAMB_ROOT/_build_all_trendy_new" \
+  --build_dir "$ILAMB_ROOT/_build_all" \
   --config "$ILAMB_ROOT/build.cfg" \
   --model_root "$ILAMB_ROOT/AllTrendyModels" \
   --define_regions "$MASKS_DIR/ilamb_tvt.nc" \

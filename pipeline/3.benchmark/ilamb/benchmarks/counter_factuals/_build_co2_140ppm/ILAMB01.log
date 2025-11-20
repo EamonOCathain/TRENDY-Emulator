@@ -1,0 +1,142 @@
+[INFO][0][<module>] Linux node-r6-he35.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/netCDF4 (1.7.2)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
+[INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
+[INFO][0][<module>] 2025-11-16 13:03:51.794615
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][fLuc] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fLuc] RMSE scored using Collier2018
+[INFO][0][confront][Land-UseChangeEmissions/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[DEBUG][0][WorkConfront][CarboninVegetation/ENSMEAN][co2_140ppm]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 464, in confront
+    il.AnalysisMeanStateSpace(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<12 lines>...
+        df_errs=self.df_errs,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2186, in AnalysisMeanStateSpace
+    ref_cycle = REF.annualCycle()
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 804, in annualCycle
+    assert self.monthly
+           ^^^^^^^^^^^^
+AssertionError
+
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[DEBUG][0][WorkConfront][CarboninSoilPool/ENSMEAN][co2_140ppm]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 464, in confront
+    il.AnalysisMeanStateSpace(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<12 lines>...
+        df_errs=self.df_errs,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2186, in AnalysisMeanStateSpace
+    ref_cycle = REF.annualCycle()
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 804, in annualCycle
+    assert self.monthly
+           ^^^^^^^^^^^^
+AssertionError
+
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[DEBUG][0][WorkConfront][CarboninLitterPool/ENSMEAN][co2_140ppm]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 563, in WorkConfront
+    c.confront(m)
+    ~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 464, in confront
+    il.AnalysisMeanStateSpace(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obs,
+        ^^^^
+    ...<12 lines>...
+        df_errs=self.df_errs,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/ilamblib.py", line 2186, in AnalysisMeanStateSpace
+    ref_cycle = REF.annualCycle()
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 804, in annualCycle
+    assert self.monthly
+           ^^^^^^^^^^^^
+AssertionError
+
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][co2_140ppm] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][co2_140ppm] Success
+[DEBUG][0][WorkPost][Land-UseChangeEmissions/ENSMEAN][co2_140ppm]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 618, in WorkPost
+    c.modelPlots(m)
+    ~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 952, in modelPlots
+    ax = var.plot(
+        None,
+    ...<3 lines>...
+        cmap=self.limits[pname]["cmap"],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1370, in plot
+    self.lon_bnds[lon_empty[0], 0],
+                  ~~~~~~~~~^^^
+IndexError: index 0 is out of bounds for axis 0 with size 0
+
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][co2_140ppm] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][co2_140ppm] Success
+[INFO][0][<module>][total time] 2295.0 s

@@ -51,7 +51,7 @@ export TORCH_SHOW_CPP_STACKTRACES=1
 
 # torchrun sets LOCAL_RANK/RANK/WORLD_SIZE expected by your script
 torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
-  --job_name test_carry_32 \
+  --job_name test_base \
   --epochs 40 \
   --num_workers 4 \
   --val_frac 0.5 \
@@ -67,7 +67,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=${NPROC} train.py \
   --eval_mb_size 1855 \
   --train_mb_size 1855 \
   --model_monthly_mode sequential_months \
-  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt \
+  --use_foundation /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/base_model/checkpoints/best.pt \
   --test_only \
   --diagnostics_only
 
