@@ -1,48 +1,167 @@
-# Welcome to TRENDY-Emulator
+# TRENDY-Emulator
 
-The code was executed in the following order:
+This repository accompanies the thesis **"TRENDY-Emulator: A Bias-Corrected Deep Learning Emulator of Terrestrial Carbon and Water Dynamics"** and provides the full workflow used to build, train, and benchmark the TRENDY-Emulator.
 
-## 1. PreProcessing
+The pipeline includes:
+- preprocessing TRENDY forcing and DGVM outputs  
+- generating spatial masks  
+- constructing Zarr datasets for training and inference  
+- model training (Base → Stable → Transfer-Learned)  
+- scenario prediction and NetCDF export  
+- ILAMB benchmarking  
+- plotting and analysis  
 
-*In scripts/preprocessing*.
 
-1. Run 'climate', 'co2', 'jsbach', 'ndep', 'nfert', 'potential' 'radiation', 'model outputs' in any order.
-2. Then run the 'rolling means' script (takes rolling means of the climate variables).
-3. Preindustrial - Creates the pre-industrial versions of climate, land use and co2 variables for use in TRENDY scenarios.
+
+## Repository Structure
+TRENDY-Emulator/
+├── scripts/
+│   ├── preprocessing/
+│   ├── masking/
+│   ├── make_zarrs/
+│   └── standardisation/
+│
+├── pipeline/
+│   ├── 1.train/
+│   ├── 2.predict/
+│   ├── 3.benchmark/
+│   └── 4.Analyse/
+│
+└── src/
+    ├── analysis/
+    ├── dataset/
+    ├── inference/
+    ├── models/
+    ├── one_off_tools/
+    ├── paths/
+    ├── training/
+    └── utils/
+
+
+
+## 1. Preprocessing
+
+Location: `scripts/preprocessing/`
+
+Processes all TRENDY forcing and ancillary datasets.
+
+Steps:
+
+1. Core TRENDY forcing: run any of  
+   - `climate.sh`  
+   - `co2.sh`  
+   - `jsbach.sh`  
+   - `ndep.sh`  
+   - `nfert.sh`  
+   - `potential_radiation.sh`  
+   - `model_outputs.sh`
+
+2. `rolling_means.sh` — computes 30-year trailing means for selected climate variables.
+
+3. `preindustrial.sh` — generates pre-industrial CO₂, land-use, and climate inputs for TRENDY scenarios.
+
+4. `avh15c1.sh` — processes LAI observations after downloading via ILAMB.
+
+
 
 ## 2. Masking
 
-*In scripts/masking*.
+Location: `scripts/masking/`
 
- 1. Nan mask - creates a mask of where the values are finite from all datasets.
- 2. Land mask - creates a mask of where models agree pixels are more than 90% land and also incorporates the nan mask.
- 3. tvt mask - splits the locations into training, test and validation along longitudinal bands.
-
-## 3. Make Zarrs from Training and Inference Data
-
-*In scripts/make_zarrs/training/main*.
-
-1. Run 'make_training_tiles.sh' to create the training, validation and testing zarrs.
-2. Run consolidate and finalize.
-   
-*In scripts/make_zarrs/training/main*.
-
-3. Run fill_potential_rad_nans to fill some non-finite data in the testing zarr for potential radiation.
-
-*In scripts/make_zarrs/inference*.
-
-4. Run make_inference to create the inference zarrs.
-
-## 4. Create the standardisation JSON containing mean and standard deviation of each variable.
-
-*In scripts/standardisation/*.
-
-1. Run standardisation.
-2. Run merge.
-
-## 5. Train the Model
+1. `nan_mask.sh` — creates a mask of pixels where all forcing + output variables are finite.  
+2. `land_mask.sh` — selects pixels where CLM, ORCHIDEE, ELM & CLASSIC agree land fraction > 0.9; combined with the nan mask.  
+3. `tvt_mask.sh` — creates the longitudinal-band Train/Validation/Test split.
 
 
 
-   
+## 3. Make Zarrs (Training & Inference)
 
+### Training Zarrs
+
+Location: `scripts/make_zarrs/training/main/`
+
+1. Run `make_training_tiles.sh` — generates training, validation, and testing Zarrs.  
+2. Run `consolidate.sh` and `finalize.sh`.
+
+Location: `scripts/make_zarrs/training/other/`
+
+3. `fill_potential_rad_nans.sh` — fills missing potential radiation data in the testing Zarr.  
+4. `add_avh15c1.sh` — adds LAI observations for transfer learning.
+
+### Inference Zarrs
+
+Location: `scripts/make_zarrs/inference/`
+
+5. `make_inference.sh` — creates inference-ready Zarrs for all scenarios.  
+6. `add_avh15c1.sh` — inserts observed LAI for scenario 3.
+
+
+
+## 4. Standardisation
+
+Location: `scripts/standardisation/`
+
+1. `standardisation.sh` — computes global means and standard deviations for each variable.  
+2. `merge.py` — assembles the full standardisation JSON.
+
+
+
+## 5. Train the Emulator
+
+Location: `pipeline/1.train/`
+
+1. Run train.sh
+
+Three emulator versions are produced:
+
+- **Base-Emulator** — trained without autoregressive carrying  
+- **Stable-Emulator** — autoregressive carrying with progressively longer horizons  
+- **TL-Emulator** — transfer-learned on AVH15C1 LAI observations  
+
+These versions were produced by manually adjusting the condigurations in train.sh.
+
+
+
+## 6. Generate Predictions
+
+Location: `pipeline/2.predict/`
+
+1. Run predict.sh
+
+Outputs:
+
+- Zarr prediction files  
+- (optional) NetCDF exports (`export_nc=true`)  
+- automatic copying into ILAMB-ready structure  
+
+
+
+## 7. Benchmark with ILAMB
+
+Location: `pipeline/3.benchmark/`
+
+Steps:
+
+1. Download ILAMB benchmark datasets (see https://www.ilamb.org/doc/tutorial.html).  
+2. Place emulator output inside `MODELS/`.  
+3. Configure `build.cfg` (regions, confrontations, variables).  
+4. Run `submit.sh`.
+
+
+
+## 8. Plotting and Analysis
+
+Location: `pipeline/4.Analyse/`
+
+Main manuscript figures are generated via:
+
+- `create_csvs/`
+- `plot_csvs/`
+
+Additional analysis scripts are provided in the same directory.
+
+
+
+## Usage and Citation
+
+This work is being prepared for publication, please contact the author before use.
