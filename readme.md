@@ -20,22 +20,24 @@ Processes all TRENDY forcing and ancillary datasets.
 
 Steps:
 
-1. Core TRENDY forcing: run any of  
-   - `climate.sh`  
-   - `co2.sh`  
-   - `jsbach.sh`  
-   - `ndep.sh`  
-   - `nfert.sh`  
-   - `potential_radiation.sh`  
-   - `model_outputs.sh`
+1. Run in any order  
+   - `climate/ClimateProcessor.sh`  
+   - `co2/co2.py`  
+   - `jsbach/jsbach_processor.py` 
+   - `luh2/LUHProcessor.sh` 
+   - `ndep/ndep_processor.sh`  
+   - `nfert/nfert_processor.sh`  
+   - `potential_radiation/potential_radiation.sh` 
+   - `population/population.py`
+   - `avh15c1.sh` — processes LAI observations (after downloading via ILAMB). 
 
 2. `rolling_means.sh` — computes 30-year trailing means for selected climate variables.
 
 3. `preindustrial.sh` — generates pre-industrial CO₂, land-use, and climate inputs for TRENDY scenarios.
 
-4. `avh15c1.sh` — processes LAI observations after downloading via ILAMB.
+4. `model_outputs/models.sh` - preprocesses all the individual DGVMs
 
-
+5. `model_outputs/ensmean.sh` - takes the ensemble mean of DGVMs.
 
 ## 2. Masking
 
@@ -44,8 +46,6 @@ Location: `scripts/masking/`
 1. `nan_mask.sh` — creates a mask of pixels where all forcing + output variables are finite.  
 2. `land_mask.sh` — selects pixels where CLM, ORCHIDEE, ELM & CLASSIC agree land fraction > 0.9; combined with the nan mask.  
 3. `tvt_mask.sh` — creates the longitudinal-band Train/Validation/Test split.
-
-
 
 ## 3. Make Zarrs (Training & Inference)
 
@@ -69,14 +69,12 @@ Location: `scripts/make_zarrs/inference/`
 6. `add_avh15c1.sh` — inserts observed LAI for scenario 3.
 
 
-
 ## 4. Standardisation
 
 Location: `scripts/standardisation/`
 
 1. `standardisation.sh` — computes global means and standard deviations for each variable.  
 2. `merge.py` — assembles the full standardisation JSON.
-
 
 
 ## 5. Train the Emulator
@@ -92,7 +90,6 @@ Three emulator versions are produced:
 - **TL-Emulator** — transfer-learned on AVH15C1 LAI observations  
 
 These versions were produced by manually adjusting the condigurations in train.sh.
-
 
 
 ## 6. Generate Predictions
