@@ -12,33 +12,6 @@ The pipeline includes:
 - plotting and analysis  
 
 
-
-## Repository Structure
-TRENDY-Emulator/
-├── scripts/
-│   ├── preprocessing/
-│   ├── masking/
-│   ├── make_zarrs/
-│   └── standardisation/
-│
-├── pipeline/
-│   ├── 1.train/
-│   ├── 2.predict/
-│   ├── 3.benchmark/
-│   └── 4.Analyse/
-│
-└── src/
-    ├── analysis/
-    ├── dataset/
-    ├── inference/
-    ├── models/
-    ├── one_off_tools/
-    ├── paths/
-    ├── training/
-    └── utils/
-
-
-
 ## 1. Preprocessing
 
 Location: `scripts/preprocessing/`
