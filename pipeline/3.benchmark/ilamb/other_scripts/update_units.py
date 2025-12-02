@@ -16,7 +16,8 @@ path_11 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel
 path_12 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals")
 path_13 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/32_year_vs_ensmean_scenarios")
 path_14 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/states_stabilisation")
-paths = [path_14]
+path_15 = Path("/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/no_rolling_mean")
+paths = [path_15]
 
 # Helper: is a file within a given dir?
 def in_dir(file_path: Path, dir_path: Path) -> bool:

@@ -20,7 +20,7 @@ import torch
 import xarray as xr
 import zarr
 import pandas as pd
-
+import time
 # =============================================================================
 # Spec describing variable layout
 # =============================================================================
@@ -1066,7 +1066,7 @@ def process_one_tile(
     carry_forward_states: bool = True,
     sequential_months: bool = False,
     tl_seed_cfg: Optional[dict] = None,
-    forcing_offsets: Optional[Dict[str, Dict[str, dict]]] = None, 
+    forcing_offsets: Optional[Dict[str, Dict[str, dict]]] = None,
 ) -> None:
     """
     Tile-wise rollout (no land masking), vectorized per year:
@@ -1104,7 +1104,7 @@ def process_one_tile(
 
     # Precompute which input channels to zero-fill for nfert once
     fill_idxs: List[int] = _compute_nfert_fill_indices(input_names, nfert)
- 
+
     prev_year_daily_states_ns: Optional[np.ndarray] = None  # (365, Y, X, Ns)
 
     for yi, year in enumerate(years):
@@ -1112,13 +1112,19 @@ def process_one_tile(
         if do_log:
             print(f"[YEAR] Processing {year} ({yi + 1}/{len(years)})")
 
+        # ----------------- PROFILING START -----------------
+        t0 = time.time()
+
         # Pre-slice forcing to this year & tile (fast indexed reads)
         dsd_yx, dsm_yx, dsa_yx = _preslice_forcing_for_year_and_tile(forc, year, ys, xs)
-        
+
         # Apply any physical offsets to the forcing (e.g., co2 += 100)
         dsd_yx, dsm_yx, dsa_yx = _apply_forcing_offsets_to_sliced(
             dsd_yx, dsm_yx, dsa_yx, forcing_offsets
         )
+
+        t_io = time.time()
+        # ----------------- END I/O -----------------
 
         # ---- Build state input template (daily, STATE_VARS order)
         if yi == 0:
@@ -1170,8 +1176,10 @@ def process_one_tile(
 
         # DAILY_FORCING
         if spec.DAILY_FORCING:
-            cols = [dsd_yx[v].transpose("time", "lat", "lon").values[..., None].astype("float32")
-                    for v in spec.DAILY_FORCING]
+            cols = [
+                dsd_yx[v].transpose("time", "lat", "lon").values[..., None].astype("float32")
+                for v in spec.DAILY_FORCING
+            ]
             D = np.concatenate(cols, axis=-1) if cols else np.empty((365, Y, X, 0), dtype=np.float32)
             X_year_phys[..., chan:chan + D.shape[-1]] = D
             chan += D.shape[-1]
@@ -1188,7 +1196,9 @@ def process_one_tile(
 
         # MONTHLY_STATES (from template)
         if n_mstates > 0:
-            X_year_phys[..., chan:chan + n_mstates] = 0.0 if state_template_daily is None else state_template_daily[..., :n_mstates]
+            X_year_phys[..., chan:chan + n_mstates] = (
+                0.0 if state_template_daily is None else state_template_daily[..., :n_mstates]
+            )
             chan += n_mstates
 
         # ANNUAL_FORCING (broadcast)
@@ -1203,23 +1213,34 @@ def process_one_tile(
 
         # ANNUAL_STATES (from template)
         if n_astates > 0:
-            X_year_phys[..., chan:chan + n_astates] = 0.0 if state_template_daily is None else state_template_daily[..., n_mstates:]
+            X_year_phys[..., chan:chan + n_astates] = (
+                0.0 if state_template_daily is None else state_template_daily[..., n_mstates:]
+            )
             chan += n_astates
 
         # Optional zero-fill for specified inputs (e.g., nfert)
         if fill_idxs:
             X_year_phys[..., fill_idxs] = np.nan_to_num(X_year_phys[..., fill_idxs], nan=0.0)
 
+        t_build = time.time()
+        # ----------------- END BUILD -----------------
+
         # ---- Standardize → select valid → model → destandardize
         Xn_year = (X_year_phys - MU_IN_B) / SD_IN_B                      # (365, Y, X, Cin)
         Xb_valid, valid_flat = _select_valid_batch(Xn_year)              # (B_valid, 365, Cin), (B,)
+        t_pre = time.time()
+        # ----------------- END PRE -----------------
 
         if Xb_valid.shape[0] == 0:
             y_phys_year = np.full((365, Y, X, Cout), np.nan, dtype=np.float32)
+            t_model = time.time()  # essentially zero work
         else:
             with torch.no_grad():
                 xb = torch.from_numpy(Xb_valid).to(device, non_blocking=True)   # (B_valid, 365, Cin)
                 y_std_valid = model(xb).detach().cpu().numpy().astype("float32")
+            t_model = time.time()
+            # ----------------- END MODEL -----------------
+
             y_std_full_btc = _scatter_back(y_std_valid, valid_flat, Y, X, Cout)  # (B, 365, C)
             y_std_year = unflatten_batch_to_tile(y_std_full_btc, Y, X)           # (365, Y, X, C)
             y_phys_year = y_std_year * SD_OUT_B + MU_OUT_B                       # back to physical
@@ -1291,6 +1312,16 @@ def process_one_tile(
             for si, v in enumerate(spec.STATE_VARS):
                 k = spec.OUTPUT_ORDER.index(v)
                 prev_year_daily_states_ns[..., si] = y_phys_year[..., k]
+
+        t_post = time.time()
+        # ----------------- END POST -----------------
+
+        print(
+            f"[PROFILE] tile={tile_index} year={year} "
+            f"io={t_io - t0:.3f}s build={t_build - t_io:.3f}s "
+            f"pre={t_pre - t_build:.3f}s model={t_model - t_pre:.3f}s "
+            f"post={t_post - t_model:.3f}s"
+        )
 
     suffix = ""
     if tiles_done_before is not None and ntiles_total is not None:
@@ -1582,6 +1613,7 @@ def export_netcdf_sharded(
     overwrite: bool = False,
     var_order: Optional[list[str]] = None,
     annual_vars: Optional[List[str]] = None,
+    filename_prefix: str = "",
 ):
     """
     Export per-variable NetCDFs from monthly.zarr, splitting work across shards.
@@ -1671,20 +1703,20 @@ def export_netcdf_sharded(
 
         # write full series (skip if exists unless overwrite=True)
         wrote_any = False
-        wrote_any |= _maybe_write(nc_root / "full" / f"{v_out}.nc", sel)
+        wrote_any |= _maybe_write(nc_root / "full" / f"{filename_prefix}{v_out}.nc", sel)
 
         # early / late ranges by YEAR (handles MultiIndex cleanly)
         try:
             se = _slice_year_range(sel, 1901, 1918)
             if getattr(se, "time", None) is not None and se.time.size:
-                wrote_any |= _maybe_write(nc_root / "test" / "early" / f"{v_out}.nc", se)
+                wrote_any |= _maybe_write(nc_root / "test" / "early" / f"{filename_prefix}{v_out}.nc", se)
         except Exception as e:
             print(f"[EXPORT][WARN] early subset failed for {v_in}: {e}")
 
         try:
             sl = _slice_year_range(sel, 2018, 2023)
             if getattr(sl, "time", None) is not None and sl.time.size:
-                wrote_any |= _maybe_write(nc_root / "test" / "late" / f"{v_out}.nc", sl)
+                wrote_any |= _maybe_write(nc_root / "test" / "late" / f"{filename_prefix}{v_out}.nc", sl)
         except Exception as e:
             print(f"[EXPORT][WARN] late subset failed for {v_in}: {e}")
 

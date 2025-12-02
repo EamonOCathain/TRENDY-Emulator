@@ -11,25 +11,21 @@
 set -euo pipefail
 mkdir -p logs
 
-# Offsets: 0, ±20, ±40, ±60, ±80, ±100, +120, +140, +160, +180, +200
-OFFSETS=(0 -20 -40 -60 -80 -100 20 40 60 80 100 120 140 160 180 200)
+# 11 offsets from -5 to +5 (inclusive), step 1
+OFFSETS=(-5 -4 -3 -2 -1 0 1 2 3 4 5)
 
-for pct in "${OFFSETS[@]}"; do
+for val in "${OFFSETS[@]}"; do
 
-    # Build signed percentage string: "-20%" or "+40%" or "0%"
-    if [[ $pct -ge 0 ]]; then
-        offset="+${pct}%"
-    else
-        offset="${pct}%"
-    fi
+    # Here val is already "-5", "-4", ..., "0", "1", ..., "5"
+    offset="${val}"
 
-    # Job name: tmp_-20pct, tmp_40pct, tmp_120pct, etc
-    jobname="tmp_${pct}pct"
+    # Job name, e.g. tmp_-5, tmp_0, tmp_5
+    jobname="tmp_${val}"
 
     echo "Submitting temperature offset: ${offset}"
 
     sbatch --export=ALL,\
-FORCING_OFFSETS="daily:tmp=${offset},tmin=${offset},tmax=${offset}",\
+FORCING_OFFSETS="daily:tmp=${offset},daily:tmin=${offset},daily:tmax=${offset}",\
 JOB_NAME="${jobname}" \
         ./predict_generic.sbatch
 

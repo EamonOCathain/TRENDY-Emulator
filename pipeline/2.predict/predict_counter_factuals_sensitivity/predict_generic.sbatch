@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=predict
+#SBATCH --job-name=counter_factuals_sens
 #SBATCH --array=0-1
 #SBATCH --partition=big
 #SBATCH --cpus-per-task=8

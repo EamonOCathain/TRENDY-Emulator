@@ -1,0 +1,9 @@
+Scanning for .nc files under: /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/preds_for_analysis/ensmean
+Found 65 NetCDF files.
+Traceback (most recent call last):
+  File "/var/spool/slurm/d/job3886399/slurm_script", line 108, in <module>
+    main()
+  File "/var/spool/slurm/d/job3886399/slurm_script", line 93, in main
+    if args.only-carbon:
+       ^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'only'

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=predict_S3
-#SBATCH --partition=work
+#SBATCH --partition=big
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=24G
 #SBATCH --time=3-00:00:00

@@ -5,7 +5,7 @@
 #SBATCH --error=logs/%A_%a.err
 #SBATCH --time=24:00:00
 #SBATCH --mem=50G
-#SBATCH --cpus-per-task=6
+#SBATCH --cpus-per-task=8
 
 set -euo pipefail
 
@@ -32,5 +32,5 @@ export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewMod
   --build_dir "$ILAMB_ROOT/_build" \
   --config "$ILAMB_ROOT/build.cfg" \
   --model_root "$ILAMB_ROOT/MODELS" \
-  --define_regions "$MASKS_DIR/ilamb_tvt.nc" \
-  --regions global test
+  --define_regions /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/regions.txt \
+  --regions global tropics subtropics temperate boreal

@@ -1,6 +1,6 @@
 # ---- Shared config for predict jobs (defaults; can be overridden by env) ----
 
-: "${JOB_NAME:=32_year_scenarios}"
+: "${JOB_NAME:=Stable_Emulator_carry_2000_2020}"
 : "${CARRY_FORWARD_STATES:=True}"
 : "${SEQUENTIAL_MONTHS:=True}"
 
@@ -8,8 +8,8 @@
 : "${SCENARIO:=S3}"   # override via: sbatch --export=ALL,SCENARIO=S0 ...
 
 : "${DEVICE:=cpu}"    # set "cuda" if you enable a GPU
-: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/stabilised_32_year_scenarios/MODELS}"
-: "${NUMBER_TILES:=8}"
+: "${ILAMB_DIR_GLOBAL:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/Stable_2000_2020_carry/MODELS}"
+: "${NUMBER_TILES:=12}"
 : "${WEIGHTS:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/checkpoints/carry/32_year/checkpoints/best.pt}"
 
 # Carrying / Nudging
@@ -18,11 +18,11 @@
 
 # Paths
 : "${FORCING_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/zarrs/inference}"
-: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stabilised_32_year}"
+: "${OUT_DIR:=/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/predictions/stable_no_carry}"
 
 # Periods
-: "${STORE_PERIOD:=1901-01-01:2023-12-31}"
-: "${WRITE_PERIOD:=1901-01-01:2023-12-31}"
+: "${STORE_PERIOD:=2000-01-01:2020-12-31}"
+: "${WRITE_PERIOD:=2000-01-01:2020-12-31}"
 
 # Optional filters (leave empty if unused)
 : "${EXCLUDE_VARS:=}"

@@ -1,4 +1,4 @@
-[INFO][0][<module>] Linux node-r5-he27.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] Linux node-r5-he36.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
@@ -6,7 +6,7 @@
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
-[INFO][0][<module>] 2025-11-11 16:58:04.256606
+[INFO][0][<module>] 2025-11-22 11:42:14.935780
 [INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
 [INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
 [INFO][0][confront][GrossPrimaryProduction/ENSMEAN][32_year] Success
@@ -22,6 +22,9 @@
 [INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
 [INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
 [INFO][0][confront][HeterotrophicRespiration/ENSMEAN][32_year] Success
+[INFO][0][AnalysisMeanStateSpace][nee] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nee] RMSE scored using Collier2018
+[INFO][0][confront][NetEcosystemExchange/ENSMEAN][32_year] Success
 [INFO][0][AnalysisMeanStateSpace][fLuc] Bias scored using Collier2018
 [INFO][0][AnalysisMeanStateSpace][fLuc] RMSE scored using Collier2018
 [INFO][0][confront][Land-UseChangeEmissions/ENSMEAN][32_year] Success
@@ -57,7 +60,23 @@
 [INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][32_year] Success
-[INFO][0][modelPlots][Land-UseChangeEmissions/ENSMEAN][32_year] Success
+[INFO][0][modelPlots][NetEcosystemExchange/ENSMEAN][32_year] Success
+[DEBUG][0][WorkPost][Land-UseChangeEmissions/ENSMEAN][32_year]
+Traceback (most recent call last):
+  File "/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run", line 618, in WorkPost
+    c.modelPlots(m)
+    ~~~~~~~~~~~~^^^
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Confrontation.py", line 952, in modelPlots
+    ax = var.plot(
+        None,
+    ...<3 lines>...
+        cmap=self.limits[pname]["cmap"],
+    )
+  File "/Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB/Variable.py", line 1370, in plot
+    self.lon_bnds[lon_empty[0], 0],
+                  ~~~~~~~~~^^^
+IndexError: index 0 is out of bounds for axis 0 with size 0
+
 [INFO][0][modelPlots][FireEmissions/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][TotalRunoff/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][Evapotranspiration/ENSMEAN][32_year] Success
@@ -67,4 +86,4 @@
 [INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][32_year] Success
 [INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][32_year] Success
-[INFO][0][<module>][total time] 2389.6 s
+[INFO][0][<module>][total time] 2417.7 s

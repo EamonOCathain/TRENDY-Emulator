@@ -248,6 +248,10 @@ def _parse_var_weights(s: str | None) -> dict[str, float]:
             raise SystemExit(f'Weight for "{k}" must be a float, got "{v}".')
     return out
 
+def count_params(model: torch.nn.Module) -> int:
+    """Return number of trainable parameters in a model."""
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 # =============================================================================
 # Utility: non-finite scan (optional)
 # =============================================================================
@@ -647,6 +651,11 @@ def main():
     
     # Log model mode
     log.info("[model] constructed with initial mode=%s", (model.module if isinstance(model, DDP) else model).mode)
+
+    # Log parameter count (only on main rank)
+    if is_main:
+        n_params = count_params(model)
+        log.info(f"[model] total trainable parameters: {n_params:,}")
 
     def _ckpt_io_dims(ckpt: dict) -> tuple[int, int]:
         return int(ckpt.get("input_dim", -1)), int(ckpt.get("output_dim", -1))

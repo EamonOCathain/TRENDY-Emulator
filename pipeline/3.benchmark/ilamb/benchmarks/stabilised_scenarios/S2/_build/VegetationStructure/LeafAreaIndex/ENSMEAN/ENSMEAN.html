@@ -238,7 +238,7 @@
       </div>
       <select id="MeanStateRegion" onchange="changeRegionMeanState()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <div style="display:none">
       <select id="MeanStateModel">
@@ -312,7 +312,7 @@
         </table>
         </center>
         <center>
-        <table class="table-header-rotated" id="MeanState_table_train">
+        <table class="table-header-rotated" id="MeanState_table_test">
            <thead>
              <tr>
                <th></th>
@@ -338,7 +338,7 @@
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>2.22</td>
+               <td>2.28</td>
                <td></td>
                <td></td>
                <td></td>
@@ -357,21 +357,21 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.29</td>
-               <td onclick="highlightRowMeanState(this)">2.29</td>
-               <td onclick="highlightRowMeanState(this)">2.22</td>
+               <td onclick="highlightRowMeanState(this)">2.33</td>
+               <td onclick="highlightRowMeanState(this)">2.33</td>
+               <td onclick="highlightRowMeanState(this)">2.28</td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.0736</td>
-               <td onclick="highlightRowMeanState(this)">0.306</td>
-               <td onclick="highlightRowMeanState(this)">0.787</td>
+               <td onclick="highlightRowMeanState(this)">0.0512</td>
+               <td onclick="highlightRowMeanState(this)">0.441</td>
+               <td onclick="highlightRowMeanState(this)">0.944</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.545</td>
-               <td onclick="highlightRowMeanState(this)">0.685</td>
-               <td onclick="highlightRowMeanState(this)">0.905</td>
-               <td onclick="highlightRowMeanState(this)">0.994</td>
-               <td onclick="highlightRowMeanState(this)">0.763</td>
+               <td onclick="highlightRowMeanState(this)">0.462</td>
+               <td onclick="highlightRowMeanState(this)">0.622</td>
+               <td onclick="highlightRowMeanState(this)">0.879</td>
+               <td onclick="highlightRowMeanState(this)">0.989</td>
+               <td onclick="highlightRowMeanState(this)">0.715</td>
              </tr>
           </tbody>
         </table>
@@ -500,7 +500,7 @@
       </div>
       <select id="AllModelsRegion" onchange="AllSelect()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>

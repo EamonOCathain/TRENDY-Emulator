@@ -238,7 +238,7 @@
       </div>
       <select id="MeanStateRegion" onchange="changeRegionMeanState()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <div style="display:none">
       <select id="MeanStateModel">
@@ -252,14 +252,14 @@
              <tr>
                <th></th>
                <th class="rotate"><div><span>Download Data</span></div></th>
-               <th class="rotate"><div><span>Period Mean (original grids) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2]</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [kg m-2]</span></div></th>
                <th></th>
-               <th class="rotate"><div><span>Bias [g m-2]</span></div></th>
-               <th class="rotate"><div><span>RMSE [g m-2]</span></div></th>
+               <th class="rotate"><div><span>Bias [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>RMSE [kg m-2]</span></div></th>
                <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
                <th></th>
                <th class="rotate"><div><span>Bias Score [1]</span></div></th>
@@ -273,7 +273,7 @@
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>1.33e+03</td>
+               <td>3.83</td>
                <td></td>
                <td></td>
                <td></td>
@@ -292,39 +292,39 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.61e+03</td>
-               <td onclick="highlightRowMeanState(this)">2.61e+03</td>
-               <td onclick="highlightRowMeanState(this)">2.35e+03</td>
+               <td onclick="highlightRowMeanState(this)">4.44</td>
+               <td onclick="highlightRowMeanState(this)">4.44</td>
+               <td onclick="highlightRowMeanState(this)">3.83</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">259.</td>
-               <td onclick="highlightRowMeanState(this)">379.</td>
+               <td onclick="highlightRowMeanState(this)">0.619</td>
+               <td onclick="highlightRowMeanState(this)">0.801</td>
                <td onclick="highlightRowMeanState(this)">0.00</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.578</td>
+               <td onclick="highlightRowMeanState(this)">0.171</td>
                <td onclick="highlightRowMeanState(this)">1.00</td>
                <td onclick="highlightRowMeanState(this)">1.00</td>
-               <td onclick="highlightRowMeanState(this)">0.988</td>
-               <td onclick="highlightRowMeanState(this)">0.913</td>
+               <td onclick="highlightRowMeanState(this)">0.982</td>
+               <td onclick="highlightRowMeanState(this)">0.831</td>
              </tr>
           </tbody>
         </table>
         </center>
         <center>
-        <table class="table-header-rotated" id="MeanState_table_train">
+        <table class="table-header-rotated" id="MeanState_table_test">
            <thead>
              <tr>
                <th></th>
                <th class="rotate"><div><span>Download Data</span></div></th>
-               <th class="rotate"><div><span>Period Mean (original grids) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2]</span></div></th>
-               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2]</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [kg m-2]</span></div></th>
                <th></th>
-               <th class="rotate"><div><span>Bias [g m-2]</span></div></th>
-               <th class="rotate"><div><span>RMSE [g m-2]</span></div></th>
+               <th class="rotate"><div><span>Bias [kg m-2]</span></div></th>
+               <th class="rotate"><div><span>RMSE [kg m-2]</span></div></th>
                <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
                <th></th>
                <th class="rotate"><div><span>Bias Score [1]</span></div></th>
@@ -338,7 +338,7 @@
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>3.82e+03</td>
+               <td>3.83</td>
                <td></td>
                <td></td>
                <td></td>
@@ -357,21 +357,21 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">4.48e+03</td>
-               <td onclick="highlightRowMeanState(this)">4.48e+03</td>
-               <td onclick="highlightRowMeanState(this)">3.82e+03</td>
+               <td onclick="highlightRowMeanState(this)">4.35</td>
+               <td onclick="highlightRowMeanState(this)">4.35</td>
+               <td onclick="highlightRowMeanState(this)">3.83</td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">658.</td>
-               <td onclick="highlightRowMeanState(this)">778.</td>
+               <td onclick="highlightRowMeanState(this)">0.518</td>
+               <td onclick="highlightRowMeanState(this)">0.900</td>
                <td onclick="highlightRowMeanState(this)">0.00</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.175</td>
+               <td onclick="highlightRowMeanState(this)">0.154</td>
                <td onclick="highlightRowMeanState(this)">1.00</td>
                <td onclick="highlightRowMeanState(this)">1.00</td>
-               <td onclick="highlightRowMeanState(this)">0.982</td>
-               <td onclick="highlightRowMeanState(this)">0.831</td>
+               <td onclick="highlightRowMeanState(this)">0.983</td>
+               <td onclick="highlightRowMeanState(this)">0.827</td>
              </tr>
           </tbody>
         </table>
@@ -500,7 +500,7 @@
       </div>
       <select id="AllModelsRegion" onchange="AllSelect()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>

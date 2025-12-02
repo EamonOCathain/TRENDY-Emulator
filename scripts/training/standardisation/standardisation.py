@@ -73,6 +73,8 @@ for var in tasks:
     s_sum = 0.0
     s_sumsq = 0.0
     s_count = 0
+    s_min = None
+    s_max = None
 
     for z in relevant_zarrs:
         # Open store (consolidated only)
@@ -84,11 +86,13 @@ for var in tasks:
 
         # Skip if var not present
         if var not in ds.data_vars or var in EXCLUDE:
-            try: ds.close()
-            except Exception: pass
+            try:
+                ds.close()
+            except Exception:
+                pass
             continue
 
-        # Use dask-native reduction: sum, sumsq, count (ignore NaNs)
+        # Use dask-native reduction: sum, sumsq, count, min, max (ignore NaNs)
         da = ds[var].astype("float64")
         if not hasattr(da.data, "to_delayed"):
             da = da.chunk()  # ensure dask-backed; keep native zarr chunks
@@ -96,18 +100,28 @@ for var in tasks:
         total    = da.sum(skipna=True)
         total_sq = (da * da).sum(skipna=True)
         count    = da.count()
+        vmin     = da.min(skipna=True)
+        vmax     = da.max(skipna=True)
 
         try:
-            s, s2, n = dask.compute(total, total_sq, count)
-            s = float(s); s2 = float(s2); n = int(n)
+            s, s2, n, mn, mx = dask.compute(total, total_sq, count, vmin, vmax)
+            s = float(s)
+            s2 = float(s2)
+            n = int(n)
+            mn = float(mn)
+            mx = float(mx)
         except Exception as e:
             print(f"[ERROR] Reduction failed for {z.name} var={var}: {e}", flush=True)
-            try: ds.close()
-            except Exception: pass
+            try:
+                ds.close()
+            except Exception:
+                pass
             continue
         finally:
-            try: ds.close()
-            except Exception: pass
+            try:
+                ds.close()
+            except Exception:
+                pass
 
         if n == 0:
             continue
@@ -116,7 +130,17 @@ for var in tasks:
         s_sumsq += s2
         s_count += n
 
-        print(f"[INFO] {z.name}: +count={n} +sum={s:.6g} +sumsq={s2:.6g}", flush=True)
+        # Update global min / max
+        if s_min is None or mn < s_min:
+            s_min = mn
+        if s_max is None or mx > s_max:
+            s_max = mx
+
+        print(
+            f"[INFO] {z.name}: +count={n} +sum={s:.6g} +sumsq={s2:.6g} "
+            f"+min={mn:.6g} +max={mx:.6g}",
+            flush=True,
+        )
 
     # Finalize stats for this var
     if s_count > 0:
@@ -124,18 +148,22 @@ for var in tasks:
         var_pop = (s_sumsq / s_count) - (mean * mean)
         std = float(np.sqrt(max(var_pop, 0.0)))
         results[var] = {
-            "mean": float(mean),
-            "std":  std,
+            "mean":  float(mean),
+            "std":   std,
+            "min":   float(s_min) if s_min is not None else None,
+            "max":   float(s_max) if s_max is not None else None,
             "count": int(s_count),
-            "sum":  float(s_sum),
+            "sum":   float(s_sum),
             "sumsq": float(s_sumsq),
         }
     else:
         results[var] = {
-            "mean": None,
-            "std":  None,
+            "mean":  None,
+            "std":   None,
+            "min":   None,
+            "max":   None,
             "count": 0,
-            "sum":  0.0,
+            "sum":   0.0,
             "sumsq": 0.0,
         }
         print(f"[WARN] No data accumulated for {var}", flush=True)

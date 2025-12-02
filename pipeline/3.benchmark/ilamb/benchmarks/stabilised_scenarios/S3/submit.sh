@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=work
+#SBATCH --partition=big
 #SBATCH --job-name=ilamb_ensmean
 #SBATCH --output=logs/%A_%a.out
 #SBATCH --error=logs/%A_%a.err
@@ -23,13 +23,13 @@ source /User/homes/ecathain/miniconda3/etc/profile.d/conda.sh
 conda activate /Net/Groups/BGI/people/ecathain/envs/ilamb
 
 # Paths
-cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/32_year_vs_ensmean_scenarios/S3
-export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/32_year_vs_ensmean_scenarios/S3"
+cd /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/no_rolling_mean
+export ILAMB_ROOT="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/no_rolling_mean"
 export MASKS_DIR="/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/data/masks"
 
 # Run ILAMB
 /Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/scripts/analysis/ilamb/ILAMB/bin/ilamb-run \
-  --config "$ILAMB_ROOT/build_new.cfg" \
+  --config "$ILAMB_ROOT/build.cfg" \
   --model_root "$ILAMB_ROOT/MODELS" \
   --define_regions "$MASKS_DIR/ilamb_tvt.nc" \
   --regions global test

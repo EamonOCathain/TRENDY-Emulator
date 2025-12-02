@@ -616,6 +616,7 @@ def main():
                 overwrite=bool(args.overwrite_data),
                 var_order=OUTPUT_ORDER,
                 annual_vars=ANNUAL_OUT_VARS, 
+                filename_prefix=f"{args.job_name}_{scenario}_",
             )
 
             # Mark this shard's export completion (for ILAMB copy barrier)

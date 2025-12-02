@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=predict
-#SBATCH --array=0-19
+#SBATCH --array=0-5
 #SBATCH --partition=big
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=48G
+#SBATCH --mem=64G
 #SBATCH --time=3-00:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err

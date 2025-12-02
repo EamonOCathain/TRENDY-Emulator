@@ -169,6 +169,7 @@
           document.getElementById("co2_-40pct_legend").style.display = 'none';
           document.getElementById("co2_-60pct_legend").style.display = 'none';
           document.getElementById("co2_-80pct_legend").style.display = 'none';
+          document.getElementById("co2_0pct_legend").style.display = 'none';
           document.getElementById("co2_100pct_legend").style.display = 'none';
           document.getElementById("co2_20pct_legend").style.display = 'none';
           document.getElementById("co2_40pct_legend").style.display = 'none';
@@ -181,6 +182,7 @@
           document.getElementById("co2_-40pct_legend").style.display = 'inline';
           document.getElementById("co2_-60pct_legend").style.display = 'inline';
           document.getElementById("co2_-80pct_legend").style.display = 'inline';
+          document.getElementById("co2_0pct_legend").style.display = 'inline';
           document.getElementById("co2_100pct_legend").style.display = 'inline';
           document.getElementById("co2_20pct_legend").style.display = 'inline';
           document.getElementById("co2_40pct_legend").style.display = 'inline';
@@ -199,6 +201,8 @@
         document.getElementById('co2_-60pct_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('co2_-80pct').src = 'co2_-80pct_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('co2_-80pct_legend').src = 'legend_' + PNAME + '.png';
+        document.getElementById('co2_0pct').src = 'co2_0pct_' + RNAME + '_' + PNAME + '.png';
+        document.getElementById('co2_0pct_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('co2_100pct').src = 'co2_100pct_' + RNAME + '_' + PNAME + '.png';
         document.getElementById('co2_100pct_legend').src = 'legend_' + PNAME + '.png';
         document.getElementById('co2_20pct').src = 'co2_20pct_' + RNAME + '_' + PNAME + '.png';
@@ -274,8 +278,11 @@
         </div>
       </div>
       <select id="MeanStateRegion" onchange="changeRegionMeanState()">
+        <option value='boreal'>Boreal</option>
         <option value='global' selected="selected">Globe</option>
-        <option value='test'>test</option>
+        <option value='subtropics'>Subtropics</option>
+        <option value='temperate'>Temperate</option>
+        <option value='tropics'>Tropics</option>
       </select>
       <div style="display:none">
       <select id="MeanStateModel">
@@ -285,6 +292,7 @@
         <option value='co2_-40pct'>co2_-40pct</option>
         <option value='co2_-60pct'>co2_-60pct</option>
         <option value='co2_-80pct'>co2_-80pct</option>
+        <option value='co2_0pct'>co2_0pct</option>
         <option value='co2_100pct'>co2_100pct</option>
         <option value='co2_20pct'>co2_20pct</option>
         <option value='co2_40pct'>co2_40pct</option>
@@ -292,6 +300,261 @@
         <option value='co2_80pct'>co2_80pct</option>
       </select>
       </div>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_boreal">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>0.690</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.07</td>
+               <td onclick="highlightRowMeanState(this)">1.07</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.377</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)">0.242</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.675</td>
+               <td onclick="highlightRowMeanState(this)">0.628</td>
+               <td onclick="highlightRowMeanState(this)">0.984</td>
+               <td onclick="highlightRowMeanState(this)">0.786</td>
+               <td onclick="highlightRowMeanState(this)">0.740</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.721</td>
+               <td onclick="highlightRowMeanState(this)">0.721</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0283</td>
+               <td onclick="highlightRowMeanState(this)">0.176</td>
+               <td onclick="highlightRowMeanState(this)">0.135</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.927</td>
+               <td onclick="highlightRowMeanState(this)">0.849</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
+               <td onclick="highlightRowMeanState(this)">0.921</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0480</td>
+               <td onclick="highlightRowMeanState(this)">0.273</td>
+               <td onclick="highlightRowMeanState(this)">0.222</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
+               <td onclick="highlightRowMeanState(this)">0.789</td>
+               <td onclick="highlightRowMeanState(this)">0.985</td>
+               <td onclick="highlightRowMeanState(this)">0.951</td>
+               <td onclick="highlightRowMeanState(this)">0.881</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.857</td>
+               <td onclick="highlightRowMeanState(this)">0.857</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.165</td>
+               <td onclick="highlightRowMeanState(this)">0.425</td>
+               <td onclick="highlightRowMeanState(this)">0.241</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.793</td>
+               <td onclick="highlightRowMeanState(this)">0.724</td>
+               <td onclick="highlightRowMeanState(this)">0.984</td>
+               <td onclick="highlightRowMeanState(this)">0.878</td>
+               <td onclick="highlightRowMeanState(this)">0.821</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.981</td>
+               <td onclick="highlightRowMeanState(this)">0.981</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.289</td>
+               <td onclick="highlightRowMeanState(this)">0.566</td>
+               <td onclick="highlightRowMeanState(this)">0.241</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.724</td>
+               <td onclick="highlightRowMeanState(this)">0.677</td>
+               <td onclick="highlightRowMeanState(this)">0.984</td>
+               <td onclick="highlightRowMeanState(this)">0.848</td>
+               <td onclick="highlightRowMeanState(this)">0.782</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.767</td>
+               <td onclick="highlightRowMeanState(this)">0.767</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0734</td>
+               <td onclick="highlightRowMeanState(this)">0.198</td>
+               <td onclick="highlightRowMeanState(this)">0.107</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.918</td>
+               <td onclick="highlightRowMeanState(this)">0.835</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.916</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.788</td>
+               <td onclick="highlightRowMeanState(this)">0.788</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0957</td>
+               <td onclick="highlightRowMeanState(this)">0.322</td>
+               <td onclick="highlightRowMeanState(this)">0.242</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.871</td>
+               <td onclick="highlightRowMeanState(this)">0.768</td>
+               <td onclick="highlightRowMeanState(this)">0.984</td>
+               <td onclick="highlightRowMeanState(this)">0.939</td>
+               <td onclick="highlightRowMeanState(this)">0.866</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.828</td>
+               <td onclick="highlightRowMeanState(this)">0.828</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.135</td>
+               <td onclick="highlightRowMeanState(this)">0.299</td>
+               <td onclick="highlightRowMeanState(this)">0.109</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.877</td>
+               <td onclick="highlightRowMeanState(this)">0.775</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.983</td>
+               <td onclick="highlightRowMeanState(this)">0.881</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.904</td>
+               <td onclick="highlightRowMeanState(this)">0.904</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.211</td>
+               <td onclick="highlightRowMeanState(this)">0.433</td>
+               <td onclick="highlightRowMeanState(this)">0.135</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.825</td>
+               <td onclick="highlightRowMeanState(this)">0.706</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
+               <td onclick="highlightRowMeanState(this)">0.942</td>
+               <td onclick="highlightRowMeanState(this)">0.834</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.942</td>
+               <td onclick="highlightRowMeanState(this)">0.942</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.250</td>
+               <td onclick="highlightRowMeanState(this)">0.501</td>
+               <td onclick="highlightRowMeanState(this)">0.188</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.799</td>
+               <td onclick="highlightRowMeanState(this)">0.672</td>
+               <td onclick="highlightRowMeanState(this)">0.988</td>
+               <td onclick="highlightRowMeanState(this)">0.911</td>
+               <td onclick="highlightRowMeanState(this)">0.808</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.906</td>
+               <td onclick="highlightRowMeanState(this)">0.906</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.214</td>
+               <td onclick="highlightRowMeanState(this)">0.408</td>
+               <td onclick="highlightRowMeanState(this)">0.233</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.821</td>
+               <td onclick="highlightRowMeanState(this)">0.726</td>
+               <td onclick="highlightRowMeanState(this)">0.985</td>
+               <td onclick="highlightRowMeanState(this)">0.891</td>
+               <td onclick="highlightRowMeanState(this)">0.830</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
         <center>
         <table class="table-header-rotated" id="MeanState_table_global">
            <thead>
@@ -431,6 +694,25 @@
                <td onclick="highlightRowMeanState(this)">0.606</td>
              </tr>
              <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)">0.977</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.849</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0465</td>
+               <td onclick="highlightRowMeanState(this)">0.191</td>
+               <td onclick="highlightRowMeanState(this)">0.649</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.707</td>
+               <td onclick="highlightRowMeanState(this)">0.712</td>
+               <td onclick="highlightRowMeanState(this)">0.914</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.807</td>
+             </tr>
+             <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_100pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_100pct.nc" download>[-]</a></td>
                <td onclick="highlightRowMeanState(this)">1.42</td>
@@ -529,7 +811,7 @@
         </table>
         </center>
         <center>
-        <table class="table-header-rotated" id="MeanState_table_test">
+        <table class="table-header-rotated" id="MeanState_table_subtropics">
            <thead>
              <tr>
                <th></th>
@@ -555,7 +837,7 @@
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>0.975</td>
+               <td>0.888</td>
                <td></td>
                <td></td>
                <td></td>
@@ -574,192 +856,721 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_-100pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-100pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.61</td>
-               <td onclick="highlightRowMeanState(this)">1.61</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.85</td>
+               <td onclick="highlightRowMeanState(this)">1.85</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.637</td>
-               <td onclick="highlightRowMeanState(this)">0.929</td>
-               <td onclick="highlightRowMeanState(this)">0.954</td>
+               <td onclick="highlightRowMeanState(this)">0.966</td>
+               <td onclick="highlightRowMeanState(this)">1.14</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.415</td>
-               <td onclick="highlightRowMeanState(this)">0.465</td>
-               <td onclick="highlightRowMeanState(this)">0.887</td>
-               <td onclick="highlightRowMeanState(this)">0.765</td>
-               <td onclick="highlightRowMeanState(this)">0.599</td>
+               <td onclick="highlightRowMeanState(this)">0.252</td>
+               <td onclick="highlightRowMeanState(this)">0.455</td>
+               <td onclick="highlightRowMeanState(this)">0.842</td>
+               <td onclick="highlightRowMeanState(this)">0.388</td>
+               <td onclick="highlightRowMeanState(this)">0.478</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_-20pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-20pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.00</td>
-               <td onclick="highlightRowMeanState(this)">1.00</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">0.897</td>
+               <td onclick="highlightRowMeanState(this)">0.897</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.0281</td>
-               <td onclick="highlightRowMeanState(this)">0.269</td>
-               <td onclick="highlightRowMeanState(this)">0.750</td>
+               <td onclick="highlightRowMeanState(this)">0.00942</td>
+               <td onclick="highlightRowMeanState(this)">0.248</td>
+               <td onclick="highlightRowMeanState(this)">0.737</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.661</td>
-               <td onclick="highlightRowMeanState(this)">0.635</td>
-               <td onclick="highlightRowMeanState(this)">0.905</td>
-               <td onclick="highlightRowMeanState(this)">0.989</td>
-               <td onclick="highlightRowMeanState(this)">0.765</td>
+               <td onclick="highlightRowMeanState(this)">0.626</td>
+               <td onclick="highlightRowMeanState(this)">0.708</td>
+               <td onclick="highlightRowMeanState(this)">0.917</td>
+               <td onclick="highlightRowMeanState(this)">0.986</td>
+               <td onclick="highlightRowMeanState(this)">0.789</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_-40pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-40pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.20</td>
-               <td onclick="highlightRowMeanState(this)">1.20</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.36</td>
+               <td onclick="highlightRowMeanState(this)">1.36</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.226</td>
-               <td onclick="highlightRowMeanState(this)">0.470</td>
-               <td onclick="highlightRowMeanState(this)">0.733</td>
+               <td onclick="highlightRowMeanState(this)">0.468</td>
+               <td onclick="highlightRowMeanState(this)">0.601</td>
+               <td onclick="highlightRowMeanState(this)">0.891</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.525</td>
-               <td onclick="highlightRowMeanState(this)">0.546</td>
-               <td onclick="highlightRowMeanState(this)">0.914</td>
-               <td onclick="highlightRowMeanState(this)">0.969</td>
-               <td onclick="highlightRowMeanState(this)">0.700</td>
+               <td onclick="highlightRowMeanState(this)">0.430</td>
+               <td onclick="highlightRowMeanState(this)">0.547</td>
+               <td onclick="highlightRowMeanState(this)">0.896</td>
+               <td onclick="highlightRowMeanState(this)">0.959</td>
+               <td onclick="highlightRowMeanState(this)">0.676</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_-60pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-60pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.42</td>
-               <td onclick="highlightRowMeanState(this)">1.42</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.80</td>
+               <td onclick="highlightRowMeanState(this)">1.80</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.911</td>
+               <td onclick="highlightRowMeanState(this)">1.04</td>
+               <td onclick="highlightRowMeanState(this)">1.27</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.246</td>
                <td onclick="highlightRowMeanState(this)">0.448</td>
-               <td onclick="highlightRowMeanState(this)">0.696</td>
-               <td onclick="highlightRowMeanState(this)">0.907</td>
-               <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.441</td>
-               <td onclick="highlightRowMeanState(this)">0.496</td>
-               <td onclick="highlightRowMeanState(this)">0.885</td>
-               <td onclick="highlightRowMeanState(this)">0.941</td>
-               <td onclick="highlightRowMeanState(this)">0.652</td>
+               <td onclick="highlightRowMeanState(this)">0.827</td>
+               <td onclick="highlightRowMeanState(this)">0.742</td>
+               <td onclick="highlightRowMeanState(this)">0.542</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_-80pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-80pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.57</td>
-               <td onclick="highlightRowMeanState(this)">1.57</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.89</td>
+               <td onclick="highlightRowMeanState(this)">1.89</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.244</td>
+               <td onclick="highlightRowMeanState(this)">0.448</td>
+               <td onclick="highlightRowMeanState(this)">0.820</td>
+               <td onclick="highlightRowMeanState(this)">0.477</td>
+               <td onclick="highlightRowMeanState(this)">0.487</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.592</td>
-               <td onclick="highlightRowMeanState(this)">0.855</td>
-               <td onclick="highlightRowMeanState(this)">0.958</td>
+               <td onclick="highlightRowMeanState(this)">-0.0264</td>
+               <td onclick="highlightRowMeanState(this)">0.189</td>
+               <td onclick="highlightRowMeanState(this)">0.681</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.422</td>
-               <td onclick="highlightRowMeanState(this)">0.478</td>
-               <td onclick="highlightRowMeanState(this)">0.883</td>
-               <td onclick="highlightRowMeanState(this)">0.857</td>
-               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.685</td>
+               <td onclick="highlightRowMeanState(this)">0.763</td>
+               <td onclick="highlightRowMeanState(this)">0.923</td>
+               <td onclick="highlightRowMeanState(this)">0.982</td>
+               <td onclick="highlightRowMeanState(this)">0.823</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_100pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_100pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.43</td>
-               <td onclick="highlightRowMeanState(this)">1.43</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.46</td>
+               <td onclick="highlightRowMeanState(this)">1.46</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.453</td>
-               <td onclick="highlightRowMeanState(this)">0.593</td>
-               <td onclick="highlightRowMeanState(this)">1.08</td>
+               <td onclick="highlightRowMeanState(this)">0.571</td>
+               <td onclick="highlightRowMeanState(this)">0.675</td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.424</td>
-               <td onclick="highlightRowMeanState(this)">0.500</td>
-               <td onclick="highlightRowMeanState(this)">0.860</td>
-               <td onclick="highlightRowMeanState(this)">0.935</td>
-               <td onclick="highlightRowMeanState(this)">0.644</td>
+               <td onclick="highlightRowMeanState(this)">0.335</td>
+               <td onclick="highlightRowMeanState(this)">0.457</td>
+               <td onclick="highlightRowMeanState(this)">0.843</td>
+               <td onclick="highlightRowMeanState(this)">0.953</td>
+               <td onclick="highlightRowMeanState(this)">0.609</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_20pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_20pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.15</td>
-               <td onclick="highlightRowMeanState(this)">1.15</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">0.929</td>
+               <td onclick="highlightRowMeanState(this)">0.929</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.172</td>
-               <td onclick="highlightRowMeanState(this)">0.333</td>
-               <td onclick="highlightRowMeanState(this)">0.768</td>
+               <td onclick="highlightRowMeanState(this)">0.0408</td>
+               <td onclick="highlightRowMeanState(this)">0.226</td>
+               <td onclick="highlightRowMeanState(this)">0.677</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.630</td>
-               <td onclick="highlightRowMeanState(this)">0.638</td>
-               <td onclick="highlightRowMeanState(this)">0.899</td>
-               <td onclick="highlightRowMeanState(this)">0.945</td>
-               <td onclick="highlightRowMeanState(this)">0.750</td>
+               <td onclick="highlightRowMeanState(this)">0.667</td>
+               <td onclick="highlightRowMeanState(this)">0.752</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+               <td onclick="highlightRowMeanState(this)">0.950</td>
+               <td onclick="highlightRowMeanState(this)">0.809</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_40pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_40pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.27</td>
-               <td onclick="highlightRowMeanState(this)">1.27</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.296</td>
-               <td onclick="highlightRowMeanState(this)">0.465</td>
-               <td onclick="highlightRowMeanState(this)">0.784</td>
+               <td onclick="highlightRowMeanState(this)">0.140</td>
+               <td onclick="highlightRowMeanState(this)">0.293</td>
+               <td onclick="highlightRowMeanState(this)">0.697</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.566</td>
-               <td onclick="highlightRowMeanState(this)">0.587</td>
-               <td onclick="highlightRowMeanState(this)">0.897</td>
-               <td onclick="highlightRowMeanState(this)">0.905</td>
-               <td onclick="highlightRowMeanState(this)">0.709</td>
+               <td onclick="highlightRowMeanState(this)">0.629</td>
+               <td onclick="highlightRowMeanState(this)">0.725</td>
+               <td onclick="highlightRowMeanState(this)">0.920</td>
+               <td onclick="highlightRowMeanState(this)">0.906</td>
+               <td onclick="highlightRowMeanState(this)">0.781</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_60pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_60pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.38</td>
-               <td onclick="highlightRowMeanState(this)">1.38</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.15</td>
+               <td onclick="highlightRowMeanState(this)">1.15</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.400</td>
-               <td onclick="highlightRowMeanState(this)">0.572</td>
-               <td onclick="highlightRowMeanState(this)">0.969</td>
+               <td onclick="highlightRowMeanState(this)">0.266</td>
+               <td onclick="highlightRowMeanState(this)">0.406</td>
+               <td onclick="highlightRowMeanState(this)">0.845</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.503</td>
-               <td onclick="highlightRowMeanState(this)">0.537</td>
-               <td onclick="highlightRowMeanState(this)">0.871</td>
-               <td onclick="highlightRowMeanState(this)">0.884</td>
-               <td onclick="highlightRowMeanState(this)">0.667</td>
+               <td onclick="highlightRowMeanState(this)">0.552</td>
+               <td onclick="highlightRowMeanState(this)">0.664</td>
+               <td onclick="highlightRowMeanState(this)">0.899</td>
+               <td onclick="highlightRowMeanState(this)">0.872</td>
+               <td onclick="highlightRowMeanState(this)">0.730</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">co2_80pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_80pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.44</td>
-               <td onclick="highlightRowMeanState(this)">1.44</td>
-               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">1.33</td>
+               <td onclick="highlightRowMeanState(this)">1.33</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.463</td>
-               <td onclick="highlightRowMeanState(this)">0.610</td>
+               <td onclick="highlightRowMeanState(this)">0.439</td>
+               <td onclick="highlightRowMeanState(this)">0.560</td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.444</td>
+               <td onclick="highlightRowMeanState(this)">0.573</td>
+               <td onclick="highlightRowMeanState(this)">0.876</td>
+               <td onclick="highlightRowMeanState(this)">0.884</td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_temperate">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>0.712</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.68</td>
+               <td onclick="highlightRowMeanState(this)">1.68</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">1.17</td>
+               <td onclick="highlightRowMeanState(this)">1.56</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.240</td>
+               <td onclick="highlightRowMeanState(this)">0.383</td>
+               <td onclick="highlightRowMeanState(this)">0.813</td>
+               <td onclick="highlightRowMeanState(this)">0.485</td>
+               <td onclick="highlightRowMeanState(this)">0.461</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.750</td>
+               <td onclick="highlightRowMeanState(this)">0.750</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0580</td>
+               <td onclick="highlightRowMeanState(this)">0.246</td>
+               <td onclick="highlightRowMeanState(this)">0.461</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.699</td>
+               <td onclick="highlightRowMeanState(this)">0.666</td>
+               <td onclick="highlightRowMeanState(this)">0.960</td>
+               <td onclick="highlightRowMeanState(this)">0.985</td>
+               <td onclick="highlightRowMeanState(this)">0.795</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.44</td>
+               <td onclick="highlightRowMeanState(this)">1.44</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.744</td>
+               <td onclick="highlightRowMeanState(this)">0.894</td>
+               <td onclick="highlightRowMeanState(this)">1.14</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.281</td>
+               <td onclick="highlightRowMeanState(this)">0.493</td>
+               <td onclick="highlightRowMeanState(this)">0.862</td>
+               <td onclick="highlightRowMeanState(this)">0.769</td>
+               <td onclick="highlightRowMeanState(this)">0.580</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.70</td>
+               <td onclick="highlightRowMeanState(this)">1.70</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">1.01</td>
+               <td onclick="highlightRowMeanState(this)">1.16</td>
+               <td onclick="highlightRowMeanState(this)">1.74</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.238</td>
+               <td onclick="highlightRowMeanState(this)">0.445</td>
+               <td onclick="highlightRowMeanState(this)">0.767</td>
+               <td onclick="highlightRowMeanState(this)">0.749</td>
+               <td onclick="highlightRowMeanState(this)">0.529</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.74</td>
+               <td onclick="highlightRowMeanState(this)">1.74</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">1.05</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)">1.90</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.230</td>
+               <td onclick="highlightRowMeanState(this)">0.406</td>
+               <td onclick="highlightRowMeanState(this)">0.742</td>
+               <td onclick="highlightRowMeanState(this)">0.582</td>
+               <td onclick="highlightRowMeanState(this)">0.473</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.665</td>
+               <td onclick="highlightRowMeanState(this)">0.665</td>
+               <td onclick="highlightRowMeanState(this)">0.705</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.67</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.0392</td>
+               <td onclick="highlightRowMeanState(this)">0.194</td>
+               <td onclick="highlightRowMeanState(this)">0.410</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.715</td>
+               <td onclick="highlightRowMeanState(this)">0.730</td>
+               <td onclick="highlightRowMeanState(this)">0.963</td>
+               <td onclick="highlightRowMeanState(this)">0.986</td>
+               <td onclick="highlightRowMeanState(this)">0.825</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.22</td>
+               <td onclick="highlightRowMeanState(this)">1.22</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.525</td>
+               <td onclick="highlightRowMeanState(this)">0.702</td>
+               <td onclick="highlightRowMeanState(this)">1.70</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.322</td>
+               <td onclick="highlightRowMeanState(this)">0.479</td>
+               <td onclick="highlightRowMeanState(this)">0.763</td>
+               <td onclick="highlightRowMeanState(this)">0.916</td>
+               <td onclick="highlightRowMeanState(this)">0.592</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.705</td>
+               <td onclick="highlightRowMeanState(this)">0.705</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0127</td>
+               <td onclick="highlightRowMeanState(this)">0.188</td>
+               <td onclick="highlightRowMeanState(this)">0.432</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.750</td>
+               <td onclick="highlightRowMeanState(this)">0.736</td>
+               <td onclick="highlightRowMeanState(this)">0.964</td>
+               <td onclick="highlightRowMeanState(this)">0.979</td>
+               <td onclick="highlightRowMeanState(this)">0.833</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.770</td>
+               <td onclick="highlightRowMeanState(this)">0.770</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0777</td>
+               <td onclick="highlightRowMeanState(this)">0.265</td>
+               <td onclick="highlightRowMeanState(this)">0.535</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.680</td>
+               <td onclick="highlightRowMeanState(this)">0.686</td>
+               <td onclick="highlightRowMeanState(this)">0.955</td>
+               <td onclick="highlightRowMeanState(this)">0.934</td>
+               <td onclick="highlightRowMeanState(this)">0.788</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">0.935</td>
+               <td onclick="highlightRowMeanState(this)">0.935</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.242</td>
+               <td onclick="highlightRowMeanState(this)">0.435</td>
+               <td onclick="highlightRowMeanState(this)">0.828</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.550</td>
+               <td onclick="highlightRowMeanState(this)">0.611</td>
+               <td onclick="highlightRowMeanState(this)">0.915</td>
+               <td onclick="highlightRowMeanState(this)">0.809</td>
+               <td onclick="highlightRowMeanState(this)">0.699</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.14</td>
+               <td onclick="highlightRowMeanState(this)">1.14</td>
+               <td onclick="highlightRowMeanState(this)">0.692</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.66</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.444</td>
+               <td onclick="highlightRowMeanState(this)">0.605</td>
+               <td onclick="highlightRowMeanState(this)">1.27</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.465</td>
+               <td onclick="highlightRowMeanState(this)">0.555</td>
+               <td onclick="highlightRowMeanState(this)">0.847</td>
+               <td onclick="highlightRowMeanState(this)">0.782</td>
+               <td onclick="highlightRowMeanState(this)">0.641</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_tropics">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>1.93</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.23</td>
+               <td onclick="highlightRowMeanState(this)">2.23</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.297</td>
+               <td onclick="highlightRowMeanState(this)">0.876</td>
+               <td onclick="highlightRowMeanState(this)">1.45</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.427</td>
+               <td onclick="highlightRowMeanState(this)">0.493</td>
+               <td onclick="highlightRowMeanState(this)">0.791</td>
+               <td onclick="highlightRowMeanState(this)">0.215</td>
+               <td onclick="highlightRowMeanState(this)">0.484</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.03</td>
+               <td onclick="highlightRowMeanState(this)">2.03</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0975</td>
+               <td onclick="highlightRowMeanState(this)">0.301</td>
+               <td onclick="highlightRowMeanState(this)">0.678</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.712</td>
+               <td onclick="highlightRowMeanState(this)">0.707</td>
+               <td onclick="highlightRowMeanState(this)">0.916</td>
+               <td onclick="highlightRowMeanState(this)">0.983</td>
+               <td onclick="highlightRowMeanState(this)">0.807</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.22</td>
+               <td onclick="highlightRowMeanState(this)">2.22</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.295</td>
+               <td onclick="highlightRowMeanState(this)">0.605</td>
                <td onclick="highlightRowMeanState(this)">0.969</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.455</td>
-               <td onclick="highlightRowMeanState(this)">0.514</td>
-               <td onclick="highlightRowMeanState(this)">0.879</td>
+               <td onclick="highlightRowMeanState(this)">0.506</td>
+               <td onclick="highlightRowMeanState(this)">0.608</td>
+               <td onclick="highlightRowMeanState(this)">0.870</td>
+               <td onclick="highlightRowMeanState(this)">0.763</td>
+               <td onclick="highlightRowMeanState(this)">0.687</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.33</td>
+               <td onclick="highlightRowMeanState(this)">2.33</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.404</td>
+               <td onclick="highlightRowMeanState(this)">0.791</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.449</td>
+               <td onclick="highlightRowMeanState(this)">0.544</td>
+               <td onclick="highlightRowMeanState(this)">0.831</td>
+               <td onclick="highlightRowMeanState(this)">0.422</td>
+               <td onclick="highlightRowMeanState(this)">0.561</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_-80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_-80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.30</td>
+               <td onclick="highlightRowMeanState(this)">2.30</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.373</td>
+               <td onclick="highlightRowMeanState(this)">0.855</td>
+               <td onclick="highlightRowMeanState(this)">1.41</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.435</td>
+               <td onclick="highlightRowMeanState(this)">0.513</td>
+               <td onclick="highlightRowMeanState(this)">0.797</td>
+               <td onclick="highlightRowMeanState(this)">0.272</td>
+               <td onclick="highlightRowMeanState(this)">0.502</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.08</td>
+               <td onclick="highlightRowMeanState(this)">2.08</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.154</td>
+               <td onclick="highlightRowMeanState(this)">0.268</td>
+               <td onclick="highlightRowMeanState(this)">0.605</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.666</td>
+               <td onclick="highlightRowMeanState(this)">0.764</td>
+               <td onclick="highlightRowMeanState(this)">0.927</td>
+               <td onclick="highlightRowMeanState(this)">0.980</td>
+               <td onclick="highlightRowMeanState(this)">0.828</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.67</td>
+               <td onclick="highlightRowMeanState(this)">2.67</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.739</td>
+               <td onclick="highlightRowMeanState(this)">0.816</td>
+               <td onclick="highlightRowMeanState(this)">1.02</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.306</td>
+               <td onclick="highlightRowMeanState(this)">0.590</td>
+               <td onclick="highlightRowMeanState(this)">0.867</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.659</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.34</td>
+               <td onclick="highlightRowMeanState(this)">2.34</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.415</td>
+               <td onclick="highlightRowMeanState(this)">0.510</td>
+               <td onclick="highlightRowMeanState(this)">0.593</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.504</td>
+               <td onclick="highlightRowMeanState(this)">0.728</td>
+               <td onclick="highlightRowMeanState(this)">0.930</td>
+               <td onclick="highlightRowMeanState(this)">0.908</td>
+               <td onclick="highlightRowMeanState(this)">0.788</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.57</td>
+               <td onclick="highlightRowMeanState(this)">2.57</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.639</td>
+               <td onclick="highlightRowMeanState(this)">0.715</td>
+               <td onclick="highlightRowMeanState(this)">0.637</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.429</td>
+               <td onclick="highlightRowMeanState(this)">0.707</td>
+               <td onclick="highlightRowMeanState(this)">0.924</td>
+               <td onclick="highlightRowMeanState(this)">0.859</td>
+               <td onclick="highlightRowMeanState(this)">0.756</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.70</td>
+               <td onclick="highlightRowMeanState(this)">2.70</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.773</td>
+               <td onclick="highlightRowMeanState(this)">0.845</td>
+               <td onclick="highlightRowMeanState(this)">0.763</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.371</td>
+               <td onclick="highlightRowMeanState(this)">0.664</td>
+               <td onclick="highlightRowMeanState(this)">0.908</td>
+               <td onclick="highlightRowMeanState(this)">0.865</td>
+               <td onclick="highlightRowMeanState(this)">0.718</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">co2_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_co2_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">2.74</td>
+               <td onclick="highlightRowMeanState(this)">2.74</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.812</td>
+               <td onclick="highlightRowMeanState(this)">0.887</td>
+               <td onclick="highlightRowMeanState(this)">0.833</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.306</td>
+               <td onclick="highlightRowMeanState(this)">0.613</td>
                <td onclick="highlightRowMeanState(this)">0.898</td>
-               <td onclick="highlightRowMeanState(this)">0.652</td>
+               <td onclick="highlightRowMeanState(this)">0.948</td>
+               <td onclick="highlightRowMeanState(this)">0.684</td>
              </tr>
           </tbody>
         </table>
@@ -893,8 +1704,11 @@
         </div>
       </div>
       <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='boreal'>Boreal</option>
         <option value='global' selected="selected">Globe</option>
-        <option value='test'>test</option>
+        <option value='subtropics'>Subtropics</option>
+        <option value='temperate'>Temperate</option>
+        <option value='tropics'>Tropics</option>
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>
@@ -949,6 +1763,13 @@
           <center>co2_-80pct</center>
           <img src="" id="co2_-80pct" alt="Data not available" ></img>
           <center><img src="legend_co2_-80pct.png" id="co2_-80pct_legend"  alt="Data not available" ></img></center>
+          </div>
+        </div>
+        <div class="container" id="co2_0pct_div">
+          <div class="child">
+          <center>co2_0pct</center>
+          <img src="" id="co2_0pct" alt="Data not available" ></img>
+          <center><img src="legend_co2_0pct.png" id="co2_0pct_legend"  alt="Data not available" ></img></center>
           </div>
         </div>
         <div class="container" id="co2_100pct_div">

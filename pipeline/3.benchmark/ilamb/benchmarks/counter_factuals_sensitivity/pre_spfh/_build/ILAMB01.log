@@ -1,4 +1,4 @@
-[INFO][0][<module>] Linux node-r5-he28.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
+[INFO][0][<module>] Linux node-r5-he21.bgc-jena.mpg.de 4.18.0-348.7.1.el8_5.x86_64 #1 SMP Wed Dec 22 13:25:12 UTC 2021 x86_64 x86_64
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/ILAMB (2.7.2)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/numpy (2.3.3)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/matplotlib (3.10.6)
@@ -6,125 +6,621 @@
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/cf_units (3.3.0)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/sympy (1.14.0)
 [INFO][0][<module>] /Net/Groups/BGI/people/ecathain/envs/ilamb/lib/python3.13/site-packages/mpi4py (4.1.0)
-[INFO][0][<module>] 2025-11-17 11:23:22.764653
-[DEBUG][0][__init__][GrossPrimaryProduction/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/gpp/ENSMEAN/ENSMEAN_S0_gpp.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][NetBiomeProductivity/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/nbp/ENSMEAN/ENSMEAN_S0_nbp.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][NetPrimaryProduction/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/npp/ENSMEAN/ENSMEAN_S0_npp.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][AutotrophicRespiration/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/ra/ENSMEAN/ENSMEAN_S0_ra.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][HeterotrophicRespiration/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/rh/ENSMEAN/ENSMEAN_S0_rh.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][Land-UseChangeEmissions/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/fLuc/ENSMEAN/ENSMEAN_S0_fLuc.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][FireEmissions/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/fFire/ENSMEAN/ENSMEAN_S0_fFire.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][TotalRunoff/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/mrro/ENSMEAN/ENSMEAN_S0_mrro.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][Evapotranspiration/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/evapotrans/ENSMEAN/ENSMEAN_S0_evapotrans.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][TotalSoilMoistureContent/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/mrso/ENSMEAN/ENSMEAN_S0_mrso.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][CarboninVegetation/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/cVeg/ENSMEAN/ENSMEAN_S0_cVeg.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][CarboninSoilPool/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/cSoil/ENSMEAN/ENSMEAN_S0_cSoil.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][CarboninLitterPool/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/cLitter/ENSMEAN/ENSMEAN_S0_cLitter.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][CarboninEcosystem/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/cTotal/ENSMEAN/ENSMEAN_S0_cTotal_monthly.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[DEBUG][0][__init__][LeafAreaIndex/ENSMEAN] 
-
-I am looking for data for the ENSMEAN confrontation here
-
-/Net/Groups/BGI/people/ecathain/TRENDY_Emulator_Scripts/NewModel/pipeline/3.benchmark/ilamb/benchmarks/counter_factuals_sensitivity/pre_spfh/DATA/lai/ENSMEAN/ENSMEAN_S0_lai.nc
-
-but I cannot find it. Did you download the data? Have you set the ILAMB_ROOT envronment variable?
-
-[INFO][0][<module>][total time] 21.8 s
+[INFO][0][<module>] 2025-11-18 15:53:00.183922
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][gpp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][gpp] RMSE scored using Collier2018
+[INFO][0][confront][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][nbp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][nbp] RMSE scored using Collier2018
+[INFO][0][confront][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][npp] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][npp] RMSE scored using Collier2018
+[INFO][0][confront][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][ra] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][ra] RMSE scored using Collier2018
+[INFO][0][confront][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][rh] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][rh] RMSE scored using Collier2018
+[INFO][0][confront][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][fFire] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][fFire] RMSE scored using Collier2018
+[INFO][0][confront][FireEmissions/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrro] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrro] RMSE scored using Collier2018
+[INFO][0][confront][TotalRunoff/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][evapotrans] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][evapotrans] RMSE scored using Collier2018
+[INFO][0][confront][Evapotranspiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][mrso] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][mrso] RMSE scored using Collier2018
+[INFO][0][confront][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][cVeg] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cVeg] RMSE scored using Collier2018
+[INFO][0][confront][CarboninVegetation/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][cSoil] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cSoil] RMSE scored using Collier2018
+[INFO][0][confront][CarboninSoilPool/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][cLitter] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cLitter] RMSE scored using Collier2018
+[INFO][0][confront][CarboninLitterPool/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][cTotal] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][cTotal] RMSE scored using Collier2018
+[INFO][0][confront][CarboninEcosystem/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][AnalysisMeanStateSpace][lai] Bias scored using Collier2018
+[INFO][0][AnalysisMeanStateSpace][lai] RMSE scored using Collier2018
+[INFO][0][confront][LeafAreaIndex/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][GrossPrimaryProduction/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][NetBiomeProductivity/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][NetPrimaryProduction/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][AutotrophicRespiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][HeterotrophicRespiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][FireEmissions/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][TotalRunoff/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][Evapotranspiration/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][TotalSoilMoistureContent/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][CarboninVegetation/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][CarboninSoilPool/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][CarboninLitterPool/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][CarboninEcosystem/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_0pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_100pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_10pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_20pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_30pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_40pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_50pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_60pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_70pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_80pct] Success
+[INFO][0][modelPlots][LeafAreaIndex/ENSMEAN][pre_spfh_minus_90pct] Success
+[INFO][0][<module>][total time] 16503.2 s

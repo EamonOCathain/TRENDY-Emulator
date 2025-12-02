@@ -278,8 +278,11 @@
         </div>
       </div>
       <select id="MeanStateRegion" onchange="changeRegionMeanState()">
+        <option value='boreal'>Boreal</option>
         <option value='global' selected="selected">Globe</option>
-        <option value='test'>test</option>
+        <option value='subtropics'>Subtropics</option>
+        <option value='temperate'>Temperate</option>
+        <option value='tropics'>Tropics</option>
       </select>
       <div style="display:none">
       <select id="MeanStateModel">
@@ -297,6 +300,261 @@
         <option value='pre_spfh_minus_90pct'>pre_spfh_minus_90pct</option>
       </select>
       </div>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_boreal">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>1.21</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.112</td>
+               <td onclick="highlightRowMeanState(this)">0.285</td>
+               <td onclick="highlightRowMeanState(this)">0.0755</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.918</td>
+               <td onclick="highlightRowMeanState(this)">0.847</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.921</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.26</td>
+               <td onclick="highlightRowMeanState(this)">1.26</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0444</td>
+               <td onclick="highlightRowMeanState(this)">0.266</td>
+               <td onclick="highlightRowMeanState(this)">0.159</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.927</td>
+               <td onclick="highlightRowMeanState(this)">0.857</td>
+               <td onclick="highlightRowMeanState(this)">0.989</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_10pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_10pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.109</td>
+               <td onclick="highlightRowMeanState(this)">0.282</td>
+               <td onclick="highlightRowMeanState(this)">0.0765</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.919</td>
+               <td onclick="highlightRowMeanState(this)">0.848</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.922</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.106</td>
+               <td onclick="highlightRowMeanState(this)">0.279</td>
+               <td onclick="highlightRowMeanState(this)">0.0791</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.920</td>
+               <td onclick="highlightRowMeanState(this)">0.849</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.922</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_30pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_30pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.103</td>
+               <td onclick="highlightRowMeanState(this)">0.275</td>
+               <td onclick="highlightRowMeanState(this)">0.0797</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.921</td>
+               <td onclick="highlightRowMeanState(this)">0.851</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.998</td>
+               <td onclick="highlightRowMeanState(this)">0.923</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0978</td>
+               <td onclick="highlightRowMeanState(this)">0.272</td>
+               <td onclick="highlightRowMeanState(this)">0.0842</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.922</td>
+               <td onclick="highlightRowMeanState(this)">0.852</td>
+               <td onclick="highlightRowMeanState(this)">0.994</td>
+               <td onclick="highlightRowMeanState(this)">0.997</td>
+               <td onclick="highlightRowMeanState(this)">0.924</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_50pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_50pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.30</td>
+               <td onclick="highlightRowMeanState(this)">1.30</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0921</td>
+               <td onclick="highlightRowMeanState(this)">0.269</td>
+               <td onclick="highlightRowMeanState(this)">0.0880</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.924</td>
+               <td onclick="highlightRowMeanState(this)">0.854</td>
+               <td onclick="highlightRowMeanState(this)">0.994</td>
+               <td onclick="highlightRowMeanState(this)">0.997</td>
+               <td onclick="highlightRowMeanState(this)">0.924</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.30</td>
+               <td onclick="highlightRowMeanState(this)">1.30</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0851</td>
+               <td onclick="highlightRowMeanState(this)">0.267</td>
+               <td onclick="highlightRowMeanState(this)">0.0981</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+               <td onclick="highlightRowMeanState(this)">0.855</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.996</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_70pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_70pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0768</td>
+               <td onclick="highlightRowMeanState(this)">0.265</td>
+               <td onclick="highlightRowMeanState(this)">0.113</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.926</td>
+               <td onclick="highlightRowMeanState(this)">0.856</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.996</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.28</td>
+               <td onclick="highlightRowMeanState(this)">1.28</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0672</td>
+               <td onclick="highlightRowMeanState(this)">0.264</td>
+               <td onclick="highlightRowMeanState(this)">0.128</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.926</td>
+               <td onclick="highlightRowMeanState(this)">0.857</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.996</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_90pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_90pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.27</td>
+               <td onclick="highlightRowMeanState(this)">1.27</td>
+               <td onclick="highlightRowMeanState(this)">1.21</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.714</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0561</td>
+               <td onclick="highlightRowMeanState(this)">0.264</td>
+               <td onclick="highlightRowMeanState(this)">0.144</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.927</td>
+               <td onclick="highlightRowMeanState(this)">0.857</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
         <center>
         <table class="table-header-rotated" id="MeanState_table_global">
            <thead>
@@ -553,7 +811,7 @@
         </table>
         </center>
         <center>
-        <table class="table-header-rotated" id="MeanState_table_test">
+        <table class="table-header-rotated" id="MeanState_table_subtropics">
            <thead>
              <tr>
                <th></th>
@@ -579,7 +837,7 @@
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>2.15</td>
+               <td>2.01</td>
                <td></td>
                <td></td>
                <td></td>
@@ -598,211 +856,721 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_0pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_0pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.24</td>
-               <td onclick="highlightRowMeanState(this)">2.24</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)">1.93</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.0919</td>
-               <td onclick="highlightRowMeanState(this)">0.392</td>
-               <td onclick="highlightRowMeanState(this)">0.829</td>
+               <td onclick="highlightRowMeanState(this)">-0.0735</td>
+               <td onclick="highlightRowMeanState(this)">0.325</td>
+               <td onclick="highlightRowMeanState(this)">0.693</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.659</td>
-               <td onclick="highlightRowMeanState(this)">0.673</td>
-               <td onclick="highlightRowMeanState(this)">0.887</td>
-               <td onclick="highlightRowMeanState(this)">0.992</td>
-               <td onclick="highlightRowMeanState(this)">0.777</td>
+               <td onclick="highlightRowMeanState(this)">0.649</td>
+               <td onclick="highlightRowMeanState(this)">0.767</td>
+               <td onclick="highlightRowMeanState(this)">0.920</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.819</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_100pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_100pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.52</td>
-               <td onclick="highlightRowMeanState(this)">1.52</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.09</td>
+               <td onclick="highlightRowMeanState(this)">1.09</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.625</td>
-               <td onclick="highlightRowMeanState(this)">0.823</td>
-               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)">-0.916</td>
+               <td onclick="highlightRowMeanState(this)">1.09</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.507</td>
-               <td onclick="highlightRowMeanState(this)">0.599</td>
-               <td onclick="highlightRowMeanState(this)">0.821</td>
-               <td onclick="highlightRowMeanState(this)">0.872</td>
-               <td onclick="highlightRowMeanState(this)">0.680</td>
+               <td onclick="highlightRowMeanState(this)">0.344</td>
+               <td onclick="highlightRowMeanState(this)">0.547</td>
+               <td onclick="highlightRowMeanState(this)">0.819</td>
+               <td onclick="highlightRowMeanState(this)">0.846</td>
+               <td onclick="highlightRowMeanState(this)">0.621</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_10pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_10pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.20</td>
-               <td onclick="highlightRowMeanState(this)">2.20</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.88</td>
+               <td onclick="highlightRowMeanState(this)">1.88</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.0543</td>
-               <td onclick="highlightRowMeanState(this)">0.382</td>
-               <td onclick="highlightRowMeanState(this)">0.833</td>
+               <td onclick="highlightRowMeanState(this)">-0.126</td>
+               <td onclick="highlightRowMeanState(this)">0.335</td>
+               <td onclick="highlightRowMeanState(this)">0.701</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.664</td>
-               <td onclick="highlightRowMeanState(this)">0.676</td>
-               <td onclick="highlightRowMeanState(this)">0.887</td>
-               <td onclick="highlightRowMeanState(this)">0.994</td>
-               <td onclick="highlightRowMeanState(this)">0.779</td>
+               <td onclick="highlightRowMeanState(this)">0.639</td>
+               <td onclick="highlightRowMeanState(this)">0.762</td>
+               <td onclick="highlightRowMeanState(this)">0.919</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.815</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_20pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_20pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.16</td>
-               <td onclick="highlightRowMeanState(this)">2.16</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.83</td>
+               <td onclick="highlightRowMeanState(this)">1.83</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.0123</td>
-               <td onclick="highlightRowMeanState(this)">0.377</td>
-               <td onclick="highlightRowMeanState(this)">0.835</td>
+               <td onclick="highlightRowMeanState(this)">-0.182</td>
+               <td onclick="highlightRowMeanState(this)">0.355</td>
+               <td onclick="highlightRowMeanState(this)">0.705</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.666</td>
-               <td onclick="highlightRowMeanState(this)">0.679</td>
-               <td onclick="highlightRowMeanState(this)">0.887</td>
-               <td onclick="highlightRowMeanState(this)">0.995</td>
-               <td onclick="highlightRowMeanState(this)">0.781</td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.754</td>
+               <td onclick="highlightRowMeanState(this)">0.919</td>
+               <td onclick="highlightRowMeanState(this)">0.994</td>
+               <td onclick="highlightRowMeanState(this)">0.809</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_30pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_30pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.11</td>
-               <td onclick="highlightRowMeanState(this)">2.11</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.76</td>
+               <td onclick="highlightRowMeanState(this)">1.76</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.0352</td>
-               <td onclick="highlightRowMeanState(this)">0.379</td>
-               <td onclick="highlightRowMeanState(this)">0.846</td>
+               <td onclick="highlightRowMeanState(this)">-0.244</td>
+               <td onclick="highlightRowMeanState(this)">0.389</td>
+               <td onclick="highlightRowMeanState(this)">0.716</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.664</td>
-               <td onclick="highlightRowMeanState(this)">0.679</td>
-               <td onclick="highlightRowMeanState(this)">0.886</td>
+               <td onclick="highlightRowMeanState(this)">0.600</td>
+               <td onclick="highlightRowMeanState(this)">0.743</td>
+               <td onclick="highlightRowMeanState(this)">0.917</td>
                <td onclick="highlightRowMeanState(this)">0.995</td>
-               <td onclick="highlightRowMeanState(this)">0.781</td>
+               <td onclick="highlightRowMeanState(this)">0.800</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_40pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_40pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.06</td>
-               <td onclick="highlightRowMeanState(this)">2.06</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.70</td>
+               <td onclick="highlightRowMeanState(this)">1.70</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.0897</td>
-               <td onclick="highlightRowMeanState(this)">0.393</td>
-               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)">-0.312</td>
+               <td onclick="highlightRowMeanState(this)">0.438</td>
+               <td onclick="highlightRowMeanState(this)">0.736</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.656</td>
-               <td onclick="highlightRowMeanState(this)">0.676</td>
-               <td onclick="highlightRowMeanState(this)">0.885</td>
-               <td onclick="highlightRowMeanState(this)">0.995</td>
-               <td onclick="highlightRowMeanState(this)">0.778</td>
+               <td onclick="highlightRowMeanState(this)">0.571</td>
+               <td onclick="highlightRowMeanState(this)">0.728</td>
+               <td onclick="highlightRowMeanState(this)">0.915</td>
+               <td onclick="highlightRowMeanState(this)">0.994</td>
+               <td onclick="highlightRowMeanState(this)">0.787</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_50pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_50pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.99</td>
-               <td onclick="highlightRowMeanState(this)">1.99</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.62</td>
+               <td onclick="highlightRowMeanState(this)">1.62</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.153</td>
-               <td onclick="highlightRowMeanState(this)">0.422</td>
-               <td onclick="highlightRowMeanState(this)">0.879</td>
+               <td onclick="highlightRowMeanState(this)">-0.387</td>
+               <td onclick="highlightRowMeanState(this)">0.501</td>
+               <td onclick="highlightRowMeanState(this)">0.761</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.639</td>
-               <td onclick="highlightRowMeanState(this)">0.671</td>
-               <td onclick="highlightRowMeanState(this)">0.883</td>
-               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.538</td>
+               <td onclick="highlightRowMeanState(this)">0.708</td>
+               <td onclick="highlightRowMeanState(this)">0.912</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
                <td onclick="highlightRowMeanState(this)">0.771</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_60pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_60pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.92</td>
-               <td onclick="highlightRowMeanState(this)">1.92</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.54</td>
+               <td onclick="highlightRowMeanState(this)">1.54</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.225</td>
-               <td onclick="highlightRowMeanState(this)">0.466</td>
-               <td onclick="highlightRowMeanState(this)">0.920</td>
+               <td onclick="highlightRowMeanState(this)">-0.472</td>
+               <td onclick="highlightRowMeanState(this)">0.583</td>
+               <td onclick="highlightRowMeanState(this)">0.803</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.616</td>
-               <td onclick="highlightRowMeanState(this)">0.662</td>
-               <td onclick="highlightRowMeanState(this)">0.877</td>
-               <td onclick="highlightRowMeanState(this)">0.986</td>
-               <td onclick="highlightRowMeanState(this)">0.761</td>
+               <td onclick="highlightRowMeanState(this)">0.500</td>
+               <td onclick="highlightRowMeanState(this)">0.684</td>
+               <td onclick="highlightRowMeanState(this)">0.907</td>
+               <td onclick="highlightRowMeanState(this)">0.985</td>
+               <td onclick="highlightRowMeanState(this)">0.752</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_70pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_70pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.84</td>
-               <td onclick="highlightRowMeanState(this)">1.84</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.44</td>
+               <td onclick="highlightRowMeanState(this)">1.44</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.308</td>
-               <td onclick="highlightRowMeanState(this)">0.526</td>
-               <td onclick="highlightRowMeanState(this)">0.970</td>
+               <td onclick="highlightRowMeanState(this)">-0.570</td>
+               <td onclick="highlightRowMeanState(this)">0.686</td>
+               <td onclick="highlightRowMeanState(this)">0.854</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.590</td>
-               <td onclick="highlightRowMeanState(this)">0.652</td>
-               <td onclick="highlightRowMeanState(this)">0.871</td>
-               <td onclick="highlightRowMeanState(this)">0.974</td>
-               <td onclick="highlightRowMeanState(this)">0.748</td>
+               <td onclick="highlightRowMeanState(this)">0.459</td>
+               <td onclick="highlightRowMeanState(this)">0.654</td>
+               <td onclick="highlightRowMeanState(this)">0.900</td>
+               <td onclick="highlightRowMeanState(this)">0.971</td>
+               <td onclick="highlightRowMeanState(this)">0.728</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_80pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_80pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.74</td>
-               <td onclick="highlightRowMeanState(this)">1.74</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">1.32</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.406</td>
-               <td onclick="highlightRowMeanState(this)">0.608</td>
-               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">-0.683</td>
+               <td onclick="highlightRowMeanState(this)">0.812</td>
+               <td onclick="highlightRowMeanState(this)">0.947</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.561</td>
-               <td onclick="highlightRowMeanState(this)">0.638</td>
-               <td onclick="highlightRowMeanState(this)">0.864</td>
-               <td onclick="highlightRowMeanState(this)">0.952</td>
-               <td onclick="highlightRowMeanState(this)">0.731</td>
+               <td onclick="highlightRowMeanState(this)">0.416</td>
+               <td onclick="highlightRowMeanState(this)">0.620</td>
+               <td onclick="highlightRowMeanState(this)">0.888</td>
+               <td onclick="highlightRowMeanState(this)">0.944</td>
+               <td onclick="highlightRowMeanState(this)">0.698</td>
              </tr>
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_90pct</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_90pct.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">1.63</td>
-               <td onclick="highlightRowMeanState(this)">1.63</td>
-               <td onclick="highlightRowMeanState(this)">2.15</td>
+               <td onclick="highlightRowMeanState(this)">1.20</td>
+               <td onclick="highlightRowMeanState(this)">1.20</td>
+               <td onclick="highlightRowMeanState(this)">2.01</td>
                <td onclick="highlightRowMeanState(this)"></td>
-               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">2.56</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">-0.518</td>
+               <td onclick="highlightRowMeanState(this)">-0.804</td>
+               <td onclick="highlightRowMeanState(this)">0.955</td>
+               <td onclick="highlightRowMeanState(this)">1.13</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.377</td>
+               <td onclick="highlightRowMeanState(this)">0.582</td>
+               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)">0.901</td>
+               <td onclick="highlightRowMeanState(this)">0.660</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_temperate">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>1.42</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.31</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.0922</td>
+               <td onclick="highlightRowMeanState(this)">0.320</td>
+               <td onclick="highlightRowMeanState(this)">0.432</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.683</td>
+               <td onclick="highlightRowMeanState(this)">0.738</td>
+               <td onclick="highlightRowMeanState(this)">0.960</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.822</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.00</td>
+               <td onclick="highlightRowMeanState(this)">1.00</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.405</td>
+               <td onclick="highlightRowMeanState(this)">0.531</td>
+               <td onclick="highlightRowMeanState(this)">0.444</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.515</td>
+               <td onclick="highlightRowMeanState(this)">0.696</td>
+               <td onclick="highlightRowMeanState(this)">0.954</td>
+               <td onclick="highlightRowMeanState(this)">0.970</td>
+               <td onclick="highlightRowMeanState(this)">0.766</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_10pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_10pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)">1.29</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.119</td>
+               <td onclick="highlightRowMeanState(this)">0.322</td>
+               <td onclick="highlightRowMeanState(this)">0.424</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.673</td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.960</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.821</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.26</td>
+               <td onclick="highlightRowMeanState(this)">1.26</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.148</td>
+               <td onclick="highlightRowMeanState(this)">0.328</td>
+               <td onclick="highlightRowMeanState(this)">0.428</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.660</td>
+               <td onclick="highlightRowMeanState(this)">0.743</td>
+               <td onclick="highlightRowMeanState(this)">0.959</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.819</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_30pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_30pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.23</td>
+               <td onclick="highlightRowMeanState(this)">1.23</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.177</td>
+               <td onclick="highlightRowMeanState(this)">0.340</td>
+               <td onclick="highlightRowMeanState(this)">0.429</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.644</td>
+               <td onclick="highlightRowMeanState(this)">0.743</td>
+               <td onclick="highlightRowMeanState(this)">0.959</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.816</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.20</td>
+               <td onclick="highlightRowMeanState(this)">1.20</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.207</td>
+               <td onclick="highlightRowMeanState(this)">0.358</td>
+               <td onclick="highlightRowMeanState(this)">0.431</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.625</td>
+               <td onclick="highlightRowMeanState(this)">0.741</td>
+               <td onclick="highlightRowMeanState(this)">0.958</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.811</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_50pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_50pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.17</td>
+               <td onclick="highlightRowMeanState(this)">1.17</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.239</td>
+               <td onclick="highlightRowMeanState(this)">0.379</td>
+               <td onclick="highlightRowMeanState(this)">0.427</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.604</td>
+               <td onclick="highlightRowMeanState(this)">0.738</td>
+               <td onclick="highlightRowMeanState(this)">0.958</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
+               <td onclick="highlightRowMeanState(this)">0.806</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.13</td>
+               <td onclick="highlightRowMeanState(this)">1.13</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.271</td>
+               <td onclick="highlightRowMeanState(this)">0.405</td>
+               <td onclick="highlightRowMeanState(this)">0.435</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.583</td>
+               <td onclick="highlightRowMeanState(this)">0.733</td>
+               <td onclick="highlightRowMeanState(this)">0.956</td>
+               <td onclick="highlightRowMeanState(this)">0.989</td>
+               <td onclick="highlightRowMeanState(this)">0.799</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_70pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_70pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.10</td>
+               <td onclick="highlightRowMeanState(this)">1.10</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.306</td>
+               <td onclick="highlightRowMeanState(this)">0.434</td>
+               <td onclick="highlightRowMeanState(this)">0.421</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.563</td>
+               <td onclick="highlightRowMeanState(this)">0.726</td>
+               <td onclick="highlightRowMeanState(this)">0.958</td>
+               <td onclick="highlightRowMeanState(this)">0.985</td>
+               <td onclick="highlightRowMeanState(this)">0.792</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.06</td>
+               <td onclick="highlightRowMeanState(this)">1.06</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.341</td>
+               <td onclick="highlightRowMeanState(this)">0.465</td>
+               <td onclick="highlightRowMeanState(this)">0.428</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.545</td>
+               <td onclick="highlightRowMeanState(this)">0.718</td>
+               <td onclick="highlightRowMeanState(this)">0.957</td>
+               <td onclick="highlightRowMeanState(this)">0.981</td>
+               <td onclick="highlightRowMeanState(this)">0.784</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_90pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_90pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">1.03</td>
+               <td onclick="highlightRowMeanState(this)">1.40</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.08</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.375</td>
+               <td onclick="highlightRowMeanState(this)">0.499</td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.529</td>
+               <td onclick="highlightRowMeanState(this)">0.707</td>
+               <td onclick="highlightRowMeanState(this)">0.954</td>
+               <td onclick="highlightRowMeanState(this)">0.975</td>
+               <td onclick="highlightRowMeanState(this)">0.775</td>
+             </tr>
+          </tbody>
+        </table>
+        </center>
+        <center>
+        <table class="table-header-rotated" id="MeanState_table_tropics">
+           <thead>
+             <tr>
+               <th></th>
+               <th class="rotate"><div><span>Download Data</span></div></th>
+               <th class="rotate"><div><span>Period Mean (original grids) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (intersection) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Model Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Benchmark Period Mean (complement) [g m-2 d-1]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>RMSE [g m-2 d-1]</span></div></th>
+               <th class="rotate"><div><span>Phase Shift [months]</span></div></th>
+               <th></th>
+               <th class="rotate"><div><span>Bias Score [1]</span></div></th>
+               <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
+               <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
+               <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
+               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td class="row-header">Benchmark</td>
+               <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
+               <td>4.67</td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td class="divider"></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+               <td></td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_0pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_0pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.99</td>
+               <td onclick="highlightRowMeanState(this)">4.99</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.313</td>
+               <td onclick="highlightRowMeanState(this)">0.486</td>
+               <td onclick="highlightRowMeanState(this)">0.619</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.601</td>
+               <td onclick="highlightRowMeanState(this)">0.752</td>
+               <td onclick="highlightRowMeanState(this)">0.925</td>
+               <td onclick="highlightRowMeanState(this)">0.989</td>
+               <td onclick="highlightRowMeanState(this)">0.816</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_100pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_100pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">3.21</td>
+               <td onclick="highlightRowMeanState(this)">3.21</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-1.47</td>
+               <td onclick="highlightRowMeanState(this)">1.67</td>
+               <td onclick="highlightRowMeanState(this)">1.98</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.284</td>
+               <td onclick="highlightRowMeanState(this)">0.469</td>
+               <td onclick="highlightRowMeanState(this)">0.702</td>
+               <td onclick="highlightRowMeanState(this)">0.963</td>
+               <td onclick="highlightRowMeanState(this)">0.605</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_10pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_10pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.92</td>
+               <td onclick="highlightRowMeanState(this)">4.92</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.248</td>
+               <td onclick="highlightRowMeanState(this)">0.455</td>
+               <td onclick="highlightRowMeanState(this)">0.647</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.623</td>
+               <td onclick="highlightRowMeanState(this)">0.754</td>
+               <td onclick="highlightRowMeanState(this)">0.920</td>
+               <td onclick="highlightRowMeanState(this)">0.989</td>
+               <td onclick="highlightRowMeanState(this)">0.817</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_20pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_20pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.85</td>
+               <td onclick="highlightRowMeanState(this)">4.85</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.173</td>
+               <td onclick="highlightRowMeanState(this)">0.429</td>
+               <td onclick="highlightRowMeanState(this)">0.684</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.648</td>
+               <td onclick="highlightRowMeanState(this)">0.752</td>
+               <td onclick="highlightRowMeanState(this)">0.915</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.816</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_30pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_30pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.76</td>
+               <td onclick="highlightRowMeanState(this)">4.76</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.0851</td>
+               <td onclick="highlightRowMeanState(this)">0.415</td>
+               <td onclick="highlightRowMeanState(this)">0.720</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.670</td>
+               <td onclick="highlightRowMeanState(this)">0.747</td>
+               <td onclick="highlightRowMeanState(this)">0.910</td>
+               <td onclick="highlightRowMeanState(this)">0.990</td>
+               <td onclick="highlightRowMeanState(this)">0.813</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_40pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_40pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.65</td>
+               <td onclick="highlightRowMeanState(this)">4.65</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.0187</td>
+               <td onclick="highlightRowMeanState(this)">0.422</td>
+               <td onclick="highlightRowMeanState(this)">0.776</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.683</td>
+               <td onclick="highlightRowMeanState(this)">0.735</td>
+               <td onclick="highlightRowMeanState(this)">0.902</td>
+               <td onclick="highlightRowMeanState(this)">0.991</td>
+               <td onclick="highlightRowMeanState(this)">0.806</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_50pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_50pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.53</td>
+               <td onclick="highlightRowMeanState(this)">4.53</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.146</td>
+               <td onclick="highlightRowMeanState(this)">0.464</td>
+               <td onclick="highlightRowMeanState(this)">0.861</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.673</td>
                <td onclick="highlightRowMeanState(this)">0.713</td>
-               <td onclick="highlightRowMeanState(this)">1.12</td>
+               <td onclick="highlightRowMeanState(this)">0.889</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)">0.792</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_60pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_60pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.37</td>
+               <td onclick="highlightRowMeanState(this)">4.37</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">0.532</td>
-               <td onclick="highlightRowMeanState(this)">0.620</td>
-               <td onclick="highlightRowMeanState(this)">0.849</td>
-               <td onclick="highlightRowMeanState(this)">0.917</td>
-               <td onclick="highlightRowMeanState(this)">0.708</td>
+               <td onclick="highlightRowMeanState(this)">-0.306</td>
+               <td onclick="highlightRowMeanState(this)">0.556</td>
+               <td onclick="highlightRowMeanState(this)">0.992</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.632</td>
+               <td onclick="highlightRowMeanState(this)">0.679</td>
+               <td onclick="highlightRowMeanState(this)">0.870</td>
+               <td onclick="highlightRowMeanState(this)">0.993</td>
+               <td onclick="highlightRowMeanState(this)">0.770</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_70pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_70pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">4.15</td>
+               <td onclick="highlightRowMeanState(this)">4.15</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.519</td>
+               <td onclick="highlightRowMeanState(this)">0.723</td>
+               <td onclick="highlightRowMeanState(this)">1.15</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.551</td>
+               <td onclick="highlightRowMeanState(this)">0.634</td>
+               <td onclick="highlightRowMeanState(this)">0.846</td>
+               <td onclick="highlightRowMeanState(this)">0.995</td>
+               <td onclick="highlightRowMeanState(this)">0.738</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_80pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_80pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">3.87</td>
+               <td onclick="highlightRowMeanState(this)">3.87</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-0.807</td>
+               <td onclick="highlightRowMeanState(this)">0.987</td>
+               <td onclick="highlightRowMeanState(this)">1.35</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.443</td>
+               <td onclick="highlightRowMeanState(this)">0.581</td>
+               <td onclick="highlightRowMeanState(this)">0.816</td>
+               <td onclick="highlightRowMeanState(this)">0.994</td>
+               <td onclick="highlightRowMeanState(this)">0.698</td>
+             </tr>
+             <tr>
+               <td onclick="highlightRowMeanState(this)" class="row-header">pre_spfh_minus_90pct</td>
+               <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_pre_spfh_minus_90pct.nc" download>[-]</a></td>
+               <td onclick="highlightRowMeanState(this)">3.52</td>
+               <td onclick="highlightRowMeanState(this)">3.52</td>
+               <td onclick="highlightRowMeanState(this)">4.67</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">3.09</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">-1.15</td>
+               <td onclick="highlightRowMeanState(this)">1.34</td>
+               <td onclick="highlightRowMeanState(this)">1.60</td>
+               <td onclick="highlightRowMeanState(this)" class="divider"></td>
+               <td onclick="highlightRowMeanState(this)">0.345</td>
+               <td onclick="highlightRowMeanState(this)">0.524</td>
+               <td onclick="highlightRowMeanState(this)">0.772</td>
+               <td onclick="highlightRowMeanState(this)">0.984</td>
+               <td onclick="highlightRowMeanState(this)">0.652</td>
              </tr>
           </tbody>
         </table>
@@ -936,8 +1704,11 @@
         </div>
       </div>
       <select id="AllModelsRegion" onchange="AllSelect()">
+        <option value='boreal'>Boreal</option>
         <option value='global' selected="selected">Globe</option>
-        <option value='test'>test</option>
+        <option value='subtropics'>Subtropics</option>
+        <option value='temperate'>Temperate</option>
+        <option value='tropics'>Tropics</option>
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>

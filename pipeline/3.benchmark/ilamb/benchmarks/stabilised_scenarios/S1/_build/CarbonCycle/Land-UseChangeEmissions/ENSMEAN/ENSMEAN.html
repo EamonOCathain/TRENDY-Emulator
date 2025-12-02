@@ -59,13 +59,13 @@
                 var table = document.getElementById("MeanState_table_" + select.options[i].value);
                 var rows  = table.getElementsByTagName("tr");
                 for (var r = 2; r < rows.length; r++) {
-                    for (var c = 0; c < rows[r].cells.length-6; c++) {
+                    for (var c = 0; c < rows[r].cells.length-5; c++) {
                         rows[r].cells[c].style.backgroundColor = "#ffffff";
                     }
                 }
                 var r = cell.closest("tr").rowIndex;
                 document.getElementById("MeanStateModel").selectedIndex = r-1;
-                for (var c = 0; c < rows[r].cells.length-6; c++) {
+                for (var c = 0; c < rows[r].cells.length-5; c++) {
                     rows[r].cells[c].style.backgroundColor = "#c1c1c1";
                 }
             }
@@ -80,7 +80,7 @@
             var nc = colors.length;
             var table  = document.getElementById("MeanState_table_" + RNAME);
             var rows   = table.getElementsByTagName("tr");
-            for (var c = rows[0].cells.length-5; c < rows[0].cells.length; c++) {
+            for (var c = rows[0].cells.length-4; c < rows[0].cells.length; c++) {
                 var scores = [];
                 for (var r = 2; r < rows.length; r++) {
                     val = rows[r].cells[c].innerHTML;
@@ -238,7 +238,7 @@
       </div>
       <select id="MeanStateRegion" onchange="changeRegionMeanState()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <div style="display:none">
       <select id="MeanStateModel">
@@ -266,7 +266,6 @@
                <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
                <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
                <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
-               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
              </tr>
            </thead>
            <tbody>
@@ -283,7 +282,6 @@
                <td></td>
                <td></td>
                <td class="divider"></td>
-               <td></td>
                <td></td>
                <td></td>
                <td></td>
@@ -306,13 +304,12 @@
                <td onclick="highlightRowMeanState(this)">0.00</td>
                <td onclick="highlightRowMeanState(this)">0.420</td>
                <td onclick="highlightRowMeanState(this)">2.83e-12</td>
-               <td onclick="highlightRowMeanState(this)">0.284</td>
              </tr>
           </tbody>
         </table>
         </center>
         <center>
-        <table class="table-header-rotated" id="MeanState_table_train">
+        <table class="table-header-rotated" id="MeanState_table_test">
            <thead>
              <tr>
                <th></th>
@@ -331,14 +328,13 @@
                <th class="rotate"><div><span>RMSE Score [1]</span></div></th>
                <th class="rotate"><div><span>Seasonal Cycle Score [1]</span></div></th>
                <th class="rotate"><div><span>Spatial Distribution Score [1]</span></div></th>
-               <th class="rotate"><div><span>Overall Score [1]</span></div></th>
              </tr>
            </thead>
            <tbody>
              <tr>
                <td class="row-header">Benchmark</td>
                <td><a href="ENSMEAN_Benchmark.nc" download>[-]</a></td>
-               <td>1.30e-11</td>
+               <td>0.00</td>
                <td></td>
                <td></td>
                <td></td>
@@ -348,7 +344,6 @@
                <td></td>
                <td></td>
                <td class="divider"></td>
-               <td></td>
                <td></td>
                <td></td>
                <td></td>
@@ -357,21 +352,20 @@
              <tr>
                <td onclick="highlightRowMeanState(this)" class="row-header">32_year</td>
                <td onclick="highlightRowMeanState(this)"><a href="ENSMEAN_32_year.nc" download>[-]</a></td>
-               <td onclick="highlightRowMeanState(this)">2.62e-05</td>
-               <td onclick="highlightRowMeanState(this)">2.62e-05</td>
-               <td onclick="highlightRowMeanState(this)">1.30e-11</td>
+               <td onclick="highlightRowMeanState(this)">8.13e-05</td>
+               <td onclick="highlightRowMeanState(this)">8.13e-05</td>
+               <td onclick="highlightRowMeanState(this)">0.00</td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)"></td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
-               <td onclick="highlightRowMeanState(this)">2.62e-05</td>
-               <td onclick="highlightRowMeanState(this)">0.000829</td>
-               <td onclick="highlightRowMeanState(this)">3.44</td>
+               <td onclick="highlightRowMeanState(this)">8.13e-05</td>
+               <td onclick="highlightRowMeanState(this)">0.000919</td>
+               <td onclick="highlightRowMeanState(this)">3.39</td>
                <td onclick="highlightRowMeanState(this)" class="divider"></td>
                <td onclick="highlightRowMeanState(this)">0.999</td>
-               <td onclick="highlightRowMeanState(this)">0.00</td>
-               <td onclick="highlightRowMeanState(this)">0.417</td>
-               <td onclick="highlightRowMeanState(this)">4.22e-12</td>
-               <td onclick="highlightRowMeanState(this)">0.283</td>
+               <td onclick="highlightRowMeanState(this)"></td>
+               <td onclick="highlightRowMeanState(this)">0.431</td>
+               <td onclick="highlightRowMeanState(this)"></td>
              </tr>
           </tbody>
         </table>
@@ -500,7 +494,7 @@
       </div>
       <select id="AllModelsRegion" onchange="AllSelect()">
         <option value='global' selected="selected">Globe</option>
-        <option value='train'>train</option>
+        <option value='test'>test</option>
       </select>
       <select id="AllModelsPlot" onchange="AllSelect()">
         <option value='timeint' selected="selected">Temporally integrated period mean</option>
