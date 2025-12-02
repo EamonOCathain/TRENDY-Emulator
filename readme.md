@@ -1,6 +1,6 @@
 # TRENDY-Emulator
 
-This repository accompanies the thesis **"TRENDY-Emulator: A Bias-Corrected Deep Learning Emulator of Terrestrial Carbon and Water Dynamics"** and provides the full workflow used to build, train, and benchmark the TRENDY-Emulator.
+This repository accompanies the MSc thesis **"TRENDY-Emulator: A Bias-Corrected Deep Learning Emulator of Terrestrial Carbon and Water Dynamics"**, presented in fulfillment of the Global Forestry Erasmus Mundus MSc at AgroParisTech, Montpellier. It provides the full workflow used to build, train, and benchmark the TRENDY-Emulator.
 
 The pipeline includes:
 - preprocessing TRENDY forcing and DGVM outputs  
