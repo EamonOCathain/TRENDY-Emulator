@@ -1,16 +1,16 @@
 # Welcome to TRENDY-Emulator
 
-<img src="Trendy-Saurus.png" width="500"/>
+The code was executed in the following order:
 
-## PreProcessing
+## 1. PreProcessing
 
 *In scripts/preprocessing*.
 
 1. Run 'climate', 'co2', 'jsbach', 'ndep', 'nfert', 'potential' 'radiation', 'model outputs' in any order.
-2. Then run the rolling means script (takes rolling means of the climate variables).
+2. Then run the 'rolling means' script (takes rolling means of the climate variables).
 3. Preindustrial - Creates the pre-industrial versions of climate, land use and co2 variables for use in TRENDY scenarios.
 
-## Masking
+## 2. Masking
 
 *In scripts/masking*.
 
@@ -20,6 +20,14 @@
 
 ## Make Zarrs from Training and Inference Data
 
-*In scripts/make_zarrs/*.
+*In scripts/make_zarrs/training/main*.
 
-1. 
+1. Run 'make_training_tiles.sh' to create the training, validation and testing zarrs.
+2. Run consolidate and finalize.
+   
+*In scripts/make_zarrs/training/main*.
+
+3. Run fill_potential_rad_nans to fill some non-finite data in the testing zarr for potential radiation.
+
+
+
